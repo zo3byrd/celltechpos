@@ -63,4 +63,49 @@ async function runMigrations() {
   console.log('Migrations done.');
 }
 
-module.exports = { runMigrations };
+async function seedIfEmpty() {
+  const { Store, User, License } = require('./models');
+  const bcrypt = require('bcryptjs');
+
+  const count = await User.count();
+  if (count > 0) return;
+
+  console.log('Empty database detected — seeding default store and admin account...');
+
+  const store = await Store.create({
+    name: process.env.STORE_NAME || 'CellTechPOS',
+    address: '123 Main St',
+    city: 'Houston',
+    state: 'TX',
+    zip: '77001',
+    phone: '(713) 555-0100',
+    email: 'store@celltechpos.com',
+    taxRate: 0.0825,
+  });
+
+  const hash = await bcrypt.hash('admin123', 10);
+  await User.create({
+    storeId: store.id,
+    name: 'Admin',
+    email: 'admin@celltechpos.com',
+    passwordHash: hash,
+    role: 'superadmin',
+  });
+
+  const existing = await License.findOne({ where: { storeId: store.id } });
+  if (!existing) {
+    await License.create({
+      storeId: store.id,
+      plan: 'yearly',
+      status: 'active',
+      startedAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 365 * 86400000).toISOString(),
+      price: 0,
+      autoRenew: false,
+    });
+  }
+
+  console.log('Seed complete. Login: admin@celltechpos.com / admin123');
+}
+
+module.exports = { runMigrations, seedIfEmpty };

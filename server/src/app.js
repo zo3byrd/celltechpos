@@ -13,7 +13,7 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const { sequelize } = require('./db');
-const { runMigrations } = require('./db/migrate');
+const { runMigrations, seedIfEmpty } = require('./db/migrate');
 const { checkLicense } = require('./middleware/checkLicense');
 
 const app = express();
@@ -213,5 +213,6 @@ const PORT = process.env.PORT || 5000;
 sequelize
   .sync()
   .then(() => runMigrations())
+  .then(() => seedIfEmpty())
   .then(() => app.listen(PORT, () => console.log(`API ready → http://localhost:${PORT}/api`)))
   .catch(err => { console.error('DB init failed:', err); process.exit(1); });
