@@ -1,0 +1,1807 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CellTechPOS â€” The POS Built for Repair Shops & Wireless Dealers</title>
+  <meta name="description" content="Repair tickets, point of sale, inventory, SMS/email messaging, loyalty, and more â€” all in one platform built for wireless and repair shops." />
+  <link rel="canonical" href="https://celltechpos.com" />
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://celltechpos.com" />
+  <meta property="og:title" content="CellTechPOS — The POS Built for Repair Shops & Wireless Dealers" />
+  <meta property="og:description" content="Repair tickets, point of sale, inventory, SMS/email messaging, loyalty, and more — all in one platform built for cell phone repair shops." />
+  <meta property="og:site_name" content="CellTechPOS" />
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="CellTechPOS — POS for Repair Shops" />
+  <meta name="twitter:description" content="Repair tickets, POS, inventory, messaging, loyalty — everything your wireless store needs in one platform." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #16a34a;
+      --green-dark: #14532d;
+      --green-light: #dcfce7;
+      --green-mid: #166534;
+      --navy: #0f172a;
+      --slate: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --white: #ffffff;
+      --off-white: #f8fafc;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      color: var(--navy);
+      background: var(--white);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* â”€â”€ NAV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 40px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .logo-icon {
+      width: 34px;
+      height: 34px;
+      background: var(--green-dark);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 900;
+      font-size: 15px;
+      letter-spacing: -0.5px;
+    }
+    .logo-text { font-weight: 800; font-size: 17px; color: var(--navy); }
+    .logo-text span { color: var(--green); }
+
+    .nav-links {
+      display: flex;
+      gap: 4px;
+      flex: 1;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .nav-links a:hover { color: var(--navy); background: var(--off-white); }
+
+    .nav-cta { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+    .btn-outline {
+      padding: 8px 18px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--navy);
+      text-decoration: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .btn-outline:hover { border-color: var(--green); color: var(--green); }
+    .btn-primary {
+      padding: 8px 20px;
+      background: var(--green);
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      text-decoration: none;
+      transition: background 0.15s, transform 0.1s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary:hover { background: var(--green-mid); transform: translateY(-1px); }
+
+    /* â”€â”€ HERO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    .hero {
+      background: linear-gradient(160deg, #0f172a 0%, #14532d 55%, #0f172a 100%);
+      padding: 90px 24px 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(22,163,74,0.25) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(22,163,74,0.15);
+      border: 1px solid rgba(22,163,74,0.4);
+      color: #86efac;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 999px;
+      margin-bottom: 28px;
+      letter-spacing: 0.02em;
+    }
+    .hero-badge span { width: 6px; height: 6px; background: #4ade80; border-radius: 50%; animation: blink 2s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .hero h1 {
+      font-size: clamp(38px, 6vw, 72px);
+      font-weight: 900;
+      line-height: 1.05;
+      color: #fff;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+    }
+    .hero h1 em {
+      font-style: normal;
+      background: linear-gradient(90deg, #4ade80, #86efac);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      font-size: clamp(16px, 2vw, 20px);
+      color: #94a3b8;
+      max-width: 640px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+      font-weight: 400;
+    }
+    .hero-btns {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 64px;
+    }
+    .btn-hero-primary {
+      padding: 16px 32px;
+      background: var(--green);
+      color: #fff;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+      box-shadow: 0 0 0 0 rgba(74,222,128,0);
+    }
+    .btn-hero-primary:hover {
+      background: #15803d;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(22,163,74,0.4);
+    }
+    .btn-hero-secondary {
+      padding: 16px 32px;
+      border: 1.5px solid rgba(255,255,255,0.2);
+      color: #e2e8f0;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    }
+    .btn-hero-secondary:hover {
+      border-color: rgba(255,255,255,0.5);
+      background: rgba(255,255,255,0.07);
+      transform: translateY(-2px);
+    }
+
+    /* dashboard mockup */
+    .hero-screen {
+      margin: 0 auto;
+      max-width: 960px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 14px 14px 0 0;
+      overflow: hidden;
+      box-shadow: 0 -12px 80px rgba(0,0,0,0.6);
+    }
+    .screen-bar {
+      background: #1e293b;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #334155;
+    }
+    .dot-red { width:10px;height:10px;border-radius:50%;background:#ef4444; }
+    .dot-yellow { width:10px;height:10px;border-radius:50%;background:#eab308; }
+    .dot-green { width:10px;height:10px;border-radius:50%;background:#22c55e; }
+    .screen-url {
+      flex:1;
+      background:#0f172a;
+      border-radius:5px;
+      padding:4px 12px;
+      font-size:11px;
+      color:#475569;
+      font-family:monospace;
+      margin:0 12px;
+    }
+    .screen-body {
+      display: flex;
+      min-height: 360px;
+    }
+    .screen-sidebar {
+      width: 170px;
+      background: #161b27;
+      border-right: 1px solid #1e293b;
+      padding: 16px 10px;
+      flex-shrink: 0;
+    }
+    .sb-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 6px 16px;
+      border-bottom: 1px solid #1e293b;
+      margin-bottom: 12px;
+    }
+    .sb-icon { width:22px;height:22px;background:#14532d;border-radius:5px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:900; }
+    .sb-name { font-size:11px;font-weight:800;color:#fff; }
+    .sb-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 8px;
+      border-radius: 5px;
+      margin-bottom: 2px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+    }
+    .sb-item.active { background:#14532d;color:#86efac; }
+    .sb-item svg { width:12px;height:12px;flex-shrink:0; }
+    .sb-section { font-size:9px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.07em;padding:10px 8px 4px; }
+
+    .screen-main {
+      flex: 1;
+      background: #f8fafc;
+      padding: 20px;
+      overflow: hidden;
+    }
+    .dash-header { font-size:14px;font-weight:800;color:#0f172a;margin-bottom:14px; }
+    .dash-cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .dash-card {
+      background:#fff;
+      border:1px solid #e2e8f0;
+      border-radius:8px;
+      padding:12px;
+    }
+    .dc-label { font-size:9px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px; }
+    .dc-val { font-size:18px;font-weight:800;color:#0f172a; }
+    .dc-sub { font-size:9px;color:#22c55e;font-weight:600;margin-top:2px; }
+    .dash-row { display:grid;grid-template-columns:1.5fr 1fr;gap:10px; }
+    .dash-table-card { background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px; }
+    .dt-head { font-size:10px;font-weight:700;color:#0f172a;margin-bottom:10px; }
+    .dt-row { display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #f1f5f9; }
+    .dt-badge { font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px; }
+    .badge-open { background:#dbeafe;color:#1d4ed8; }
+    .badge-ready { background:#dcfce7;color:#15803d; }
+    .badge-progress { background:#fef9c3;color:#854d0e; }
+    .dt-name { font-size:9px;color:#334155;font-weight:500;margin-left:6px; }
+    .dt-device { font-size:9px;color:#94a3b8; }
+    .dt-price { font-size:9px;font-weight:700;color:#0f172a;margin-left:auto; }
+    .chart-card { background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px; }
+    .chart-bars { display:flex;align-items:flex-end;gap:5px;height:80px;margin-top:10px; }
+    .bar { flex:1;border-radius:4px 4px 0 0;background:linear-gradient(180deg,#22c55e,#16a34a); opacity:0.8; }
+
+    /* â”€â”€ STATS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    .stats-band {
+      background: var(--green-dark);
+      padding: 40px 24px;
+    }
+    .stats-inner {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      text-align: center;
+    }
+    .stat-num {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 900;
+      color: #4ade80;
+      letter-spacing: -0.03em;
+    }
+    .stat-label { font-size: 13px; color: #86efac; font-weight: 500; margin-top: 4px; }
+
+    /* â”€â”€ SECTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    section { padding: 96px 24px; }
+    section:nth-child(even) { background: var(--off-white); }
+
+    .section-inner { max-width: 1200px; margin: 0 auto; }
+    .section-tag {
+      display: inline-block;
+      background: var(--green-light);
+      color: var(--green-mid);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 999px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .section-h2 {
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: var(--navy);
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .section-sub {
+      font-size: 17px;
+      color: var(--muted);
+      max-width: 560px;
+      line-height: 1.65;
+    }
+
+    /* Feature grid */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 56px;
+    }
+    .feature-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    }
+    .feature-card:hover {
+      border-color: var(--green);
+      box-shadow: 0 8px 32px rgba(22,163,74,0.1);
+      transform: translateY(-3px);
+    }
+    .feat-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--green-light);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .feat-icon svg { width: 22px; height: 22px; color: var(--green-mid); }
+    .feature-card h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 8px;
+    }
+    .feature-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+    /* Split sections */
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 72px;
+      align-items: center;
+    }
+    .split.reverse { direction: rtl; }
+    .split.reverse > * { direction: ltr; }
+
+    .split-content ul { list-style: none; margin-top: 24px; }
+    .split-content li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+      font-size: 15px;
+      color: #334155;
+    }
+    .split-content li::before {
+      content: '';
+      width: 20px;
+      height: 20px;
+      background: var(--green-light);
+      border-radius: 50%;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2316a34a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+      background-size: 12px;
+      background-repeat: no-repeat;
+      background-position: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    /* mock screen panels */
+    .mock-panel {
+      background: var(--navy);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .mock-bar {
+      background: #1e293b;
+      padding: 10px 14px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+    }
+    .mock-dot { width:9px;height:9px;border-radius:50%; }
+    .mock-content { padding: 20px; }
+
+    /* Repair ticket mock */
+    .ticket-row {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .ticket-id { font-family: monospace; font-size: 11px; color: #4ade80; font-weight: 700; }
+    .ticket-name { font-size: 12px; color: #e2e8f0; font-weight: 600; flex: 1; }
+    .ticket-device { font-size: 11px; color: #64748b; }
+    .ticket-status { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+    .ts-open { background:#1e3a5f;color:#7dd3fc; }
+    .ts-progress { background:#292524;color:#fbbf24; }
+    .ts-ready { background:#14532d;color:#86efac; }
+    .ts-pick { background:#4a044e;color:#e879f9; }
+
+    /* POS mock */
+    .pos-grid { display:grid;grid-template-columns:1fr 1.2fr;gap:10px; }
+    .pos-items { display:flex;flex-direction:column;gap:6px; }
+    .pos-item {
+      background:#1e293b;border:1px solid #334155;border-radius:6px;padding:8px 10px;
+      display:flex;align-items:center;gap:8px;
+    }
+    .pos-thumb { width:28px;height:28px;background:#0f172a;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:14px; }
+    .pos-item-name { font-size:11px;color:#e2e8f0;font-weight:600;flex:1; }
+    .pos-item-price { font-size:11px;color:#4ade80;font-weight:700; }
+    .pos-summary {
+      background:#1e293b;border:1px solid #334155;border-radius:8px;padding:14px;
+    }
+    .pos-line { display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;margin-bottom:6px; }
+    .pos-total { display:flex;justify-content:space-between;font-size:14px;font-weight:800;color:#fff;padding-top:8px;border-top:1px solid #334155;margin-top:4px; }
+    .pos-methods { display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin-top:10px; }
+    .pos-method { background:#0f172a;border:1px solid #334155;border-radius:5px;padding:7px;text-align:center;font-size:10px;font-weight:600;color:#64748b; }
+    .pos-method.active { background:#14532d;border-color:#16a34a;color:#86efac; }
+    .pos-btn { background:#16a34a;border-radius:6px;padding:10px;text-align:center;font-size:12px;font-weight:700;color:#fff;margin-top:8px; }
+
+    /* â”€â”€ TESTIMONIALS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 56px;
+    }
+    .tcard {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+    }
+    .stars { color: #f59e0b; font-size: 16px; margin-bottom: 16px; }
+    .tcard p { font-size: 15px; color: #334155; line-height: 1.7; font-style: italic; margin-bottom: 20px; }
+    .tauthor { display: flex; align-items: center; gap: 12px; }
+    .tavatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; color: #fff; font-size: 16px;
+    }
+    .tname { font-size: 14px; font-weight: 700; color: var(--navy); }
+    .tshop { font-size: 12px; color: var(--muted); }
+
+    /* â”€â”€ PRICING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 56px;
+      align-items: start;
+    }
+    .pcard {
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      background: #fff;
+      position: relative;
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+    .pcard:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.1); }
+    .pcard.popular {
+      border-color: var(--green);
+      background: linear-gradient(160deg, #f0fdf4 0%, #fff 60%);
+    }
+    .popular-badge {
+      position: absolute;
+      top: -13px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--green);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 999px;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .pcard h3 { font-size: 15px; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
+    .price-num { font-size: 48px; font-weight: 900; color: var(--navy); letter-spacing: -0.04em; }
+    .price-num sup { font-size: 24px; font-weight: 700; vertical-align: top; margin-top: 10px; display: inline-block; }
+    .price-num sub { font-size: 14px; font-weight: 500; color: var(--muted); }
+    .price-desc { font-size: 13px; color: var(--muted); margin: 12px 0 24px; line-height: 1.5; }
+    .pcard ul { list-style: none; margin-bottom: 28px; }
+    .pcard li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: #334155;
+      padding: 6px 0;
+    }
+    .pcard li::before {
+      content: 'âœ“';
+      color: var(--green);
+      font-weight: 800;
+      font-size: 13px;
+      width: 18px;
+      flex-shrink: 0;
+    }
+    .pcard .btn-plan {
+      width: 100%;
+      padding: 13px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      text-align: center;
+      text-decoration: none;
+      display: block;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn-plan-outline {
+      border: 1.5px solid var(--border);
+      color: var(--navy);
+    }
+    .btn-plan-outline:hover { border-color: var(--green); color: var(--green); }
+    .btn-plan-solid {
+      background: var(--green);
+      color: #fff;
+    }
+    .btn-plan-solid:hover { background: var(--green-mid); transform: translateY(-1px); }
+
+    /* â”€â”€ CTA BANNER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    .cta-section {
+      background: linear-gradient(135deg, var(--green-dark) 0%, #166534 50%, #15803d 100%);
+      padding: 96px 24px;
+      text-align: center;
+    }
+    .cta-section h2 {
+      font-size: clamp(28px, 4vw, 52px);
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -0.03em;
+      margin-bottom: 16px;
+    }
+    .cta-section p {
+      font-size: 18px;
+      color: #86efac;
+      margin-bottom: 40px;
+    }
+    .cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+    /* â”€â”€ FOOTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    footer {
+      background: var(--navy);
+      padding: 60px 24px 32px;
+    }
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .footer-top {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px;
+      padding-bottom: 48px;
+      border-bottom: 1px solid #1e293b;
+    }
+    .footer-brand { }
+    .footer-logo { display:flex;align-items:center;gap:10px;margin-bottom:14px; }
+    .footer-logo .logo-icon { background:#14532d; }
+    .footer-logo .logo-text { color:#fff; }
+    .footer-brand p { font-size:13px;color:#64748b;line-height:1.65;max-width:240px; }
+    .footer-col h4 { font-size:13px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:16px; }
+    .footer-col a {
+      display:block;
+      font-size:14px;
+      color:#64748b;
+      text-decoration:none;
+      margin-bottom:10px;
+      transition:color 0.15s;
+    }
+    .footer-col a:hover { color:#fff; }
+    .footer-bottom {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding-top:24px;
+      font-size:12px;
+      color:#334155;
+    }
+
+    /* â”€â”€ RESPONSIVE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* â”€â”€ HAMBURGER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      border: none;
+      background: none;
+      margin-left: auto;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--navy);
+      border-radius: 2px;
+      transition: transform 0.25s, opacity 0.25s;
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: 64px;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px 20px;
+      z-index: 99;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+    .mobile-menu.open { display: block; }
+    .mobile-menu a {
+      display: block;
+      padding: 12px 8px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--navy);
+      text-decoration: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .mobile-menu a:last-child { border: none; }
+    .mobile-menu a:hover { color: var(--green); }
+    .mobile-menu .mm-cta {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+    }
+    .mobile-menu .mm-cta a {
+      flex: 1;
+      text-align: center;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .mm-btn-outline { border: 1.5px solid var(--border) !important; color: var(--navy) !important; }
+    .mm-btn-solid { background: var(--green); color: #fff !important; }
+
+    /* â”€â”€ MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #fff;
+      border-radius: 20px;
+      padding: 36px;
+      width: 100%;
+      max-width: 460px;
+      position: relative;
+      animation: modalIn 0.2s ease;
+    }
+    @keyframes modalIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: none;
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .modal-close:hover { background: var(--off-white); color: var(--navy); }
+    .modal-tag {
+      display: inline-block;
+      background: var(--green-light);
+      color: var(--green-mid);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+    .modal-box h3 { font-size: 22px; font-weight: 800; color: var(--navy); margin-bottom: 6px; letter-spacing: -0.02em; }
+    .modal-box p { font-size: 14px; color: var(--muted); margin-bottom: 24px; line-height: 1.5; }
+    .modal-field { margin-bottom: 14px; }
+    .modal-field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .modal-field input, .modal-field select {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--navy);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .modal-field input:focus, .modal-field select:focus { border-color: var(--green); }
+    .modal-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .modal-submit {
+      width: 100%;
+      padding: 14px;
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.15s, transform 0.1s;
+      font-family: inherit;
+    }
+    .modal-submit:hover { background: var(--green-mid); transform: translateY(-1px); }
+    .modal-success {
+      text-align: center;
+      padding: 20px 0;
+    }
+    .modal-success .success-icon {
+      width: 64px;
+      height: 64px;
+      background: var(--green-light);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 28px;
+    }
+    .modal-success h3 { font-size: 22px; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+    .modal-success p { font-size: 15px; color: var(--muted); line-height: 1.6; }
+
+    @media (max-width: 900px) {
+      .nav-links { display:none; }
+      .hamburger { display:flex; }
+      .nav-cta { display:none; }
+      .feature-grid { grid-template-columns:1fr 1fr; }
+      .split { grid-template-columns:1fr; gap:40px; }
+      .split.reverse { direction:ltr; }
+      .testimonials-grid { grid-template-columns:1fr; }
+      .pricing-grid { grid-template-columns:1fr; max-width:420px;margin-left:auto;margin-right:auto; }
+      .stats-inner { grid-template-columns:repeat(2,1fr); }
+      .footer-top { grid-template-columns:1fr 1fr; }
+      .screen-sidebar { display:none; }
+      .dash-cards { grid-template-columns:repeat(2,1fr); }
+    }
+    @media (max-width: 600px) {
+      .feature-grid { grid-template-columns:1fr; }
+      .footer-top { grid-template-columns:1fr; }
+      .stats-inner { grid-template-columns:1fr 1fr; }
+      .hero-btns { flex-direction:column;align-items:center; }
+      .cta-btns { flex-direction:column;align-items:center; }
+      .dash-row { grid-template-columns:1fr; }
+      .modal-field-row { grid-template-columns:1fr; }
+    }
+    /* ── SALE BANNER ─────────────────────────────────────────── */
+    .sale-bar {
+      background: linear-gradient(90deg, #15803d 0%, #16a34a 50%, #15803d 100%);
+      background-size: 200% 100%;
+      animation: shimmer 4s ease infinite;
+      padding: 10px 16px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 101;
+    }
+    @keyframes shimmer {
+      0%,100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    .sale-bar .sale-pill {
+      background: #fff;
+      color: #15803d;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 999px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .sale-bar .sale-link {
+      color: #bbf7d0;
+      text-decoration: underline;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .sale-bar .sale-link:hover { color: #fff; }
+    .sale-bar .sale-close {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 4px;
+    }
+    .sale-bar .sale-close:hover { color: #fff; }
+
+    /* sale badge on pricing card */
+    .sale-orig {
+      font-size: 15px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-decoration: line-through;
+      margin-left: 6px;
+    }
+    .sale-badge-card {
+      display: inline-block;
+      background: #fef3c7;
+      color: #92400e;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+      letter-spacing: 0.04em;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── SALE BAR ─── -->
+<div class=”sale-bar” id=”saleBar”>
+  <span class=”sale-pill”>Limited Time</span>
+  <span>🎉 Special launch offer — get started for just <strong>$29.99/mo</strong> (reg. $49). First 3 months!</span>
+  <span class=”sale-link” onclick=”openModal('trial')”>Claim offer →</span>
+  <button class=”sale-close” onclick=”document.getElementById('saleBar').style.display='none'” aria-label=”Dismiss”>✕</button>
+</div>
+
+<!-- ── NAV ─── -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="logo">
+      <div class="logo-icon"><svg width="20" height="20" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="1" width="12" height="20" rx="2.5" stroke="#fff" stroke-width="1.6"/><rect x="4" y="4.5" width="8" height="11" rx="1" fill="#fff" fill-opacity="0.2"/><line x1="6" y1="2.8" x2="9.5" y2="2.8" stroke="#fff" stroke-width="1" stroke-linecap="round" opacity="0.55"/><circle cx="8" cy="18.2" r="1.1" fill="#fff" fill-opacity="0.6"/><rect x="16" y="15.5" width="2.2" height="5" rx="0.6" fill="#4ade80"/><rect x="19" y="11" width="2.2" height="9.5" rx="0.6" fill="#4ade80" fill-opacity="0.6"/></svg></div>
+      <div class="logo-text">CellTech<span>POS</span></div>
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#repairs">Repairs</a>
+      <a href="#pos">Point of Sale</a>
+      <a href="#messaging">Messaging</a>
+      <a href="#pricing">Pricing</a>
+    </div>
+    <div class="nav-cta">
+      <a href="#pricing" class="btn-outline">See Pricing</a>
+      <a href="#" data-pos-login class="btn-outline" style="border-color:#d1fae5;color:#166534;" target="_blank">Log In</a>
+      <a href="#cta" class="btn-primary" onclick="openModal('trial'); return false;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Get Started
+      </a>
+    </div>
+    <button class="hamburger" id="hamburger" aria-label="Menu" onclick="toggleMobileMenu()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#features" onclick="closeMobileMenu()">Features</a>
+  <a href="#repairs" onclick="closeMobileMenu()">Repairs</a>
+  <a href="#pos" onclick="closeMobileMenu()">Point of Sale</a>
+  <a href="#messaging" onclick="closeMobileMenu()">Messaging</a>
+  <a href="#pricing" onclick="closeMobileMenu()">Pricing</a>
+  <a href="#" data-pos-login target="_blank" onclick="closeMobileMenu()" style="color:#166534;font-weight:700;">Log In to POS â†’</a>
+  <div class="mm-cta">
+    <a href="#pricing" class="mm-btn-outline" onclick="closeMobileMenu()">See Pricing</a>
+    <a href="#" class="mm-btn-solid" onclick="closeMobileMenu(); openModal('trial'); return false;">Get Started</a>
+  </div>
+</div>
+
+<!-- â”€â”€ HERO â”€â”€â”€ -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">
+      <span></span>
+      Built exclusively for wireless &amp; repair shops
+    </div>
+    <h1>The POS That Runs<br/><em>Your Repair Shop</em></h1>
+    <p class="hero-sub">
+      Repair tickets, point of sale, inventory, customer messaging, loyalty programs, commissions â€” everything your wireless store needs in one powerful platform.
+    </p>
+    <div class="hero-btns">
+      <a href="#" class="btn-hero-primary" onclick="openModal('trial'); return false;">Start Free Trial</a>
+      <a href="#features" class="btn-hero-secondary">See All Features â†’</a>
+    </div>
+
+    <!-- Dashboard mockup -->
+    <div class="hero-screen">
+      <div class="screen-bar">
+        <div class="dot-red"></div>
+        <div class="dot-yellow"></div>
+        <div class="dot-green"></div>
+        <div class="screen-url">app.celltechpos.com · CellTechPOS</div>
+      </div>
+      <div class="screen-body">
+        <div class="screen-sidebar">
+          <div class="sb-logo">
+            <div class="sb-icon"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="1" y="0.5" width="8" height="13" rx="1.5" stroke="#fff" stroke-width="1.2"/><rect x="2.5" y="2.8" width="5" height="7" rx="0.5" fill="#fff" fill-opacity="0.25"/><circle cx="5" cy="11.5" r="0.8" fill="#fff" fill-opacity="0.6"/><rect x="10.5" y="9.5" width="1.5" height="3.5" rx="0.4" fill="#4ade80"/><rect x="12.5" y="7" width="1.5" height="6" rx="0.4" fill="#4ade80" fill-opacity="0.6"/></svg></div>
+            <div class="sb-name">CellTechPOS</div>
+          </div>
+          <div class="sb-item active">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Dashboard
+          </div>
+          <div class="sb-item">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M9 21V9"/></svg>
+            Point of Sale
+          </div>
+          <div class="sb-item">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            Repairs
+          </div>
+          <div class="sb-section">Ops</div>
+          <div class="sb-item">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            Inventory
+          </div>
+          <div class="sb-item">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Customers
+          </div>
+          <div class="sb-section">Growth</div>
+          <div class="sb-item">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Messages
+          </div>
+        </div>
+
+        <div class="screen-main">
+          <div class="dash-header">Good morning â€” Today's Overview</div>
+          <div class="dash-cards">
+            <div class="dash-card">
+              <div class="dc-label">Today's Sales</div>
+              <div class="dc-val">$1,284</div>
+              <div class="dc-sub">â†‘ 12% vs yesterday</div>
+            </div>
+            <div class="dash-card">
+              <div class="dc-label">Open Repairs</div>
+              <div class="dc-val">14</div>
+              <div class="dc-sub" style="color:#f59e0b;">3 due today</div>
+            </div>
+            <div class="dash-card">
+              <div class="dc-label">Ready Pickups</div>
+              <div class="dc-val">7</div>
+              <div class="dc-sub">Notify customers</div>
+            </div>
+            <div class="dash-card">
+              <div class="dc-label">Monthly Rev</div>
+              <div class="dc-val">$24.6k</div>
+              <div class="dc-sub">â†‘ 8% vs last mo</div>
+            </div>
+          </div>
+          <div class="dash-row">
+            <div class="dash-table-card">
+              <div class="dt-head">Recent Repair Tickets</div>
+              <div class="dt-row">
+                <span class="dt-badge badge-ready">Ready</span>
+                <span class="dt-name">Marcus J.</span>
+                <span class="dt-device">iPhone 15 Pro Â· Screen</span>
+                <span class="dt-price">$189</span>
+              </div>
+              <div class="dt-row">
+                <span class="dt-badge badge-progress">In Progress</span>
+                <span class="dt-name">Sandra K.</span>
+                <span class="dt-device">Samsung S24 Â· Battery</span>
+                <span class="dt-price">$79</span>
+              </div>
+              <div class="dt-row">
+                <span class="dt-badge badge-open">Open</span>
+                <span class="dt-name">David M.</span>
+                <span class="dt-device">Google Pixel Â· Charging</span>
+                <span class="dt-price">$65</span>
+              </div>
+              <div class="dt-row" style="border:0">
+                <span class="dt-badge" style="background:#1c1917;color:#fcd34d">Waiting</span>
+                <span class="dt-name">Tanya R.</span>
+                <span class="dt-device">iPad Air Â· Cracked</span>
+                <span class="dt-price">$299</span>
+              </div>
+            </div>
+            <div class="chart-card">
+              <div class="dt-head">Revenue â€” Last 7 Days</div>
+              <div class="chart-bars">
+                <div class="bar" style="height:45%;opacity:0.5"></div>
+                <div class="bar" style="height:62%"></div>
+                <div class="bar" style="height:38%;opacity:0.5"></div>
+                <div class="bar" style="height:78%"></div>
+                <div class="bar" style="height:55%;opacity:0.7"></div>
+                <div class="bar" style="height:90%"></div>
+                <div class="bar" style="height:72%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- â”€â”€ STATS â”€â”€â”€ -->
+<div class="stats-band">
+  <div class="stats-inner">
+    <div>
+      <div class="stat-num">500+</div>
+      <div class="stat-label">Repair shops powered</div>
+    </div>
+    <div>
+      <div class="stat-num">2M+</div>
+      <div class="stat-label">Tickets processed</div>
+    </div>
+    <div>
+      <div class="stat-num">99.9%</div>
+      <div class="stat-label">Uptime guaranteed</div>
+    </div>
+    <div>
+      <div class="stat-num">4.9â˜…</div>
+      <div class="stat-label">Average shop rating</div>
+    </div>
+  </div>
+</div>
+
+<!-- â”€â”€ FEATURES â”€â”€â”€ -->
+<section id="features">
+  <div class="section-inner">
+    <div style="text-align:center">
+      <span class="section-tag">Everything Included</span>
+      <h2 class="section-h2">Every tool your shop needs,<br/>in one place</h2>
+      <p class="section-sub" style="margin:0 auto">No juggling five different apps. CellTechPOS handles every part of your repair shop and wireless store.</p>
+    </div>
+
+    <div class="feature-grid">
+
+      <div class="feature-card">
+        <div class="feat-icon">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        </div>
+        <h3>Repair Ticket Management</h3>
+        <p>Create, assign, and track every repair from intake to pickup. Custom statuses, device notes, photos, and automated customer notifications.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feat-icon">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <h3>Point of Sale</h3>
+        <p>Fast, intuitive POS built for retail and repair payments. Accept cash, card, check, and split payments with real-time change calculation.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feat-icon">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        </div>
+        <h3>Inventory Control</h3>
+        <p>Track parts, accessories, and devices. Low-stock alerts, purchase orders, supplier management, and barcode-ready item lookup.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feat-icon">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <h3>SMS &amp; Email Messaging</h3>
+        <p>Send repair updates directly to customers via text or email. Message templates, delivery history, and two-way conversations â€” all logged.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feat-icon">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3>Customer Management</h3>
+        <p>Full customer profiles with repair history, purchase records, loyalty points, and contact details all in one searchable database.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feat-icon">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+        <h3>Loyalty &amp; Rewards</h3>
+        <p>Keep customers coming back with a built-in points program. Earn on repairs and retail, redeem on future visits â€” no third-party app needed.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feat-icon">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h3>Staff Time Clock</h3>
+        <p>Track employee hours with built-in clock-in/out. View daily and weekly totals, export timesheets, and spot overtime before it happens.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feat-icon">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <h3>Commissions</h3>
+        <p>Automatically calculate technician and sales rep commissions on repairs and sales. Transparent, configurable, and always accurate.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feat-icon">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <h3>Reports &amp; Analytics</h3>
+        <p>Sales by day, repair volume by technician, inventory turnover, commission summaries â€” the data you need to make smart decisions.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- â”€â”€ REPAIR DEEP DIVE â”€â”€â”€ -->
+<section id="repairs" style="background:#fff">
+  <div class="section-inner">
+    <div class="split">
+      <div class="split-content">
+        <span class="section-tag">Repair Tickets</span>
+        <h2 class="section-h2">Your repair workflow,<br/>finally organized</h2>
+        <p class="section-sub">From cracked screens to water damage â€” every job gets a ticket, every ticket gets tracked.</p>
+        <ul>
+          <li>Assign tickets to specific technicians instantly</li>
+          <li>Custom statuses: Open, In Progress, Waiting for Parts, Ready, Picked Up</li>
+          <li>Auto-send SMS or email when a repair is ready for pickup</li>
+          <li>Track parts cost and labor per ticket for true profitability</li>
+          <li>Ticket history tied to every customer profile forever</li>
+          <li>Carry over unpaid balances directly to the POS checkout</li>
+        </ul>
+      </div>
+      <div>
+        <div class="mock-panel">
+          <div class="mock-bar">
+            <div class="mock-dot" style="background:#ef4444"></div>
+            <div class="mock-dot" style="background:#eab308"></div>
+            <div class="mock-dot" style="background:#22c55e"></div>
+            <span style="font-size:11px;color:#475569;margin-left:8px;">Repairs Â· CellTechPOS</span>
+          </div>
+          <div class="mock-content">
+            <div style="font-size:11px;font-weight:700;color:#94a3b8;margin-bottom:10px;">OPEN TICKETS â€” 14 Active</div>
+            <div class="ticket-row">
+              <div class="ticket-id">#RPR-0041</div>
+              <div class="ticket-name">Marcus Johnson<br/><span style="color:#64748b;font-weight:400">iPhone 15 Pro Max</span></div>
+              <div class="ticket-status ts-ready">Ready</div>
+            </div>
+            <div class="ticket-row">
+              <div class="ticket-id">#RPR-0040</div>
+              <div class="ticket-name">Sandra Kim<br/><span style="color:#64748b;font-weight:400">Samsung Galaxy S24</span></div>
+              <div class="ticket-status ts-progress">In Progress</div>
+            </div>
+            <div class="ticket-row">
+              <div class="ticket-id">#RPR-0039</div>
+              <div class="ticket-name">David Martinez<br/><span style="color:#64748b;font-weight:400">Google Pixel 8</span></div>
+              <div class="ticket-status ts-open">Open</div>
+            </div>
+            <div class="ticket-row">
+              <div class="ticket-id">#RPR-0038</div>
+              <div class="ticket-name">Tanya Rogers<br/><span style="color:#64748b;font-weight:400">iPad Air 5th Gen</span></div>
+              <div class="ticket-status ts-pick">Picked Up</div>
+            </div>
+            <div style="background:#1e293b;border-radius:8px;padding:12px;margin-top:10px;display:flex;align-items:center;gap:10px;">
+              <div style="background:#14532d;border-radius:6px;padding:6px 10px;font-size:10px;font-weight:700;color:#86efac;">âœ“ SMS Sent</div>
+              <span style="font-size:10px;color:#94a3b8;">"Your iPhone is ready for pickup at our store!" â†’ Marcus</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- â”€â”€ POS DEEP DIVE â”€â”€â”€ -->
+<section id="pos">
+  <div class="section-inner">
+    <div class="split reverse">
+      <div class="split-content">
+        <span class="section-tag">Point of Sale</span>
+        <h2 class="section-h2">Ring up sales in<br/>seconds, not minutes</h2>
+        <p class="section-sub">A POS designed for the speed of a repair counter and the flexibility of a retail floor.</p>
+        <ul>
+          <li>Search inventory by name, SKU, or barcode instantly</li>
+          <li>Cash with change calculation, card, check, and split payments</li>
+          <li>Collect repair balance payments tied to the ticket</li>
+          <li>Apply loyalty points or discounts at checkout</li>
+          <li>Print or email receipts on the spot</li>
+          <li>Per-transaction notes for cash codes or authorizations</li>
+        </ul>
+      </div>
+      <div>
+        <div class="mock-panel">
+          <div class="mock-bar">
+            <div class="mock-dot" style="background:#ef4444"></div>
+            <div class="mock-dot" style="background:#eab308"></div>
+            <div class="mock-dot" style="background:#22c55e"></div>
+            <span style="font-size:11px;color:#475569;margin-left:8px;">Point of Sale Â· CellTechPOS</span>
+          </div>
+          <div class="mock-content">
+            <div class="pos-grid">
+              <div class="pos-items">
+                <div style="font-size:9px;font-weight:700;color:#64748b;margin-bottom:6px;">CART (3 items)</div>
+                <div class="pos-item">
+                  <div class="pos-thumb">ðŸ“±</div>
+                  <div class="pos-item-name">iPhone 15 Screen Repair</div>
+                  <div class="pos-item-price">$189.00</div>
+                </div>
+                <div class="pos-item">
+                  <div class="pos-thumb">ðŸ”‹</div>
+                  <div class="pos-item-name">Premium Glass Screen Protector</div>
+                  <div class="pos-item-price">$29.99</div>
+                </div>
+                <div class="pos-item">
+                  <div class="pos-thumb">ðŸ”Œ</div>
+                  <div class="pos-item-name">USB-C Fast Charge Cable</div>
+                  <div class="pos-item-price">$14.99</div>
+                </div>
+                <div style="background:#1e293b;border-radius:6px;padding:8px 10px;font-size:10px;color:#64748b;text-align:center;border:1px dashed #334155;">+ Add item</div>
+              </div>
+              <div class="pos-summary">
+                <div class="pos-line"><span>Subtotal</span><span>$233.98</span></div>
+                <div class="pos-line"><span>Tax (8%)</span><span>$18.72</span></div>
+                <div class="pos-line" style="color:#4ade80"><span>Loyalty discount</span><span>âˆ’$10.00</span></div>
+                <div class="pos-total"><span>Total</span><span>$242.70</span></div>
+                <div style="font-size:9px;font-weight:700;color:#64748b;margin:10px 0 6px;">PAYMENT METHOD</div>
+                <div class="pos-methods">
+                  <div class="pos-method active">ðŸ’µ Cash</div>
+                  <div class="pos-method">ðŸ’³ Card</div>
+                  <div class="pos-method">ðŸ”€ Split</div>
+                  <div class="pos-method">ðŸ“‹ Check</div>
+                </div>
+                <div style="background:#1e293b;border-radius:5px;padding:7px 10px;margin-top:8px;">
+                  <div style="font-size:9px;color:#64748b;margin-bottom:3px;">Cash Received</div>
+                  <div style="font-size:15px;font-weight:800;color:#fff;">$260.00</div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:#4ade80;font-weight:700;padding:6px 2px;">
+                  <span>Change Due</span><span>$17.30</span>
+                </div>
+                <div class="pos-btn">Charge $242.70</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- â”€â”€ MESSAGING DEEP DIVE â”€â”€â”€ -->
+<section id="messaging" style="background:#fff">
+  <div class="section-inner">
+    <div class="split">
+      <div class="split-content">
+        <span class="section-tag">Customer Messaging</span>
+        <h2 class="section-h2">Keep customers in the loop â€” automatically</h2>
+        <p class="section-sub">Reduce "where's my phone?" calls with proactive SMS and email updates that go out the moment a repair status changes.</p>
+        <ul>
+          <li>Send SMS or email directly from any repair ticket</li>
+          <li>Pre-built templates: Ready for pickup, Waiting for parts, Estimate approved</li>
+          <li>Message variables: customer name, device, ticket #, store phone</li>
+          <li>Full delivery history per ticket and per customer</li>
+          <li>Bulk messaging campaigns for promotions and service reminders</li>
+          <li>Works with Twilio (SMS) and any SMTP email provider</li>
+        </ul>
+      </div>
+      <div>
+        <div class="mock-panel">
+          <div class="mock-bar">
+            <div class="mock-dot" style="background:#ef4444"></div>
+            <div class="mock-dot" style="background:#eab308"></div>
+            <div class="mock-dot" style="background:#22c55e"></div>
+            <span style="font-size:11px;color:#475569;margin-left:8px;">Send Message Â· CellTechPOS</span>
+          </div>
+          <div class="mock-content">
+            <div style="display:flex;border-radius:6px;overflow:hidden;border:1px solid #334155;margin-bottom:12px;">
+              <div style="flex:1;padding:8px;text-align:center;background:#14532d;color:#86efac;font-size:11px;font-weight:700;">ðŸ“± SMS</div>
+              <div style="flex:1;padding:8px;text-align:center;color:#64748b;font-size:11px;font-weight:600;">âœ‰ï¸ Email</div>
+            </div>
+            <div style="font-size:9px;font-weight:700;color:#64748b;margin-bottom:6px;">TEMPLATE</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;">
+              <div style="background:#14532d;color:#86efac;border-radius:999px;font-size:9px;font-weight:700;padding:3px 10px;border:1px solid #166534;">Ready for Pickup</div>
+              <div style="border:1px solid #334155;color:#64748b;border-radius:999px;font-size:9px;font-weight:600;padding:3px 10px;">Repair Estimate</div>
+              <div style="border:1px solid #334155;color:#64748b;border-radius:999px;font-size:9px;font-weight:600;padding:3px 10px;">Waiting Parts</div>
+              <div style="border:1px solid #334155;color:#64748b;border-radius:999px;font-size:9px;font-weight:600;padding:3px 10px;">Promotion</div>
+            </div>
+            <div style="font-size:9px;font-weight:700;color:#64748b;margin-bottom:6px;">MESSAGE</div>
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:6px;padding:10px;font-size:11px;color:#cbd5e1;line-height:1.6;margin-bottom:10px;">
+              Hi Marcus, great news! Your iPhone 15 Pro repair is complete and ready for pickup at CellTechPOS. See you soon! ðŸ“±
+            </div>
+            <div style="display:flex;gap:6px;">
+              <div style="background:#16a34a;border-radius:5px;padding:7px 14px;font-size:11px;font-weight:700;color:#fff;display:flex;align-items:center;gap:5px;">âœˆ Send SMS</div>
+              <div style="background:#1e293b;border-radius:5px;padding:7px 14px;font-size:11px;color:#64748b;">Cancel</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- â”€â”€ TESTIMONIALS â”€â”€â”€ -->
+<section>
+  <div class="section-inner">
+    <div style="text-align:center">
+      <span class="section-tag">From Real Shops</span>
+      <h2 class="section-h2">Repair shop owners love it</h2>
+    </div>
+    <div class="testimonials-grid">
+      <div class="tcard">
+        <div class="stars">â˜…â˜…â˜…â˜…â˜…</div>
+        <p>"We switched from a generic POS and the difference is night and day. The repair tickets alone save us an hour a day. Customers love getting the SMS when their phone is ready."</p>
+        <div class="tauthor">
+          <div class="tavatar" style="background:#166534;">A</div>
+          <div>
+            <div class="tname">Alex R.</div>
+            <div class="tshop">Fix It Fast Mobile Repair Â· Houston, TX</div>
+          </div>
+        </div>
+      </div>
+      <div class="tcard">
+        <div class="stars">â˜…â˜…â˜…â˜…â˜…</div>
+        <p>"The inventory and repair system are perfectly connected. When I use a part on a ticket, it deducts from stock automatically. My part ordering is actually under control now."</p>
+        <div class="tauthor">
+          <div class="tavatar" style="background:#0f766e;">M</div>
+          <div>
+            <div class="tname">Maria C.</div>
+            <div class="tshop">Metro Phone Clinic Â· Miami, FL</div>
+          </div>
+        </div>
+      </div>
+      <div class="tcard">
+        <div class="stars">â˜…â˜…â˜…â˜…â˜…</div>
+        <p>"My technicians are paid commission, and CellTechPOS calculates it all automatically. No more spreadsheets, no more arguments. The loyalty program brought customers back too."</p>
+        <div class="tauthor">
+          <div class="tavatar" style="background:#7c3aed;">J</div>
+          <div>
+            <div class="tname">James T.</div>
+            <div class="tshop">TechSmart Wireless Â· Atlanta, GA</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- â”€â”€ PRICING â”€â”€â”€ -->
+<section id="pricing">
+  <div class="section-inner">
+    <div style="text-align:center">
+      <span class="section-tag">Simple Pricing</span>
+      <h2 class="section-h2">One price. Everything included.</h2>
+      <p class="section-sub" style="margin:0 auto">No per-device fees. No transaction cuts. No feature gating. Just a flat monthly rate and full access.</p>
+    </div>
+    <div class="pricing-grid">
+
+      <div class="pcard" style="border-color:#fbbf24;background:linear-gradient(160deg,#fffbeb 0%,#fff 60%);">
+        <div class="popular-badge" style="background:#f59e0b;">🔥 Sale — Limited Time</div>
+        <h3 style="margin-top:14px;">Starter</h3>
+        <div class="sale-badge-card">First 3 months at this price</div>
+        <div class="price-num"><sup>$</sup>29.99<span class="sale-orig">$49</span><sub>/mo</sub></div>
+        <p class="price-desc">Perfect for solo operators and small shops just getting started.</p>
+        <ul>
+          <li>Unlimited repair tickets</li>
+          <li>Point of sale + inventory</li>
+          <li>Customer management</li>
+          <li>Up to 2 staff accounts</li>
+          <li>Basic reports</li>
+          <li>Email support</li>
+        </ul>
+        <a href="#" class="btn-plan btn-plan-outline" onclick="openModal('trial'); return false;">Get Started</a>
+      </div>
+
+      <div class="pcard popular">
+        <div class="popular-badge">Most Popular</div>
+        <h3>Pro</h3>
+        <div class="price-num"><sup>$</sup>99<sub>/mo</sub></div>
+        <p class="price-desc">The full platform for busy shops with multiple staff and high ticket volume.</p>
+        <ul>
+          <li>Everything in Starter</li>
+          <li>SMS &amp; Email messaging</li>
+          <li>Loyalty &amp; rewards program</li>
+          <li>Commissions tracking</li>
+          <li>Time clock &amp; scheduling</li>
+          <li>Marketing campaigns</li>
+          <li>Unlimited staff accounts</li>
+          <li>Purchase orders &amp; suppliers</li>
+          <li>Priority support</li>
+        </ul>
+        <a href="#" class="btn-plan btn-plan-solid" onclick="openModal('trial'); return false;">Start Free Trial</a>
+      </div>
+
+      <div class="pcard">
+        <h3>Multi-Location</h3>
+        <div class="price-num"><sup>$</sup>199<sub>/mo</sub></div>
+        <p class="price-desc">For chains and franchises managing multiple store locations.</p>
+        <ul>
+          <li>Everything in Pro</li>
+          <li>Up to 5 store locations</li>
+          <li>Cross-location reporting</li>
+          <li>Centralized inventory</li>
+          <li>Admin dashboard</li>
+          <li>Custom onboarding</li>
+          <li>Dedicated account manager</li>
+        </ul>
+        <a href="#" class="btn-plan btn-plan-outline" onclick="openModal('demo'); return false;">Contact Sales</a>
+      </div>
+
+    </div>
+    <p style="text-align:center;font-size:13px;color:var(--muted);margin-top:24px;">All plans include a 14-day free trial Â· No credit card required Â· Cancel anytime</p>
+  </div>
+</section>
+
+<!-- â”€â”€ CTA BANNER â”€â”€â”€ -->
+<div class="cta-section" id="cta">
+  <h2>Ready to run a tighter shop?</h2>
+  <p>Join hundreds of repair shops already saving time with CellTechPOS.</p>
+  <div class="cta-btns">
+    <a href="#" class="btn-hero-primary" style="font-size:17px;padding:18px 38px;" onclick="openModal('trial'); return false;">Start Free Trial â€” 14 Days</a>
+    <a href="#" class="btn-hero-secondary" style="font-size:17px;padding:18px 38px;" onclick="openModal('demo'); return false;">Schedule a Demo</a>
+  </div>
+  <p style="font-size:13px;color:rgba(134,239,172,0.6);margin-top:20px;margin-bottom:0;">No credit card required Â· Up and running in minutes</p>
+</div>
+
+<!-- â”€â”€ FOOTER â”€â”€â”€ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <div class="logo-icon"><svg width="20" height="20" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="1" width="12" height="20" rx="2.5" stroke="#fff" stroke-width="1.6"/><rect x="4" y="4.5" width="8" height="11" rx="1" fill="#fff" fill-opacity="0.2"/><line x1="6" y1="2.8" x2="9.5" y2="2.8" stroke="#fff" stroke-width="1" stroke-linecap="round" opacity="0.55"/><circle cx="8" cy="18.2" r="1.1" fill="#fff" fill-opacity="0.6"/><rect x="16" y="15.5" width="2.2" height="5" rx="0.6" fill="#4ade80"/><rect x="19" y="11" width="2.2" height="9.5" rx="0.6" fill="#4ade80" fill-opacity="0.6"/></svg></div>
+          <div class="logo-text">CellTech<span style="color:var(--green)">POS</span></div>
+        </div>
+        <p>The point-of-sale platform built from the ground up for cell phone repair shops and wireless dealers.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="#features" onclick="smoothTo('features')">Features</a>
+        <a href="#pricing" onclick="smoothTo('pricing')">Pricing</a>
+        <a href="javascript:void(0)" onclick="openModal('trial')">Start Free Trial</a>
+        <a href="#" data-pos-login target="_blank">Log In</a>
+      </div>
+      <div class="footer-col">
+        <h4>Industry</h4>
+        <a href="javascript:void(0)">Phone Repair Shops</a>
+        <a href="javascript:void(0)">Wireless Dealers</a>
+        <a href="javascript:void(0)">Accessory Retailers</a>
+        <a href="javascript:void(0)">Multi-Location</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="javascript:void(0)" onclick="openModal('demo')">Contact / Demo</a>
+        <a href="javascript:void(0)">Privacy Policy</a>
+        <a href="javascript:void(0)">Terms of Service</a>
+        <a href="#" data-pos-login target="_blank" style="color:#4ade80;font-weight:600;">POS Login â†’</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>Â© 2026 CellTechPOS. All rights reserved.</span>
+      <span>Built for the repair industry.</span>
+    </div>
+  </div>
+</footer>
+
+
+<!-- â”€â”€ TRIAL MODAL â”€â”€â”€ -->
+<div class="modal-overlay" id="trialModal" onclick="handleOverlayClick(event,'trialModal')">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('trialModal')">âœ•</button>
+    <div id="trialForm">
+      <span class="modal-tag">14-Day Free Trial</span>
+      <h3>Get started today</h3>
+      <p>No credit card required. Your store is up and running in minutes.</p>
+      <div class="modal-field-row">
+        <div class="modal-field">
+          <label>First Name</label>
+          <input type="text" id="t-fname" placeholder="Alex" />
+        </div>
+        <div class="modal-field">
+          <label>Last Name</label>
+          <input type="text" id="t-lname" placeholder="Rivera" />
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>Store Name</label>
+        <input type="text" id="t-store" placeholder="Fix It Fast Mobile Repair" />
+      </div>
+      <div class="modal-field">
+        <label>Email Address</label>
+        <input type="email" id="t-email" placeholder="you@yourshop.com" />
+      </div>
+      <div class="modal-field">
+        <label>Phone Number</label>
+        <input type="tel" id="t-phone" placeholder="+1 (555) 000-0000" />
+      </div>
+      <div class="modal-field">
+        <label>Plan</label>
+        <select id="t-plan">
+          <option value=”starter”>Starter — $29.99/mo 🔥 Sale (reg. $49)</option>
+          <option value="pro" selected>Pro â€” $99/mo (Most Popular)</option>
+          <option value="multi">Multi-Location â€” $199/mo</option>
+        </select>
+      </div>
+      <button class="modal-submit" onclick="submitTrial()">Start My Free Trial â†’</button>
+      <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:12px;margin-bottom:0;">By signing up you agree to our Terms of Service.</p>
+    </div>
+    <div id="trialSuccess" class="modal-success" style="display:none;">
+      <div class="success-icon">âœ“</div>
+      <h3>You're on the list!</h3>
+      <p>Thanks! We'll reach out within 24 hours to get your store set up. Check your email for next steps.</p>
+      <button class="modal-submit" style="margin-top:20px;" onclick="closeModal('trialModal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- â”€â”€ DEMO MODAL â”€â”€â”€ -->
+<div class="modal-overlay" id="demoModal" onclick="handleOverlayClick(event,'demoModal')">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('demoModal')">âœ•</button>
+    <div id="demoForm">
+      <span class="modal-tag">Schedule a Demo</span>
+      <h3>See CellTechPOS live</h3>
+      <p>A 30-minute walkthrough tailored to your shop's workflow. Pick a time that works for you.</p>
+      <div class="modal-field-row">
+        <div class="modal-field">
+          <label>First Name</label>
+          <input type="text" id="d-fname" placeholder="Alex" />
+        </div>
+        <div class="modal-field">
+          <label>Last Name</label>
+          <input type="text" id="d-lname" placeholder="Rivera" />
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>Store Name</label>
+        <input type="text" id="d-store" placeholder="Fix It Fast Mobile Repair" />
+      </div>
+      <div class="modal-field">
+        <label>Email Address</label>
+        <input type="email" id="d-email" placeholder="you@yourshop.com" />
+      </div>
+      <div class="modal-field">
+        <label>Phone Number</label>
+        <input type="tel" id="d-phone" placeholder="+1 (555) 000-0000" />
+      </div>
+      <div class="modal-field">
+        <label>Number of Locations</label>
+        <select id="d-locations">
+          <option value="1">1 location</option>
+          <option value="2-5">2â€“5 locations</option>
+          <option value="5+">5+ locations</option>
+        </select>
+      </div>
+      <button class="modal-submit" onclick="submitDemo()">Request My Demo â†’</button>
+    </div>
+    <div id="demoSuccess" class="modal-success" style="display:none;">
+      <div class="success-icon">ðŸ“…</div>
+      <h3>Demo requested!</h3>
+      <p>We'll send a calendar invite to your email within a few hours. Looking forward to showing you around!</p>
+      <button class="modal-submit" style="margin-top:20px;" onclick="closeModal('demoModal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Config — UPDATE THIS TO YOUR PRODUCTION DOMAIN ──────────────────────────
+  const POS_URL = 'https://app.celltechpos.com';
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  // Inject POS login URL into all login links at runtime
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-pos-login]').forEach(el => {
+      el.href = POS_URL + '/login';
+    });
+  });
+
+  // ── Mobile menu ──────────────────────────────────────────
+  function toggleMobileMenu() {
+    const menu = document.getElementById('mobileMenu');
+    const btn  = document.getElementById('hamburger');
+    menu.classList.toggle('open');
+    btn.classList.toggle('open');
+  }
+  function closeMobileMenu() {
+    document.getElementById('mobileMenu').classList.remove('open');
+    document.getElementById('hamburger').classList.remove('open');
+  }
+
+  // Close mobile menu when scrolling
+  window.addEventListener('scroll', () => {
+    if (document.getElementById('mobileMenu').classList.contains('open')) {
+      closeMobileMenu();
+    }
+  }, { passive: true });
+
+  // â”€â”€ Smooth scroll helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  function smoothTo(id) {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // â”€â”€ Modals â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  function openModal(type) {
+    closeMobileMenu();
+    const id = type === 'trial' ? 'trialModal' : 'demoModal';
+    document.getElementById(id).classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function handleOverlayClick(e, id) {
+    if (e.target === document.getElementById(id)) closeModal(id);
+  }
+
+  // Close on Escape key
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeModal('trialModal');
+      closeModal('demoModal');
+    }
+  });
+
+  // â”€â”€ Form validation & submission â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  function validateField(id, label) {
+    const el = document.getElementById(id);
+    const val = el.value.trim();
+    if (!val) {
+      el.style.borderColor = '#ef4444';
+      el.focus();
+      alert(`Please enter your ${label}.`);
+      return false;
+    }
+    el.style.borderColor = '';
+    return true;
+  }
+
+  function submitTrial() {
+    if (!validateField('t-fname', 'first name')) return;
+    if (!validateField('t-email', 'email address')) return;
+    if (!validateField('t-store', 'store name')) return;
+    // In production: POST to your signup endpoint here
+    document.getElementById('trialForm').style.display = 'none';
+    document.getElementById('trialSuccess').style.display = 'block';
+  }
+
+  function submitDemo() {
+    if (!validateField('d-fname', 'first name')) return;
+    if (!validateField('d-email', 'email address')) return;
+    if (!validateField('d-store', 'store name')) return;
+    // In production: POST to your demo booking endpoint here
+    document.getElementById('demoForm').style.display = 'none';
+    document.getElementById('demoSuccess').style.display = 'block';
+  }
+
+  // Reset modal forms when closed
+  function resetModal(id) {
+    if (id === 'trialModal') {
+      document.getElementById('trialForm').style.display = 'block';
+      document.getElementById('trialSuccess').style.display = 'none';
+      ['t-fname','t-lname','t-store','t-email','t-phone'].forEach(f => {
+        const el = document.getElementById(f);
+        if (el) { el.value = ''; el.style.borderColor = ''; }
+      });
+    } else {
+      document.getElementById('demoForm').style.display = 'block';
+      document.getElementById('demoSuccess').style.display = 'none';
+      ['d-fname','d-lname','d-store','d-email','d-phone'].forEach(f => {
+        const el = document.getElementById(f);
+        if (el) { el.value = ''; el.style.borderColor = ''; }
+      });
+    }
+  }
+
+  // Patch closeModal to also reset
+  const _closeModal = closeModal;
+  window.closeModal = function(id) {
+    _closeModal(id);
+    setTimeout(() => resetModal(id), 300);
+  };
+</script>
+
+</body>
+</html>
+
+
+

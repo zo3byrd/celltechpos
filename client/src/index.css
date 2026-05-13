@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body { @apply bg-gray-100 text-gray-900 antialiased; font-family: 'Inter', system-ui, sans-serif; font-size: 14px; }
+  * { box-sizing: border-box; }
+}
+
+@layer components {
+  /* Buttons */
+  .btn { @apply inline-flex items-center gap-2 px-3.5 py-2 rounded font-semibold text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-primary   { @apply btn bg-green-800 text-white hover:bg-green-900 focus:ring-green-700; }
+  .btn-secondary { @apply btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-green-700; }
+  .btn-danger    { @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500; }
+  .btn-success   { @apply btn bg-green-700 text-white hover:bg-green-800 focus:ring-green-600; }
+  .btn-ghost     { @apply btn text-gray-600 hover:bg-gray-100 hover:text-gray-900; }
+
+  /* Inputs */
+  .input  { @apply block w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm font-medium placeholder:text-gray-400 placeholder:font-normal focus:border-green-700 focus:ring-1 focus:ring-green-700 focus:outline-none; }
+  .label  { @apply block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide; }
+
+  /* Cards */
+  .card       { @apply bg-white border border-gray-200 rounded p-4; }
+  .card-hover { @apply card hover:border-gray-400 transition-colors cursor-pointer; }
+
+  /* Badges */
+  .badge        { @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-bold; }
+  .badge-green  { @apply badge bg-green-100 text-green-800; }
+  .badge-red    { @apply badge bg-red-100 text-red-700; }
+  .badge-yellow { @apply badge bg-amber-100 text-amber-700; }
+  .badge-blue   { @apply badge bg-blue-100 text-blue-700; }
+  .badge-gray   { @apply badge bg-gray-100 text-gray-600; }
+  .badge-purple { @apply badge bg-purple-100 text-purple-700; }
+  .badge-orange { @apply badge bg-orange-100 text-orange-700; }
+  .badge-sky    { @apply badge bg-sky-100 text-sky-700; }
+  .badge-teal   { @apply badge bg-teal-100 text-teal-700; }
+
+  /* Tables */
+  .table-th  { @apply px-3 py-2.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wide bg-gray-50 border-b border-gray-200; }
+  .table-td  { @apply px-3 py-2.5 text-sm text-gray-800 border-b border-gray-100; }
+  .table-row { @apply hover:bg-green-50 transition-colors; }
+
+  /* Page */
+  .page-title  { @apply text-xl font-bold text-gray-900; }
+  .page-sub    { @apply text-sm text-gray-500; }
+  .section-title { @apply text-xs font-bold text-gray-500 uppercase tracking-wide mb-2; }
+
+  /* Modals */
+  .modal-overlay { @apply fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4; }
+  .modal-box     { @apply bg-white rounded border border-gray-300 shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto; }
+  .modal-header  { @apply px-5 py-3.5 border-b border-gray-200 flex items-center justify-between bg-gray-50; }
+  .modal-body    { @apply px-5 py-4 space-y-4; }
+  .modal-footer  { @apply px-5 py-3.5 border-t border-gray-200 flex justify-end gap-2 bg-gray-50; }
+}
