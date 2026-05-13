@@ -2,8 +2,9 @@ require('dotenv').config();
 
 // ── Startup safety checks ────────────────────────────────────────────────────
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'change-this-to-a-long-random-secret') {
-  console.error('FATAL: JWT_SECRET is not set or is using the default placeholder. Set a secure value in .env');
-  process.exit(1);
+  const crypto = require('crypto');
+  process.env.JWT_SECRET = crypto.randomBytes(48).toString('base64');
+  console.warn('WARNING: JWT_SECRET not set — generated a temporary one. Sessions will reset on each restart. Set JWT_SECRET in your environment variables.');
 }
 
 const express = require('express');
