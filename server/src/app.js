@@ -191,11 +191,16 @@ app.use('/api/messages',       require('./routes/messages'));
 
 // ── Serve React build in production ──────────────────────────────────────────
 if (process.env.NODE_ENV === 'production') {
+  const fs = require('fs');
   const clientDist = path.join(__dirname, '../../client/dist');
-  app.use(express.static(clientDist));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(clientDist, 'index.html'));
-  });
+  const indexHtml = path.join(clientDist, 'index.html');
+  if (fs.existsSync(indexHtml)) {
+    app.use(express.static(clientDist));
+    app.get('*', (req, res) => res.sendFile(indexHtml));
+  } else {
+    console.warn('WARNING: client/dist/index.html not found — frontend not available. API-only mode.');
+    app.get('*', (req, res) => res.status(503).json({ error: 'Frontend not built. Run npm run build first.' }));
+  }
 }
 
 app.use((err, req, res, next) => {

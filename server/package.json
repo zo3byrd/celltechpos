@@ -9,7 +9,7 @@
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
     "seed": "node src/db/seed.js",
-    "build": "cd ../client && npm install && npm run build"
+    "build": "cd ../client && npm install && node --max-old-space-size=400 node_modules/.bin/vite build"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

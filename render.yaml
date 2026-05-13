@@ -14,4 +14,6 @@ services:
       - key: STORE_NAME
         value: CellTechPOS
       - key: ALLOWED_ORIGINS
-        value: https://celltechpos.com,https://www.celltechpos.com,https://app.celltechpos.com
+        value: https://celltechpos.onrender.com,https://celltechpos.com,https://www.celltechpos.com,https://app.celltechpos.com
+      - key: SQLITE_PATH
+        value: /tmp/celltechpos.sqlite
