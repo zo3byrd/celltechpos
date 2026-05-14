@@ -63,9 +63,6 @@ export default function Login() {
           </button>
         </form>
 
-        <p className="text-center text-xs text-gray-500 mt-4">
-          Default: admin@mywireless.com / admin123
-        </p>
       </div>
     </div>
   );
