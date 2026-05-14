@@ -1,7 +1,9 @@
 const router = require('express').Router();
 const { sequelize } = require('../db');
-const { License, Store } = require('../db/models');
+const { License, Store, User } = require('../db/models');
 const { auth, requireRole } = require('../middleware/auth');
+const bcrypt = require('bcryptjs');
+const { v4: uuidv4 } = require('uuid');
 
 const superadminOnly = requireRole('superadmin');
 
@@ -141,6 +143,66 @@ router.delete('/:storeId', superadminOnly, async (req, res) => {
       { replacements: [new Date().toISOString(), req.params.storeId] }
     );
     res.json({ message: 'License cancelled' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST onboard new store (superadmin only) — creates store + admin user + license in one shot
+router.post('/onboard', superadminOnly, async (req, res) => {
+  const { storeName, storeEmail, storePhone, storeAddress, storeCity, storeState, storeZip,
+          adminName, adminEmail, adminPassword, plan, price, months, notes } = req.body;
+  if (!storeName || !adminEmail || !adminPassword)
+    return res.status(400).json({ error: 'storeName, adminEmail, adminPassword required' });
+
+  const t = await sequelize.transaction();
+  try {
+    const store = await Store.create({
+      name: storeName, email: storeEmail, phone: storePhone,
+      address: storeAddress, city: storeCity, state: storeState, zip: storeZip,
+      taxRate: 0.0825,
+    }, { transaction: t });
+
+    const hash = await bcrypt.hash(adminPassword, 10);
+    await User.create({
+      storeId: store.id, name: adminName || 'Store Admin',
+      email: adminEmail, passwordHash: hash, role: 'admin',
+    }, { transaction: t });
+
+    const mo = parseInt(months) || 1;
+    const expiry = new Date();
+    expiry.setMonth(expiry.getMonth() + mo);
+    await License.create({
+      storeId: store.id, plan: plan || 'monthly', status: 'active',
+      startedAt: new Date().toISOString(),
+      expiresAt: expiry.toISOString(),
+      price: price || 0, autoRenew: false, notes,
+    }, { transaction: t });
+
+    await t.commit();
+    res.status(201).json({ storeId: store.id, message: 'Store onboarded successfully' });
+  } catch (err) {
+    await t.rollback();
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET store details (superadmin only)
+router.get('/:storeId/details', superadminOnly, async (req, res) => {
+  try {
+    const lic = await rawLicense(req.params.storeId);
+    if (!lic) return res.status(404).json({ error: 'Not found' });
+    const [users] = await sequelize.query(
+      'SELECT id, name, email, role, active, createdAt FROM `Users` WHERE storeId = ? ORDER BY role, name',
+      { replacements: [req.params.storeId] }
+    );
+    const [counts] = await sequelize.query(
+      `SELECT
+        (SELECT COUNT(*) FROM RepairTickets WHERE storeId=?) as repairs,
+        (SELECT COUNT(*) FROM Customers WHERE storeId=?) as customers,
+        (SELECT COUNT(*) FROM Transactions WHERE storeId=?) as transactions`,
+      { replacements: [req.params.storeId, req.params.storeId, req.params.storeId] }
+    );
+    lic.daysLeft = daysUntil(lic.expiresAt);
+    res.json({ license: lic, users, stats: counts[0] });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
