@@ -143,9 +143,12 @@ export default function SASettings() {
   }
 
   async function sendTestEmail() {
+    if (!smtp.smtpHost || !smtp.smtpUser || !smtp.smtpPass) {
+      return toast.error('Fill in SMTP Host, Username, and Password first');
+    }
     setSaving(s => ({ ...s, testEmail: true }));
     try {
-      const { data } = await api.post('/settings/test-email');
+      const { data } = await api.post('/settings/test-email', smtp);
       toast.success(`Test email sent to ${data.to} via ${data.host}`);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to send test email');

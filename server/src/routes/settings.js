@@ -27,23 +27,35 @@ router.get('/', auth, requireRole('superadmin'), async (req, res) => {
 });
 
 router.put('/', auth, requireRole('superadmin'), async (req, res) => {
-  for (const [key, value] of Object.entries(req.body)) {
-    await Setting.upsert({ key, value: String(value) });
+  try {
+    for (const [key, value] of Object.entries(req.body)) {
+      await Setting.upsert({ key, value: String(value) });
+    }
+    const rows = await Setting.findAll();
+    const settings = { ...DEFAULTS };
+    for (const r of rows) settings[r.key] = r.value;
+    res.json(settings);
+  } catch (err) {
+    console.error('Settings save error:', err);
+    res.status(500).json({ error: `Failed to save settings: ${err.message}` });
   }
-  const rows = await Setting.findAll();
-  const settings = { ...DEFAULTS };
-  for (const r of rows) settings[r.key] = r.value;
-  res.json(settings);
 });
 
-// POST /api/settings/test-email — sends a real test email using DB-stored SMTP config
+// POST /api/settings/test-email — sends a real test email
+// Accepts SMTP config in request body; falls back to DB-stored config
 router.post('/test-email', auth, requireRole('superadmin'), async (req, res) => {
   const nodemailer = require('nodemailer');
   const rows = await Setting.findAll();
   const s = { ...DEFAULTS };
   for (const r of rows) s[r.key] = r.value;
 
-  const { smtpHost, smtpPort, smtpUser, smtpPass, smtpFromName, smtpFromEmail } = s;
+  // Request body overrides DB values (allows testing before saving)
+  const smtpHost      = req.body.smtpHost      || s.smtpHost;
+  const smtpPort      = req.body.smtpPort      || s.smtpPort;
+  const smtpUser      = req.body.smtpUser      || s.smtpUser;
+  const smtpPass      = req.body.smtpPass      || s.smtpPass;
+  const smtpFromName  = req.body.smtpFromName  || s.smtpFromName;
+  const smtpFromEmail = req.body.smtpFromEmail || s.smtpFromEmail;
 
   if (!smtpHost || !smtpUser || !smtpPass) {
     return res.status(400).json({ error: 'SMTP is not configured. Fill in Host, Username, and Password first.' });
