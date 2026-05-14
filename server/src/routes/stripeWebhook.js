@@ -39,7 +39,12 @@ module.exports = async (req, res) => {
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    if (process.env.STRIPE_WEBHOOK_SECRET) {
+      event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    } else {
+      console.warn('STRIPE_WEBHOOK_SECRET not set — skipping signature verification');
+      event = JSON.parse(req.body.toString());
+    }
   } catch (err) {
     console.error('Webhook signature failed:', err.message);
     return res.status(400).json({ error: `Webhook error: ${err.message}` });
