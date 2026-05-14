@@ -145,7 +145,10 @@ export default function SASettings() {
   async function sendTestEmail() {
     setSaving(s => ({ ...s, testEmail: true }));
     try {
-      toast('Test email feature coming soon', { icon: 'ℹ️' });
+      const { data } = await api.post('/settings/test-email');
+      toast.success(`Test email sent to ${data.to} via ${data.host}`);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to send test email');
     } finally {
       setSaving(s => ({ ...s, testEmail: false }));
     }
