@@ -10,35 +10,35 @@ import {
 } from '@heroicons/react/24/outline';
 
 const mainNav = [
-  { to: '/',        label: 'Dashboard',     icon: HomeIcon, exact: true },
-  { to: '/pos',     label: 'Point of Sale', icon: ShoppingCartIcon },
-  { to: '/repairs', label: 'Repairs',       icon: WrenchScrewdriverIcon },
-  { to: '/customers', label: 'Customers',   icon: UsersIcon },
+  { to: '/app',          label: 'Dashboard',     icon: HomeIcon, exact: true },
+  { to: '/app/pos',      label: 'Point of Sale', icon: ShoppingCartIcon },
+  { to: '/app/repairs',  label: 'Repairs',       icon: WrenchScrewdriverIcon },
+  { to: '/app/customers',label: 'Customers',     icon: UsersIcon },
 ];
 const opsNav = [
-  { to: '/appointments',  label: 'Appointments',   icon: CalendarDaysIcon },
-  { to: '/inventory',     label: 'Inventory',       icon: CubeIcon },
-  { to: '/purchasing',    label: 'Purchase Orders', icon: TruckIcon },
-  { to: '/bill-payments', label: 'Bill Payments',   icon: BanknotesIcon },
-  { to: '/activations',   label: 'Activations',     icon: SignalIcon },
-  { to: '/layaway',       label: 'Layaway',         icon: ArchiveBoxIcon },
+  { to: '/app/appointments',  label: 'Appointments',   icon: CalendarDaysIcon },
+  { to: '/app/inventory',     label: 'Inventory',       icon: CubeIcon },
+  { to: '/app/purchasing',    label: 'Purchase Orders', icon: TruckIcon },
+  { to: '/app/bill-payments', label: 'Bill Payments',   icon: BanknotesIcon },
+  { to: '/app/activations',   label: 'Activations',     icon: SignalIcon },
+  { to: '/app/layaway',       label: 'Layaway',         icon: ArchiveBoxIcon },
 ];
 const staffNav = [
-  { to: '/timeclock',   label: 'Time Clock',  icon: ClockIcon },
-  { to: '/commissions', label: 'Commissions', icon: CurrencyDollarIcon },
+  { to: '/app/timeclock',   label: 'Time Clock',  icon: ClockIcon },
+  { to: '/app/commissions', label: 'Commissions', icon: CurrencyDollarIcon },
 ];
 const growthNav = [
-  { to: '/loyalty',   label: 'Loyalty',   icon: StarIcon },
-  { to: '/marketing', label: 'Marketing', icon: MegaphoneIcon },
-  { to: '/messages',  label: 'Messages',  icon: ChatBubbleLeftRightIcon },
+  { to: '/app/loyalty',   label: 'Loyalty',   icon: StarIcon },
+  { to: '/app/marketing', label: 'Marketing', icon: MegaphoneIcon },
+  { to: '/app/messages',  label: 'Messages',  icon: ChatBubbleLeftRightIcon },
 ];
 const adminNav = [
-  { to: '/reports',    label: 'Reports',         icon: ChartBarIcon },
-  { to: '/inv-counts', label: 'Inv. Count',      icon: ShieldCheckIcon },
-  { to: '/admin',      label: 'Admin',            icon: Cog6ToothIcon },
+  { to: '/app/reports',    label: 'Reports',    icon: ChartBarIcon },
+  { to: '/app/inv-counts', label: 'Inv. Count', icon: ShieldCheckIcon },
+  { to: '/app/admin',      label: 'Admin',       icon: Cog6ToothIcon },
 ];
 const superNav = [
-  { to: '/license-manager', label: 'License Manager', icon: KeyIcon },
+  { to: '/app/license-manager', label: 'License Manager', icon: KeyIcon },
 ];
 
 function NavItem({ to, label, icon: Icon, exact }) {

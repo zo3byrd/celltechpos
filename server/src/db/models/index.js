@@ -419,6 +419,21 @@ const Message = sequelize.define('Message', {
   providerRef: { type: DataTypes.STRING },
 });
 
+// ── AdminCampaign ─────────────────────────────────────────────────────────────
+const AdminCampaign = sequelize.define('AdminCampaign', {
+  id:             { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  subject:        { type: DataTypes.STRING, allowNull: false },
+  fromName:       { type: DataTypes.STRING, defaultValue: 'CellTechPOS' },
+  body:           { type: DataTypes.TEXT, allowNull: false },
+  target:         { type: DataTypes.ENUM('all','active','expiring_30','expired','monthly','yearly','trial'), defaultValue: 'all' },
+  status:         { type: DataTypes.ENUM('draft','sending','sent','failed'), defaultValue: 'draft' },
+  sentAt:         { type: DataTypes.DATE },
+  recipientCount: { type: DataTypes.INTEGER, defaultValue: 0 },
+  successCount:   { type: DataTypes.INTEGER, defaultValue: 0 },
+  failCount:      { type: DataTypes.INTEGER, defaultValue: 0 },
+  sentBy:         { type: DataTypes.UUID, allowNull: true },
+});
+
 // ── License ───────────────────────────────────────────────────────────────────
 // Date fields stored as ISO strings (avoids Sequelize/SQLite DATE parsing issues)
 const License = sequelize.define('License', {
@@ -625,7 +640,7 @@ module.exports = {
   TimeEntry,
   LoyaltyAccount, LoyaltyTransaction,
   LayawayPlan, LayawayPayment,
-  Campaign,
+  Campaign, AdminCampaign,
   BillPayment,
   InventoryCount, InventoryCountItem,
   SubscriptionPlan, Subscription,

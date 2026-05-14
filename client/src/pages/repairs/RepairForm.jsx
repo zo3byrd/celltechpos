@@ -87,7 +87,7 @@ export default function RepairForm() {
   return (
     <div className="p-6 max-w-4xl space-y-6">
       <div className="flex items-center gap-3">
-        <Link to="/repairs" className="text-gray-400 hover:text-gray-600 text-sm">← Repairs</Link>
+        <Link to="/app/repairs" className="text-gray-400 hover:text-gray-600 text-sm">← Repairs</Link>
         {ticket && <span className="font-mono text-sm text-brand-600">{ticket.ticketNumber}</span>}
         {ticket && <span className={`${STATUS_BADGE[ticket.status]} ml-auto`}>{ticket.status.replace(/_/g,' ')}</span>}
       </div>
@@ -197,7 +197,7 @@ export default function RepairForm() {
         <button className="btn-primary" onClick={handleSave} disabled={saving}>
           {saving ? 'Saving…' : (isEdit ? 'Save Changes' : 'Create Ticket')}
         </button>
-        <Link to="/repairs" className="btn-secondary">Cancel</Link>
+        <Link to="/app/repairs" className="btn-secondary">Cancel</Link>
       </div>
     </div>
   );

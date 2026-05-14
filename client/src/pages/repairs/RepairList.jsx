@@ -42,7 +42,7 @@ export default function RepairList() {
           <h1 className="text-2xl font-bold text-gray-900">Repair Tickets</h1>
           <p className="text-sm text-gray-500">{total} total tickets</p>
         </div>
-        <Link to="/repairs/new" className="btn-primary">+ New Ticket</Link>
+        <Link to="/app/repairs/new" className="btn-primary">+ New Ticket</Link>
       </div>
 
       <div className="flex gap-3">

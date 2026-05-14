@@ -36,20 +36,20 @@ export default function Dashboard() {
         </div>
         {stats ? (
           <>
-            <StatBar label="Today" value={fmt$(stats.sales.today)} accent="green" href="/pos" />
-            <StatBar label="Month" value={fmt$(stats.sales.month)} href="/reports" />
-            <StatBar label="Open Repairs" value={stats.repairs.open} sub={`${stats.repairs.ready} ready`} accent="amber" href="/repairs" />
-            <StatBar label="Activations" value={stats.activations.monthApproved} sub={`${stats.activations.pending} pending`} href="/activations" />
-            <StatBar label="Low Stock" value={stats.inventory.lowStock} accent={stats.inventory.lowStock > 0 ? 'red' : 'gray'} href="/inventory?lowStock=true" />
-            <StatBar label="Today Appts" value={appts.length} href="/appointments" />
+            <StatBar label="Today" value={fmt$(stats.sales.today)} accent="green" href="/app/pos" />
+            <StatBar label="Month" value={fmt$(stats.sales.month)} href="/app/reports" />
+            <StatBar label="Open Repairs" value={stats.repairs.open} sub={`${stats.repairs.ready} ready`} accent="amber" href="/app/repairs" />
+            <StatBar label="Activations" value={stats.activations.monthApproved} sub={`${stats.activations.pending} pending`} href="/app/activations" />
+            <StatBar label="Low Stock" value={stats.inventory.lowStock} accent={stats.inventory.lowStock > 0 ? 'red' : 'gray'} href="/app/inventory?lowStock=true" />
+            <StatBar label="Today Appts" value={appts.length} href="/app/appointments" />
           </>
         ) : (
           <div className="text-xs text-gray-400 animate-pulse">Loading…</div>
         )}
         <div className="ml-auto flex items-center gap-2">
-          <Link to="/repairs/new" className="btn-primary">+ Repair</Link>
-          <Link to="/pos" className="btn-secondary">POS</Link>
-          <Link to="/bill-payments" className="btn-secondary">Bill Pay</Link>
+          <Link to="/app/repairs/new" className="btn-primary">+ Repair</Link>
+          <Link to="/app/pos" className="btn-secondary">POS</Link>
+          <Link to="/app/bill-payments" className="btn-secondary">Bill Pay</Link>
         </div>
       </div>
 
@@ -63,7 +63,7 @@ export default function Dashboard() {
           <div className="card p-3">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-bold text-gray-700">Revenue · Last 30 Days</span>
-              <Link to="/reports" className="text-xs text-green-700 hover:underline">Full report →</Link>
+              <Link to="/app/reports" className="text-xs text-green-700 hover:underline">Full report →</Link>
             </div>
             <ResponsiveContainer width="100%" height={140}>
               <AreaChart data={sales} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
@@ -89,7 +89,7 @@ export default function Dashboard() {
           <div className="card p-0 overflow-hidden">
             <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-50">
               <span className="text-sm font-bold text-gray-700">Ready for Pickup</span>
-              <Link to="/repairs?status=ready" className="text-xs text-green-700 hover:underline">View all →</Link>
+              <Link to="/app/repairs?status=ready" className="text-xs text-green-700 hover:underline">View all →</Link>
             </div>
             {repairs.length === 0 ? (
               <div className="px-3 py-4 text-xs text-gray-400">No repairs ready for pickup</div>
@@ -108,7 +108,7 @@ export default function Dashboard() {
                   {repairs.map(r => (
                     <tr key={r.id} className="table-row">
                       <td className="table-td font-mono text-xs">
-                        <Link to={`/repairs/${r.id}`} className="text-green-700 hover:underline">{r.ticketNumber}</Link>
+                        <Link to={`/app/repairs/${r.id}`} className="text-green-700 hover:underline">{r.ticketNumber}</Link>
                       </td>
                       <td className="table-td">{r.Customer ? `${r.Customer.firstName} ${r.Customer.lastName}` : '—'}</td>
                       <td className="table-td text-gray-500">{r.deviceBrand} {r.deviceModel}</td>
@@ -131,7 +131,7 @@ export default function Dashboard() {
           <div className="border-b border-gray-200">
             <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
               <span className="text-sm font-bold text-gray-700">Today's Appts.</span>
-              <Link to="/appointments" className="text-xs text-green-700 hover:underline">All →</Link>
+              <Link to="/app/appointments" className="text-xs text-green-700 hover:underline">All →</Link>
             </div>
             {appts.length === 0 ? (
               <div className="px-3 py-3 text-xs text-gray-400">No appointments today</div>
@@ -149,7 +149,7 @@ export default function Dashboard() {
                 }`}>{a.status}</span>
               </div>
             ))}
-            <Link to="/appointments" className="block px-3 py-2 text-xs text-center text-green-700 hover:bg-green-50 border-t border-gray-100">
+            <Link to="/app/appointments" className="block px-3 py-2 text-xs text-center text-green-700 hover:bg-green-50 border-t border-gray-100">
               + New appointment
             </Link>
           </div>
@@ -160,13 +160,13 @@ export default function Dashboard() {
               <span className="text-sm font-bold text-gray-700">Quick Links</span>
             </div>
             {[
-              { to: '/repairs/new',   label: 'New Repair Ticket' },
-              { to: '/pos',           label: 'Open Point of Sale' },
-              { to: '/bill-payments', label: 'Process Bill Payment' },
-              { to: '/activations',   label: 'New Activation' },
-              { to: '/layaway',       label: 'Layaway Plans' },
-              { to: '/timeclock',     label: 'Time Clock' },
-              { to: '/loyalty',       label: 'Loyalty Lookup' },
+              { to: '/app/repairs/new',   label: 'New Repair Ticket' },
+              { to: '/app/pos',           label: 'Open Point of Sale' },
+              { to: '/app/bill-payments', label: 'Process Bill Payment' },
+              { to: '/app/activations',   label: 'New Activation' },
+              { to: '/app/layaway',       label: 'Layaway Plans' },
+              { to: '/app/timeclock',     label: 'Time Clock' },
+              { to: '/app/loyalty',       label: 'Loyalty Lookup' },
             ].map(l => (
               <Link key={l.to} to={l.to} className="block px-3 py-2 text-xs text-gray-700 hover:bg-green-50 hover:text-green-800 border-b border-gray-100 last:border-0 transition-colors">
                 {l.label}

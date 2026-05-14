@@ -17,7 +17,7 @@ export default function Login() {
     try {
       const { data } = await api.post('/auth/login', { email, password });
       setAuth(data.token, data.user);
-      navigate(data.user.role === 'superadmin' ? '/superadmin' : '/');
+      navigate(data.user.role === 'superadmin' ? '/superadmin' : '/app');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Login failed');
     } finally {

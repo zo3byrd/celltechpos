@@ -195,6 +195,7 @@ app.use('/api/layaway',        require('./routes/layaway'));
 app.use('/api/inventory-counts', require('./routes/inventory-counts'));
 app.use('/api/subscriptions',  require('./routes/subscriptions'));
 app.use('/api/messages',       require('./routes/messages'));
+app.use('/api/admin-campaigns', require('./routes/admin-campaigns'));
 
 // ── Serve React build in production ──────────────────────────────────────────
 if (process.env.NODE_ENV === 'production') {

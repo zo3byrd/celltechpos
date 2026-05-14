@@ -18,8 +18,10 @@ const nav = [
   { section: 'ANALYTICS', items: [
     { to: '/superadmin/reports', label: 'Reports', icon: ChartBarIcon },
   ]},
+  { section: 'MARKETING', items: [
+    { to: '/superadmin/campaigns', label: 'Campaigns', icon: MegaphoneIcon },
+  ]},
   { section: 'COMING SOON', items: [
-    { label: 'Campaigns',       icon: MegaphoneIcon,      soon: true },
     { label: 'Content Editor',  icon: PencilSquareIcon,   soon: true },
     { label: 'Settings',        icon: Cog6ToothIcon,      soon: true },
   ]},

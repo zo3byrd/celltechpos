@@ -5,7 +5,9 @@ import SADashboard from './pages/superadmin/SADashboard';
 import Subscribers from './pages/superadmin/Subscribers';
 import Pricing from './pages/superadmin/Pricing';
 import SAReports from './pages/superadmin/SAReports';
+import SACampaigns from './pages/superadmin/SACampaigns';
 import SubscriptionExpired from './components/SubscriptionExpired';
+import LandingPage from './pages/LandingPage';
 import Layout from './components/Layout';
 import Login from './pages/auth/Login';
 import Dashboard from './pages/dashboard/Dashboard';
@@ -32,7 +34,7 @@ import Messages from './pages/messages/Messages';
 function PrivateRoute({ children, roles }) {
   const { token, user } = useAuthStore();
   if (!token) return <Navigate to="/login" replace />;
-  if (roles && !roles.includes(user?.role)) return <Navigate to="/" replace />;
+  if (roles && !roles.includes(user?.role)) return <Navigate to="/app" replace />;
   return children;
 }
 
@@ -46,17 +48,30 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={token ? <Navigate to={user?.role === 'superadmin' ? '/superadmin' : '/'} replace /> : <Login />} />
+      {/* ── Public landing page ── */}
+      <Route path="/" element={
+        token
+          ? <Navigate to={user?.role === 'superadmin' ? '/superadmin' : '/app'} replace />
+          : <LandingPage />
+      } />
 
-      {/* ── Superadmin portal (completely separate from POS) ── */}
+      <Route path="/login" element={
+        token
+          ? <Navigate to={user?.role === 'superadmin' ? '/superadmin' : '/app'} replace />
+          : <Login />
+      } />
+
+      {/* ── Superadmin portal ── */}
       <Route path="/superadmin" element={<PrivateRoute roles={['superadmin']}><SuperAdminLayout /></PrivateRoute>}>
         <Route index element={<SADashboard />} />
         <Route path="subscribers" element={<Subscribers />} />
         <Route path="pricing" element={<Pricing />} />
         <Route path="reports" element={<SAReports />} />
+        <Route path="campaigns" element={<SACampaigns />} />
       </Route>
 
-      <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
+      {/* ── POS App ── */}
+      <Route path="/app" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={user?.role === 'superadmin' ? <Navigate to="/superadmin" replace /> : <Dashboard />} />
         <Route path="repairs" element={<RepairList />} />
         <Route path="repairs/new" element={<RepairForm />} />
@@ -80,6 +95,7 @@ export default function App() {
         <Route path="admin" element={<PrivateRoute roles={['superadmin', 'admin']}><AdminPanel /></PrivateRoute>} />
         <Route path="license-manager" element={<Navigate to="/superadmin/subscribers" replace />} />
       </Route>
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
