@@ -100,4 +100,25 @@ router.put('/stores/:id', auth, requireRole('superadmin'), async (req, res) => {
   res.json(store);
 });
 
+// ── Seed default inventory for a store ────────────────────────────────────────
+router.post('/stores/:id/seed-inventory', auth, requireRole('superadmin'), async (req, res) => {
+  const { InventoryItem } = require('../db/models');
+  const { getDefaultItems } = require('../db/defaultInventory');
+
+  const store = await Store.findByPk(req.params.id);
+  if (!store) return res.status(404).json({ error: 'Store not found' });
+
+  const items = getDefaultItems();
+  let created = 0, skipped = 0;
+
+  for (const item of items) {
+    const exists = await InventoryItem.findOne({ where: { sku: item.sku, storeId: req.params.id } });
+    if (exists) { skipped++; continue; }
+    await InventoryItem.create({ ...item, storeId: req.params.id });
+    created++;
+  }
+
+  res.json({ created, skipped, total: created + skipped });
+});
+
 module.exports = router;

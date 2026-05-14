@@ -4,7 +4,7 @@ import {
   XMarkIcon, PlusIcon, ArrowPathIcon, NoSymbolIcon,
   CheckCircleIcon, ExclamationTriangleIcon, MagnifyingGlassIcon,
   ChevronRightIcon, UserGroupIcon, BuildingStorefrontIcon,
-  LinkIcon, BanknotesIcon, CreditCardIcon,
+  LinkIcon, BanknotesIcon, CreditCardIcon, CubeIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 
@@ -162,6 +162,15 @@ export default function Subscribers() {
     setModal('markPaid');
   }
 
+  async function seedInventory(lic, e) {
+    e.stopPropagation();
+    if (!window.confirm(`Load default inventory (services, accessories, plans, parts) into ${lic.storeName}?\n\nExisting items with the same SKU will be skipped.`)) return;
+    try {
+      const { data } = await api.post(`/admin/stores/${lic.storeId}/seed-inventory`);
+      toast.success(`${lic.storeName}: ${data.created} items added, ${data.skipped} already existed`);
+    } catch (err) { toast.error(err.response?.data?.error || 'Failed to seed inventory'); }
+  }
+
   async function submitMarkPaid() {
     if (!markPaidForm.price) return toast.error('Enter the amount received');
     setSaving(true);
@@ -271,6 +280,7 @@ export default function Subscribers() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                      <ActionBtn icon={<CubeIcon />} label="Seed default inventory" color="#14b8a6" onClick={e => seedInventory(lic, e)} />
                       <ActionBtn icon={<LinkIcon />} label="Payment link" color="#6366f1" onClick={e => openPayMethod(lic, e)} />
                       <ActionBtn icon={<BanknotesIcon />} label="Mark paid" color="#10b981" onClick={e => { e.stopPropagation(); openMarkPaid(lic); }} />
                       <ActionBtn icon={<ArrowPathIcon />} label="Extend" color="#0ea5e9" onClick={e => { e.stopPropagation(); setSelected(lic); setExtForm(extDefault); setModal('extend'); }} />

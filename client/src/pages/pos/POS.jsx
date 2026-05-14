@@ -229,25 +229,52 @@ export default function POS() {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 xl:grid-cols-4">
               {browseItems.map(item => (
                 <button key={item.id} onClick={() => addToCart(item)}
-                  className="bg-white border border-gray-200 rounded p-3 text-left hover:border-green-600 hover:bg-green-50 transition-colors active:scale-95 group">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
-                      item.category === 'service' ? 'bg-purple-100 text-purple-700' :
-                      item.category === 'device'  ? 'bg-blue-100 text-blue-700' :
-                      item.category === 'part'    ? 'bg-amber-100 text-amber-700' :
-                      'bg-gray-100 text-gray-600'
-                    }`}>{item.category}</span>
-                    {item.category !== 'service' && (
-                      <span className={`text-xs font-semibold ${item.quantity <= item.minQuantity ? 'text-red-500' : 'text-gray-400'}`}>
-                        {item.quantity} in stock
+                  className="bg-white border border-gray-200 rounded overflow-hidden text-left hover:border-green-600 hover:shadow-md transition-all active:scale-95 group flex flex-col">
+                  {/* Image / placeholder */}
+                  <div className="w-full h-28 bg-gray-100 flex-shrink-0 overflow-hidden relative">
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy" />
+                    ) : (
+                      <div className={`w-full h-full flex items-center justify-center text-3xl ${
+                        item.category === 'service'   ? 'bg-purple-50' :
+                        item.category === 'device'    ? 'bg-blue-50' :
+                        item.category === 'part'      ? 'bg-amber-50' :
+                        item.category === 'plan'      ? 'bg-teal-50' :
+                        'bg-gray-50'
+                      }`}>
+                        {item.category === 'service'  ? '🔧' :
+                         item.category === 'device'   ? '📱' :
+                         item.category === 'part'     ? '⚙️' :
+                         item.category === 'plan'     ? '📶' :
+                         '📦'}
+                      </div>
+                    )}
+                    {/* Stock badge overlay */}
+                    {item.category !== 'service' && item.category !== 'plan' && (
+                      <span className={`absolute top-1.5 right-1.5 text-xs font-bold px-1.5 py-0.5 rounded-full shadow ${
+                        item.quantity <= item.minQuantity ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-600'
+                      }`}>
+                        {item.quantity}
                       </span>
                     )}
                   </div>
-                  <div className="text-sm font-bold text-gray-800 leading-tight mb-1 line-clamp-2 group-hover:text-green-800">
-                    {item.name}
+                  {/* Info */}
+                  <div className="p-2.5 flex flex-col flex-1">
+                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded self-start mb-1.5 ${
+                      item.category === 'service' ? 'bg-purple-100 text-purple-700' :
+                      item.category === 'device'  ? 'bg-blue-100 text-blue-700' :
+                      item.category === 'part'    ? 'bg-amber-100 text-amber-700' :
+                      item.category === 'plan'    ? 'bg-teal-100 text-teal-700' :
+                      'bg-gray-100 text-gray-600'
+                    }`}>{item.category}</span>
+                    <div className="text-xs font-bold text-gray-800 leading-tight mb-1 line-clamp-2 group-hover:text-green-800 flex-1">
+                      {item.name}
+                    </div>
+                    {item.sku && <div className="text-xs text-gray-400 mb-1 truncate">{item.sku}</div>}
+                    <div className="text-sm font-bold text-green-700">{fmt$(item.price)}</div>
                   </div>
-                  {item.sku && <div className="text-xs text-gray-400 mb-1">{item.sku}</div>}
-                  <div className="text-base font-bold text-green-700">{fmt$(item.price)}</div>
                 </button>
               ))}
             </div>
