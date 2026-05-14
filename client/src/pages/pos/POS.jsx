@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import {
   MagnifyingGlassIcon, XMarkIcon, UserIcon, TrashIcon,
-  PrinterIcon, BanknotesIcon, CreditCardIcon,
+  PrinterIcon, BanknotesIcon, CreditCardIcon, ShoppingCartIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 
@@ -41,6 +41,7 @@ export default function POS() {
   const [taxRate] = useState(0.0825);
   const [processing, setProcessing] = useState(false);
   const [receipt, setReceipt] = useState(null);
+  const [mobileView, setMobileView] = useState('browse');
   const searchRef = useRef(null);
 
   // Load items when search or category changes
@@ -149,7 +150,7 @@ export default function POS() {
     <div className="flex h-full overflow-hidden bg-gray-100">
 
       {/* ── LEFT: Product Browser ── */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className={`${mobileView === 'browse' ? 'flex' : 'hidden'} md:flex flex-1 flex-col overflow-hidden`}>
 
         {/* Customer bar */}
         <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-3">
@@ -218,14 +219,14 @@ export default function POS() {
         </div>
 
         {/* Item grid */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 pb-20 md:pb-4">
           {browseItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 text-gray-400">
               <MagnifyingGlassIcon className="w-10 h-10 mb-2 text-gray-300" />
               <p className="text-sm">Search for products or select a category</p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-2.5 xl:grid-cols-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 xl:grid-cols-4">
               {browseItems.map(item => (
                 <button key={item.id} onClick={() => addToCart(item)}
                   className="bg-white border border-gray-200 rounded p-3 text-left hover:border-green-600 hover:bg-green-50 transition-colors active:scale-95 group">
@@ -255,7 +256,7 @@ export default function POS() {
       </div>
 
       {/* ── RIGHT: Cart + Checkout ── */}
-      <div className="w-80 flex-shrink-0 bg-white border-l border-gray-200 flex flex-col overflow-hidden">
+      <div className={`${mobileView === 'cart' ? 'flex w-full' : 'hidden'} md:flex md:w-80 md:flex-shrink-0 bg-white border-l border-gray-200 flex-col overflow-hidden`}>
 
         {/* Cart header */}
         <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
@@ -307,7 +308,7 @@ export default function POS() {
         </div>
 
         {/* Totals + Payment */}
-        <div className="border-t border-gray-200 px-4 py-3 space-y-3">
+        <div className="border-t border-gray-200 px-4 py-3 pb-20 md:pb-3 space-y-3 overflow-y-auto">
           {/* Discount */}
           <div className="flex items-center gap-2">
             <label className="text-xs font-bold text-gray-500 w-20">Discount $</label>
@@ -478,6 +479,35 @@ export default function POS() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* ── Mobile Bottom Tab Bar ── */}
+      <div className="fixed bottom-0 left-0 right-0 md:hidden flex border-t border-gray-200 bg-white z-20">
+        <button
+          onClick={() => setMobileView('browse')}
+          className={`flex-1 flex flex-col items-center py-2.5 text-xs font-semibold transition-colors ${
+            mobileView === 'browse' ? 'text-green-700' : 'text-gray-500'
+          }`}
+        >
+          <MagnifyingGlassIcon className="w-5 h-5 mb-0.5" />
+          Browse
+        </button>
+        <button
+          onClick={() => setMobileView('cart')}
+          className={`flex-1 flex flex-col items-center py-2.5 text-xs font-semibold transition-colors relative ${
+            mobileView === 'cart' ? 'text-green-700' : 'text-gray-500'
+          }`}
+        >
+          <div className="relative">
+            <ShoppingCartIcon className="w-5 h-5 mb-0.5" />
+            {cart.length > 0 && (
+              <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold leading-none">
+                {cart.length}
+              </span>
+            )}
+          </div>
+          Cart{cart.length > 0 ? ` (${cart.length})` : ''}
+        </button>
       </div>
     </div>
   );
