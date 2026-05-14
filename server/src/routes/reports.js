@@ -104,7 +104,7 @@ router.get('/activations', auth, requireRole('superadmin', 'admin'), async (req,
     where,
     attributes: [
       'salesRepId',
-      [fn('COUNT', col('id')), 'count'],
+      [fn('COUNT', col('Activation.id')), 'count'],
       [fn('SUM', col('commissionAmount')), 'commission'],
     ],
     include: [{ model: User, as: 'salesRep', attributes: ['name'] }],
