@@ -15,8 +15,10 @@ const nav = [
     { to: '/superadmin/subscribers',  label: 'Subscribers',     icon: BuildingStorefrontIcon },
     { to: '/superadmin/pricing',      label: 'Pricing',         icon: CurrencyDollarIcon },
   ]},
+  { section: 'ANALYTICS', items: [
+    { to: '/superadmin/reports', label: 'Reports', icon: ChartBarIcon },
+  ]},
   { section: 'COMING SOON', items: [
-    { label: 'Reports',         icon: ChartBarIcon,       soon: true },
     { label: 'Campaigns',       icon: MegaphoneIcon,      soon: true },
     { label: 'Content Editor',  icon: PencilSquareIcon,   soon: true },
     { label: 'Settings',        icon: Cog6ToothIcon,      soon: true },

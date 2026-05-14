@@ -401,6 +401,87 @@ router.put('/stripe-plans/:key', superadminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET full report data (superadmin only)
+router.get('/stats/report', superadminOnly, async (req, res) => {
+  try {
+    const months = Math.min(parseInt(req.query.months) || 12, 24);
+    const all = await rawAllLicenses();
+    const now = new Date();
+
+    for (const lic of all) {
+      if (lic.status === 'active' && lic.expiresAt && now > new Date(lic.expiresAt)) lic.status = 'expired';
+      lic.daysLeft = daysUntil(lic.expiresAt);
+    }
+
+    const active    = all.filter(l => l.status === 'active');
+    const monthly   = active.filter(l => l.plan === 'monthly');
+    const yearly    = active.filter(l => l.plan === 'yearly');
+    const mrr = monthly.reduce((s, l) => s + parseFloat(l.price || 0), 0)
+              + yearly.reduce((s,  l) => s + parseFloat(l.price || 0) / 12, 0);
+
+    // New subscribers per month
+    const [growth] = await sequelize.query(`
+      SELECT strftime('%Y-%m', createdAt) as month, COUNT(*) as newStores
+      FROM \`Licenses\`
+      WHERE createdAt >= datetime('now', '-${months} months')
+      GROUP BY month ORDER BY month ASC`);
+
+    // Revenue by month (from lastPaidAt)
+    const [revenue] = await sequelize.query(`
+      SELECT strftime('%Y-%m', lastPaidAt) as month,
+             ROUND(SUM(CAST(price AS REAL)), 2) as revenue,
+             COUNT(*) as payments
+      FROM \`Licenses\`
+      WHERE lastPaidAt >= datetime('now', '-${months} months')
+        AND price > 0 AND lastPaidAt IS NOT NULL
+      GROUP BY month ORDER BY month ASC`);
+
+    // Plan distribution
+    const planDist = {};
+    for (const l of active) {
+      const key = l.stripePlanKey ? l.stripePlanKey.replace(/_/g,' ') : l.plan;
+      planDist[key] = (planDist[key] || 0) + 1;
+    }
+    const planDistribution = Object.entries(planDist).map(([name, value]) => ({ name, value }));
+
+    // Status breakdown
+    const statusBreakdown = [
+      { name:'Active',    value: active.length,                                  color:'#10b981' },
+      { name:'Expired',   value: all.filter(l => l.status === 'expired').length,  color:'#ef4444' },
+      { name:'Suspended', value: all.filter(l => l.status === 'suspended').length, color:'#f59e0b' },
+      { name:'Cancelled', value: all.filter(l => l.status === 'cancelled').length, color:'#374151' },
+    ];
+
+    // Expiring in next 30 days
+    const [expiringSoon] = await sequelize.query(`
+      SELECT l.storeId, l.plan, l.status, l.expiresAt, l.price, l.stripePlanKey,
+             s.name as storeName, s.email as storeEmail
+      FROM \`Licenses\` l LEFT JOIN \`Stores\` s ON l.storeId = s.id
+      WHERE l.status = 'active'
+        AND l.expiresAt BETWEEN datetime('now') AND datetime('now', '+30 days')
+      ORDER BY l.expiresAt ASC LIMIT 15`);
+
+    // Recent payments
+    const [recentPayments] = await sequelize.query(`
+      SELECT l.storeId, l.plan, l.price, l.lastPaidAt, l.stripePlanKey, l.stripeStatus, l.paypalStatus,
+             s.name as storeName
+      FROM \`Licenses\` l LEFT JOIN \`Stores\` s ON l.storeId = s.id
+      WHERE l.lastPaidAt IS NOT NULL AND l.price > 0
+      ORDER BY l.lastPaidAt DESC LIMIT 10`);
+
+    res.json({
+      summary: {
+        totalStores: all.length, activeStores: active.length,
+        mrr: parseFloat(mrr.toFixed(2)), arr: parseFloat((mrr * 12).toFixed(2)),
+        monthly: monthly.length, yearly: yearly.length,
+        expired: all.filter(l => l.status === 'expired').length,
+        suspended: all.filter(l => l.status === 'suspended').length,
+      },
+      growth, revenue, planDistribution, statusBreakdown, expiringSoon, recentPayments,
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // GET revenue stats (superadmin only)
 router.get('/stats/revenue', superadminOnly, async (req, res) => {
   try {

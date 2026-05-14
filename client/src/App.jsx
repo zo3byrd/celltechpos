@@ -4,6 +4,7 @@ import SuperAdminLayout from './pages/superadmin/SuperAdminLayout';
 import SADashboard from './pages/superadmin/SADashboard';
 import Subscribers from './pages/superadmin/Subscribers';
 import Pricing from './pages/superadmin/Pricing';
+import SAReports from './pages/superadmin/SAReports';
 import SubscriptionExpired from './components/SubscriptionExpired';
 import Layout from './components/Layout';
 import Login from './pages/auth/Login';
@@ -52,6 +53,7 @@ export default function App() {
         <Route index element={<SADashboard />} />
         <Route path="subscribers" element={<Subscribers />} />
         <Route path="pricing" element={<Pricing />} />
+        <Route path="reports" element={<SAReports />} />
       </Route>
 
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
@@ -76,7 +78,7 @@ export default function App() {
         <Route path="inv-counts" element={<PrivateRoute roles={['superadmin', 'admin']}><InventoryCount /></PrivateRoute>} />
         <Route path="admin/users" element={<PrivateRoute roles={['superadmin', 'admin']}><AdminUsers /></PrivateRoute>} />
         <Route path="admin" element={<PrivateRoute roles={['superadmin', 'admin']}><AdminPanel /></PrivateRoute>} />
-        <Route path="license-manager" element={<PrivateRoute roles={['superadmin']}><LicenseManager /></PrivateRoute>} />
+        <Route path="license-manager" element={<Navigate to="/superadmin/subscribers" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
