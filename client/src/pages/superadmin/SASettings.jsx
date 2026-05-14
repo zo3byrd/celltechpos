@@ -104,11 +104,11 @@ export default function SASettings() {
   async function saveSection(key, payload) {
     setSaving(s => ({ ...s, [key]: true }));
     try {
-      await api.put('/settings', payload);
+      const { data } = await api.put('/settings', payload);
+      setSettings(data);
       toast.success('Settings saved');
-      await loadSettings();
-    } catch {
-      toast.error('Failed to save');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to save');
     } finally {
       setSaving(s => ({ ...s, [key]: false }));
     }
