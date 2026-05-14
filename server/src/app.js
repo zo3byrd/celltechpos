@@ -15,6 +15,7 @@ const path = require('path');
 const { sequelize } = require('./db');
 const { runMigrations, seedIfEmpty } = require('./db/migrate');
 const { ensurePlans } = require('./stripe');
+const { ensurePayPalPlans } = require('./paypal');
 const { checkLicense } = require('./middleware/checkLicense');
 
 const app = express();
@@ -167,6 +168,7 @@ app.get('/api', (req, res) => {
 </body></html>`);
 });
 app.use('/api/auth',           require('./routes/auth'));
+app.post('/api/licenses/paypal-webhook', require('./routes/paypalWebhook'));
 app.use('/api/licenses',       require('./routes/licenses'));
 
 // All routes below require a valid license (superadmin is exempt inside checkLicense)
@@ -220,5 +222,6 @@ sequelize
   .then(() => runMigrations())
   .then(() => seedIfEmpty())
   .then(() => ensurePlans(sequelize))
+  .then(() => ensurePayPalPlans(sequelize))
   .then(() => app.listen(PORT, () => console.log(`API ready → http://localhost:${PORT}/api`)))
   .catch(err => { console.error('DB init failed:', err); process.exit(1); });

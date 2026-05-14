@@ -436,6 +436,8 @@ const License = sequelize.define('License', {
   stripeSubscriptionId: { type: DataTypes.STRING },
   stripeStatus:         { type: DataTypes.STRING },
   stripePlanKey:        { type: DataTypes.STRING },
+  paypalSubscriptionId: { type: DataTypes.STRING },
+  paypalStatus:         { type: DataTypes.STRING },
 });
 
 // ── StripePlan ────────────────────────────────────────────────────────────────
@@ -447,6 +449,7 @@ const StripePlan = sequelize.define('StripePlan', {
   interval:        { type: DataTypes.ENUM('month', 'year'), defaultValue: 'month' },
   stripePriceId:   { type: DataTypes.STRING },
   stripeProductId: { type: DataTypes.STRING },
+  paypalPlanId:    { type: DataTypes.STRING },
   active:          { type: DataTypes.BOOLEAN, defaultValue: true },
 });
 

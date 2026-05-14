@@ -27,6 +27,12 @@ function StripeStatus({ status }) {
   return <span className={`badge ${map[status] || 'badge-gray'} ml-1`}>stripe:{status}</span>;
 }
 
+function PayPalStatus({ status }) {
+  if (!status || status === 'APPROVAL_PENDING') return null;
+  const map = { ACTIVE:'badge-green', SUSPENDED:'badge-orange', CANCELLED:'badge-gray', EXPIRED:'badge-red' };
+  return <span className={`badge ${map[status] || 'badge-gray'} ml-1`}>paypal:{status.toLowerCase()}</span>;
+}
+
 const extendFormDefault = { months: '', years: '', price: '' };
 const onboardDefault = {
   storeName:'', storeEmail:'', storePhone:'', storeAddress:'', storeCity:'', storeState:'', storeZip:'',
@@ -49,6 +55,7 @@ export default function LicenseManager() {
   const [onboard, setOnboard]     = useState(onboardDefault);
   const [editPlan, setEditPlan]   = useState(null);
   const [checkoutUrl, setCheckoutUrl] = useState(null);
+  const [payLinkLic, setPayLinkLic]   = useState(null);
   const [saving, setSaving]       = useState(false);
 
   async function load() {
@@ -122,14 +129,28 @@ export default function LicenseManager() {
     finally { setSaving(false); }
   }
 
-  async function getPaymentLink(lic, e) {
+  function getPaymentLink(lic, e) {
     e.stopPropagation();
-    if (!lic.stripePlanKey && plans.length === 0) return toast.error('No Stripe plans configured');
+    setPayLinkLic(lic);
+    setSelected(lic);
+    setModal('payMethod');
+  }
+
+  async function generateStripeLink(lic) {
     setSaving(true);
     try {
       const { data } = await api.post(`/licenses/${lic.storeId}/payment-link`, { stripePlanKey: lic.stripePlanKey });
-      setSelected(lic);
       setCheckoutUrl(data.checkoutUrl);
+      setModal('checkout');
+    } catch (err) { toast.error(err.response?.data?.error || 'Failed'); }
+    finally { setSaving(false); }
+  }
+
+  async function generatePayPalLink(lic) {
+    setSaving(true);
+    try {
+      const { data } = await api.post(`/licenses/${lic.storeId}/paypal-link`, { stripePlanKey: lic.stripePlanKey });
+      setCheckoutUrl(data.approvalUrl);
       setModal('checkout');
     } catch (err) { toast.error(err.response?.data?.error || 'Failed'); }
     finally { setSaving(false); }
@@ -261,6 +282,7 @@ export default function LicenseManager() {
                       <td className="table-td">
                         <StatusBadge status={lic.status} daysLeft={lic.daysLeft} />
                         <StripeStatus status={lic.stripeStatus} />
+                        <PayPalStatus status={lic.paypalStatus} />
                       </td>
                       <td className="table-td">
                         <div className="text-sm">{fmtDate(lic.expiresAt)}</div>
@@ -333,6 +355,43 @@ export default function LicenseManager() {
         </div>
       )}
 
+      {/* ── Payment Method Picker Modal ── */}
+      {modal === 'payMethod' && payLinkLic && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setModal(null)}>
+          <div className="modal-box max-w-sm">
+            <div className="modal-header">
+              <h2 className="font-bold text-gray-800 flex items-center gap-2"><LinkIcon className="w-5 h-5 text-green-700" />Payment Link</h2>
+              <button onClick={() => setModal(null)}><XMarkIcon className="w-5 h-5 text-gray-400" /></button>
+            </div>
+            <div className="modal-body space-y-3">
+              <p className="text-sm text-gray-600">Choose payment processor for <strong>{payLinkLic.storeName}</strong>:</p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  disabled={saving}
+                  onClick={() => generateStripeLink(payLinkLic)}
+                  className="flex flex-col items-center gap-2 p-4 border-2 border-blue-200 hover:border-blue-500 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors disabled:opacity-50">
+                  <CreditCardIcon className="w-8 h-8 text-blue-600" />
+                  <span className="font-bold text-blue-700 text-sm">Stripe</span>
+                  <span className="text-xs text-blue-500">Credit / Debit card</span>
+                </button>
+                <button
+                  disabled={saving}
+                  onClick={() => generatePayPalLink(payLinkLic)}
+                  className="flex flex-col items-center gap-2 p-4 border-2 border-yellow-200 hover:border-yellow-500 rounded-lg bg-yellow-50 hover:bg-yellow-100 transition-colors disabled:opacity-50">
+                  <span className="text-2xl">🅿</span>
+                  <span className="font-bold text-yellow-700 text-sm">PayPal</span>
+                  <span className="text-xs text-yellow-600">PayPal balance / card</span>
+                </button>
+              </div>
+              {saving && <p className="text-xs text-center text-gray-400 animate-pulse">Generating link…</p>}
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setModal(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Onboard Modal ── */}
       {modal === 'onboard' && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setModal(null)}>
@@ -398,7 +457,7 @@ export default function LicenseManager() {
               <button onClick={() => setModal(null)}><XMarkIcon className="w-5 h-5 text-gray-400" /></button>
             </div>
             <div className="modal-body space-y-3">
-              <p className="text-sm text-gray-600">Share this link with <strong>{selected?.storeName || 'the store'}</strong>. They'll enter their card on Stripe's secure page. The subscription starts after payment.</p>
+              <p className="text-sm text-gray-600">Share this link with <strong>{selected?.storeName || 'the store'}</strong>. They'll complete payment and the license activates automatically.</p>
               <div className="bg-gray-50 border border-gray-200 rounded p-3 flex items-center gap-2">
                 <input className="input flex-1 text-xs font-mono bg-transparent border-0 p-0 focus:ring-0" readOnly value={checkoutUrl} />
                 <button className="btn-primary text-xs px-3 py-1.5" onClick={() => { navigator.clipboard.writeText(checkoutUrl); toast.success('Copied!'); }}>
@@ -408,7 +467,7 @@ export default function LicenseManager() {
               <a href={checkoutUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-sm text-blue-600 hover:underline">
                 <LinkIcon className="w-3.5 h-3.5" /> Open link
               </a>
-              <p className="text-xs text-gray-400">This link includes a 14-day trial. The license auto-activates via webhook when they pay.</p>
+              <p className="text-xs text-gray-400">The license activates automatically via webhook after payment. Stripe links include a 14-day trial.</p>
             </div>
             <div className="modal-footer">
               <button className="btn-primary" onClick={() => setModal(null)}>Done</button>
@@ -494,7 +553,7 @@ export default function LicenseManager() {
             </div>
             <div className="modal-body space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="bg-gray-50 rounded p-3"><div className="text-xs text-gray-500 mb-1">Status</div><StatusBadge status={selected.status} daysLeft={selected.daysLeft} /><StripeStatus status={selected.stripeStatus} /></div>
+                <div className="bg-gray-50 rounded p-3"><div className="text-xs text-gray-500 mb-1">Status</div><StatusBadge status={selected.status} daysLeft={selected.daysLeft} /><StripeStatus status={selected.stripeStatus} /><PayPalStatus status={selected.paypalStatus} /></div>
                 <div className="bg-gray-50 rounded p-3"><div className="text-xs text-gray-500 mb-1">Plan</div><div className="font-semibold capitalize">{selected.stripePlanKey?.replace('_',' ') || selected.plan}</div></div>
                 <div className="bg-gray-50 rounded p-3"><div className="text-xs text-gray-500 mb-1">Expires</div><div className={`font-semibold ${selected.daysLeft <= 14 ? 'text-amber-600' : ''}`}>{fmtDate(selected.expiresAt)}</div></div>
                 <div className="bg-gray-50 rounded p-3"><div className="text-xs text-gray-500 mb-1">Price</div><div className="font-semibold">{selected.price > 0 ? fmt$(selected.price) + '/period' : '—'}</div></div>

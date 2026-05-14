@@ -5,6 +5,7 @@ const { auth, requireRole } = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const { getStripe } = require('../stripe');
+const { isConfigured: paypalConfigured, createSubscription: createPayPalSubscription } = require('../paypal');
 
 const superadminOnly = requireRole('superadmin');
 
@@ -302,6 +303,30 @@ router.post('/:storeId/cancel-stripe', superadminOnly, async (req, res) => {
       { replacements: [new Date().toISOString(), req.params.storeId] }
     );
     res.json({ message: 'Cancelled' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST generate PayPal subscription approval link (superadmin only)
+router.post('/:storeId/paypal-link', superadminOnly, async (req, res) => {
+  if (!paypalConfigured()) return res.status(503).json({ error: 'PayPal not configured. Add PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET to your server .env' });
+  try {
+    const lic = await rawLicense(req.params.storeId);
+    if (!lic) return res.status(404).json({ error: 'License not found' });
+
+    const { stripePlanKey } = req.body;
+    const planKey = stripePlanKey || lic.stripePlanKey;
+    const planRow = planKey ? await StripePlan.findOne({ where: { key: planKey } }) : null;
+    if (!planRow?.paypalPlanId) return res.status(400).json({ error: 'No PayPal plan configured for this tier. Make sure PAYPAL_CLIENT_ID/SECRET are set and restart the server.' });
+
+    const appUrl = process.env.APP_URL || 'https://celltechpos.com';
+    const { subscriptionId, approvalUrl } = await createPayPalSubscription(planRow.paypalPlanId, req.params.storeId, appUrl);
+
+    await sequelize.query(
+      'UPDATE `Licenses` SET paypalSubscriptionId=?, paypalStatus=?, stripePlanKey=?, updatedAt=? WHERE storeId=?',
+      { replacements: [subscriptionId, 'APPROVAL_PENDING', planKey || lic.stripePlanKey, new Date().toISOString(), req.params.storeId] }
+    );
+
+    res.json({ approvalUrl });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
