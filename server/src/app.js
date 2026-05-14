@@ -196,6 +196,8 @@ app.use('/api/inventory-counts', require('./routes/inventory-counts'));
 app.use('/api/subscriptions',  require('./routes/subscriptions'));
 app.use('/api/messages',       require('./routes/messages'));
 app.use('/api/admin-campaigns', require('./routes/admin-campaigns'));
+app.use('/api/settings',       require('./routes/settings'));
+app.use('/api/announcements',  require('./routes/announcements'));
 
 // ── Serve React build in production ──────────────────────────────────────────
 if (process.env.NODE_ENV === 'production') {

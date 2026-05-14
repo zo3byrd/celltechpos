@@ -7,6 +7,7 @@ import {
   CalendarDaysIcon, ClockIcon, TruckIcon, StarIcon,
   MegaphoneIcon, BanknotesIcon, ArchiveBoxIcon,
   ShieldCheckIcon, KeyIcon, ChatBubbleLeftRightIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 
 const mainNav = [
@@ -41,11 +42,11 @@ const superNav = [
   { to: '/app/license-manager', label: 'License Manager', icon: KeyIcon },
 ];
 
-function NavItem({ to, label, icon: Icon, exact }) {
+function NavItem({ to, label, icon: Icon, exact, onClick }) {
   return (
-    <NavLink to={to} end={exact}
+    <NavLink to={to} end={exact} onClick={onClick}
       className={({ isActive }) =>
-        `flex items-center gap-2.5 px-2.5 py-2 rounded text-sm font-semibold transition-colors ${
+        `flex items-center gap-2.5 px-2.5 py-2.5 rounded text-sm font-semibold transition-colors ${
           isActive
             ? 'bg-green-900 text-green-200 border-l-2 border-green-400'
             : 'text-gray-400 hover:bg-gray-800 hover:text-gray-100 border-l-2 border-transparent'
@@ -58,47 +59,62 @@ function NavItem({ to, label, icon: Icon, exact }) {
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuthStore();
   const isAdmin = ['superadmin', 'admin'].includes(user?.role);
   const isSuperadmin = user?.role === 'superadmin';
 
   return (
-    <aside className="w-56 flex-shrink-0 flex flex-col" style={{ background: '#161b27', borderRight: '1px solid #1f2937' }}>
-      {/* Logo */}
-      <div className="px-3 py-3" style={{ borderBottom: '1px solid #1f2937' }}>
+    <aside
+      style={{ background: '#161b27', borderRight: '1px solid #1f2937', zIndex: 50 }}
+      className={[
+        'w-56 flex-shrink-0 flex flex-col h-full',
+        // Mobile: fixed overlay, slide in/out
+        'fixed inset-y-0 left-0 transition-transform duration-200 ease-in-out',
+        isOpen ? 'translate-x-0' : '-translate-x-full',
+        // Desktop: part of flex layout, always visible
+        'md:relative md:translate-x-0',
+      ].join(' ')}
+    >
+      {/* Logo + mobile close */}
+      <div className="px-3 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #1f2937' }}>
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ background: '#14532d' }}>C</div>
+          <div className="w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+            style={{ background: '#14532d' }}>C</div>
           <div className="min-w-0">
             <div className="text-white font-bold text-xs leading-tight">CellTechPOS</div>
             <div className="text-gray-500 text-xs truncate">{user?.store?.name || '...'}</div>
           </div>
         </div>
+        {/* Close button — mobile only */}
+        <button onClick={onClose} className="md:hidden p-1 text-gray-500 hover:text-gray-300">
+          <XMarkIcon className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
-        {mainNav.map(i => <NavItem key={i.to} {...i} />)}
+        {mainNav.map(i => <NavItem key={i.to} {...i} onClick={onClose} />)}
 
         <div className="pt-4 pb-1 px-1 text-xs font-bold text-gray-500 uppercase tracking-wider">Ops</div>
-        {opsNav.map(i => <NavItem key={i.to} {...i} />)}
+        {opsNav.map(i => <NavItem key={i.to} {...i} onClick={onClose} />)}
 
         <div className="pt-4 pb-1 px-1 text-xs font-bold text-gray-500 uppercase tracking-wider">Staff</div>
-        {staffNav.map(i => <NavItem key={i.to} {...i} />)}
+        {staffNav.map(i => <NavItem key={i.to} {...i} onClick={onClose} />)}
 
         <div className="pt-4 pb-1 px-1 text-xs font-bold text-gray-500 uppercase tracking-wider">Growth</div>
-        {growthNav.map(i => <NavItem key={i.to} {...i} />)}
+        {growthNav.map(i => <NavItem key={i.to} {...i} onClick={onClose} />)}
 
         {isAdmin && (
           <>
             <div className="pt-4 pb-1 px-1 text-xs font-bold text-gray-500 uppercase tracking-wider">Admin</div>
-            {adminNav.map(i => <NavItem key={i.to} {...i} />)}
+            {adminNav.map(i => <NavItem key={i.to} {...i} onClick={onClose} />)}
           </>
         )}
         {isSuperadmin && (
           <>
-            <div className="pt-4 pb-1 px-1 text-xs font-bold text-gray-500 uppercase tracking-wider" style={{ color: '#4ade80' }}>Owner</div>
-            {superNav.map(i => <NavItem key={i.to} {...i} />)}
+            <div className="pt-4 pb-1 px-1 text-xs font-bold uppercase tracking-wider" style={{ color: '#4ade80' }}>Owner</div>
+            {superNav.map(i => <NavItem key={i.to} {...i} onClick={onClose} />)}
           </>
         )}
       </nav>
@@ -106,7 +122,8 @@ export default function Sidebar() {
       {/* User */}
       <div className="px-2 py-2" style={{ borderTop: '1px solid #1f2937' }}>
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ background: '#14532d' }}>
+          <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+            style={{ background: '#14532d' }}>
             {user?.name?.[0]?.toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">

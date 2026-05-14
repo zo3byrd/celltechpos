@@ -490,6 +490,31 @@ const InventoryCountItem = sequelize.define('InventoryCountItem', {
   notes:         { type: DataTypes.TEXT },
 });
 
+// ── Setting ───────────────────────────────────────────────────────────────────
+const Setting = sequelize.define('Setting', {
+  key:   { type: DataTypes.STRING, unique: true, allowNull: false },
+  value: { type: DataTypes.TEXT },
+});
+
+// ── Announcement ──────────────────────────────────────────────────────────────
+const Announcement = sequelize.define('Announcement', {
+  id:        { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  title:     { type: DataTypes.STRING, allowNull: false },
+  body:      { type: DataTypes.TEXT },
+  type:      { type: DataTypes.ENUM('info', 'success', 'warning', 'error'), defaultValue: 'info' },
+  active:    { type: DataTypes.BOOLEAN, defaultValue: true },
+  dismissible: { type: DataTypes.BOOLEAN, defaultValue: true },
+  expiresAt: { type: DataTypes.DATE, allowNull: true },
+});
+
+// ── StoreNote ─────────────────────────────────────────────────────────────────
+const StoreNote = sequelize.define('StoreNote', {
+  id:        { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  storeId:   { type: DataTypes.UUID, allowNull: false },
+  note:      { type: DataTypes.TEXT, allowNull: false },
+  createdBy: { type: DataTypes.UUID },
+});
+
 // ── Associations ──────────────────────────────────────────────────────────────
 Store.hasMany(User,          { foreignKey: 'storeId' });
 User.belongsTo(Store,        { foreignKey: 'storeId' });
@@ -644,4 +669,5 @@ module.exports = {
   BillPayment,
   InventoryCount, InventoryCountItem,
   SubscriptionPlan, Subscription,
+  Setting, Announcement, StoreNote,
 };

@@ -6,6 +6,8 @@ import Subscribers from './pages/superadmin/Subscribers';
 import Pricing from './pages/superadmin/Pricing';
 import SAReports from './pages/superadmin/SAReports';
 import SACampaigns from './pages/superadmin/SACampaigns';
+import SASettings from './pages/superadmin/SASettings';
+import SAContentEditor from './pages/superadmin/SAContentEditor';
 import SubscriptionExpired from './components/SubscriptionExpired';
 import LandingPage from './pages/LandingPage';
 import Layout from './components/Layout';
@@ -68,6 +70,8 @@ export default function App() {
         <Route path="pricing" element={<Pricing />} />
         <Route path="reports" element={<SAReports />} />
         <Route path="campaigns" element={<SACampaigns />} />
+        <Route path="settings" element={<SASettings />} />
+        <Route path="content" element={<SAContentEditor />} />
       </Route>
 
       {/* ── POS App ── */}

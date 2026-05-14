@@ -121,4 +121,31 @@ router.post('/stores/:id/seed-inventory', auth, requireRole('superadmin'), async
   res.json({ created, skipped, total: created + skipped });
 });
 
+// ── Store notes ───────────────────────────────────────────────────────────────
+router.get('/stores/:id/notes', auth, requireRole('superadmin'), async (req, res) => {
+  const [rows] = await require('../db').sequelize.query(
+    'SELECT * FROM StoreNotes WHERE storeId = ? ORDER BY createdAt DESC',
+    { replacements: [req.params.id] }
+  );
+  res.json(rows);
+});
+
+router.post('/stores/:id/notes', auth, requireRole('superadmin'), async (req, res) => {
+  const { note } = req.body;
+  if (!note) return res.status(400).json({ error: 'note required' });
+  await require('../db').sequelize.query(
+    'INSERT INTO StoreNotes (id, storeId, note, createdBy, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)',
+    { replacements: [require('uuid').v4(), req.params.id, note, req.user.id, new Date().toISOString(), new Date().toISOString()] }
+  );
+  res.status(201).json({ ok: true });
+});
+
+router.delete('/stores/:id/notes/:noteId', auth, requireRole('superadmin'), async (req, res) => {
+  await require('../db').sequelize.query(
+    'DELETE FROM StoreNotes WHERE id = ? AND storeId = ?',
+    { replacements: [req.params.noteId, req.params.id] }
+  );
+  res.json({ ok: true });
+});
+
 module.exports = router;

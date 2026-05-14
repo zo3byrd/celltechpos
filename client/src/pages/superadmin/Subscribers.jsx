@@ -5,6 +5,7 @@ import {
   CheckCircleIcon, ExclamationTriangleIcon, MagnifyingGlassIcon,
   ChevronRightIcon, UserGroupIcon, BuildingStorefrontIcon,
   LinkIcon, BanknotesIcon, CreditCardIcon, CubeIcon,
+  ArrowDownTrayIcon, ChatBubbleLeftEllipsisIcon, TrashIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 
@@ -65,6 +66,10 @@ export default function Subscribers() {
   const [payLinkLic, setPayLinkLic]   = useState(null);
   const [markPaidForm, setMarkPaidForm] = useState({ price:'', period:'month', note:'' });
   const [saving, setSaving]       = useState(false);
+  const [notes, setNotes]         = useState([]);
+  const [noteText, setNoteText]   = useState('');
+  const [notesLoading, setNL]     = useState(false);
+  const [savingNote, setSN]       = useState(false);
 
   async function load() {
     setLoading(true);
@@ -87,8 +92,12 @@ export default function Subscribers() {
 
   async function openDetail(lic) {
     setSelected(lic); setDetail(null); setModal('detail'); setDL(true);
+    setNotes([]); setNoteText('');
     try {
-      const { data } = await api.get(`/licenses/${lic.storeId}/details`);
+      const [{ data }, ] = await Promise.all([
+        api.get(`/licenses/${lic.storeId}/details`),
+        loadNotes(lic.storeId),
+      ]);
       setDetail(data);
     } catch { toast.error('Failed to load details'); }
     finally { setDL(false); }
@@ -181,6 +190,47 @@ export default function Subscribers() {
     finally { setSaving(false); }
   }
 
+  function exportCSV() {
+    const header = ['Store', 'Email', 'City', 'State', 'Plan', 'Status', 'Expires', 'Price'].join(',');
+    const rows = licenses.map(l => [
+      `"${l.storeName || ''}"`, `"${l.storeEmail || ''}"`, `"${l.storeCity || ''}"`, `"${l.storeState || ''}"`,
+      `"${l.plan || ''}"`, `"${l.status || ''}"`, `"${l.expiresAt || ''}"`, l.price || 0
+    ].join(','));
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'subscribers.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function loadNotes(storeId) {
+    setNL(true);
+    try {
+      const { data } = await api.get(`/admin/stores/${storeId}/notes`);
+      setNotes(data);
+    } catch { setNotes([]); }
+    finally { setNL(false); }
+  }
+
+  async function addNote(storeId) {
+    if (!noteText.trim()) return toast.error('Note cannot be empty');
+    setSN(true);
+    try {
+      await api.post(`/admin/stores/${storeId}/notes`, { note: noteText });
+      setNoteText('');
+      await loadNotes(storeId);
+      toast.success('Note added');
+    } catch { toast.error('Failed to add note'); }
+    finally { setSN(false); }
+  }
+
+  async function deleteNote(storeId, noteId) {
+    try {
+      await api.delete(`/admin/stores/${storeId}/notes/${noteId}`);
+      await loadNotes(storeId);
+    } catch { toast.error('Failed to delete note'); }
+  }
+
   const filtered = licenses.filter(l => {
     const matchSearch = !search ||
       l.storeName?.toLowerCase().includes(search.toLowerCase()) ||
@@ -202,11 +252,18 @@ export default function Subscribers() {
           <h1 className="text-2xl font-bold text-white">Subscribers</h1>
           <p className="text-sm mt-0.5" style={{ color: '#6b7280' }}>Manage all stores using CellTechPOS</p>
         </div>
-        <button onClick={() => { setOnboard(onboardDefault); setModal('onboard'); }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-          style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>
-          <PlusIcon className="w-4 h-4" />Onboard New Store
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={exportCSV}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+            style={{ background: 'rgba(99,102,241,0.12)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.3)' }}>
+            <ArrowDownTrayIcon className="w-4 h-4" />Export CSV
+          </button>
+          <button onClick={() => { setOnboard(onboardDefault); setModal('onboard'); }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
+            style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>
+            <PlusIcon className="w-4 h-4" />Onboard New Store
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -456,7 +513,7 @@ export default function Subscribers() {
                   ))}
                 </div>
               </div>
-              <div>
+              <div className="mb-4">
                 <div className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest mb-2" style={{ color:'#4b5563' }}>
                   <UserGroupIcon className="w-3.5 h-3.5" />Staff ({detail.users?.length||0})
                 </div>
@@ -468,6 +525,41 @@ export default function Subscribers() {
                     </div>
                   ))}
                 </div>
+              </div>
+              {/* Notes section */}
+              <div>
+                <div className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest mb-2" style={{ color:'#4b5563' }}>
+                  <ChatBubbleLeftEllipsisIcon className="w-3.5 h-3.5" />Notes
+                </div>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    style={{ background:'#1a1f35', border:'1px solid #2a2f50', color:'white', borderRadius:'0.5rem', padding:'0.4rem 0.75rem', flex:1, outline:'none', fontSize:'0.8rem' }}
+                    value={noteText} onChange={e=>setNoteText(e.target.value)}
+                    placeholder="Add a note…"
+                    onKeyDown={e=>e.key==='Enter'&&!e.shiftKey&&addNote(selected.storeId)}
+                  />
+                  <button disabled={savingNote} onClick={()=>addNote(selected.storeId)}
+                    style={{ background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'white', border:'none', borderRadius:'0.5rem', padding:'0.4rem 1rem', fontSize:'0.8rem', fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
+                    {savingNote ? '…' : 'Add'}
+                  </button>
+                </div>
+                {notesLoading ? <div className="text-xs animate-pulse" style={{color:'#374151'}}>Loading notes…</div>
+                : notes.length === 0 ? <div className="text-xs" style={{color:'#374151'}}>No notes yet.</div>
+                : (
+                  <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                    {notes.map(n=>(
+                      <div key={n.id} className="flex items-start justify-between gap-2 rounded-lg px-3 py-2" style={{background:'rgba(255,255,255,0.02)',border:'1px solid #1e2240'}}>
+                        <div>
+                          <div className="text-xs text-white">{n.note}</div>
+                          <div className="text-xs mt-0.5" style={{color:'#374151'}}>{n.createdAt ? new Date(n.createdAt).toLocaleString() : ''}</div>
+                        </div>
+                        <button onClick={()=>deleteNote(selected.storeId,n.id)} style={{background:'none',border:'none',cursor:'pointer',color:'#4b5563',flexShrink:0}}>
+                          <TrashIcon className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </>
           ) : null}

@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   BuildingStorefrontIcon, CurrencyDollarIcon, ChartBarIcon,
   ExclamationTriangleIcon, ArrowTrendingUpIcon, PlusIcon,
-  ClockIcon, CheckCircleIcon,
+  ClockIcon, CheckCircleIcon, PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 
@@ -38,6 +38,16 @@ export default function SADashboard() {
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [quickNotes, setQuickNotes] = useState(() => localStorage.getItem('sa_quick_notes') || '');
+  const debounceRef = useRef(null);
+
+  function handleNotesChange(val) {
+    setQuickNotes(val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      localStorage.setItem('sa_quick_notes', val);
+    }, 600);
+  }
 
   useEffect(() => {
     Promise.all([
@@ -150,22 +160,43 @@ export default function SADashboard() {
       {/* Quick actions */}
       <div>
         <h2 className="text-base font-bold text-white mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
             { label: 'Add Subscriber',   desc: 'Onboard a new store',       color: '#6366f1', path: '/superadmin/subscribers' },
             { label: 'Manage Pricing',   desc: 'Edit plan prices',           color: '#8b5cf6', path: '/superadmin/pricing' },
             { label: 'View Subscribers', desc: 'See all active stores',      color: '#0ea5e9', path: '/superadmin/subscribers' },
-            { label: 'Revenue Report',   desc: 'Coming soon',                color: '#374151', path: null, disabled: true },
+            { label: 'Content Editor',   desc: 'Announcements & templates',  color: '#10b981', path: '/superadmin/content' },
+            { label: 'Settings',         desc: 'Platform configuration',     color: '#f59e0b', path: '/superadmin/settings' },
           ].map(a => (
-            <button key={a.label} disabled={a.disabled}
+            <button key={a.label}
               onClick={() => a.path && navigate(a.path)}
-              className="rounded-xl p-4 text-left transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-[1.02]"
+              className="rounded-xl p-4 text-left transition-all hover:scale-[1.02]"
               style={{ background: a.color + '18', border: `1px solid ${a.color}40` }}>
               <div className="font-bold text-sm text-white">{a.label}</div>
               <div className="text-xs mt-0.5" style={{ color: a.color, opacity: 0.8 }}>{a.desc}</div>
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Quick Notes */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <PencilSquareIcon className="w-4 h-4" style={{ color: '#6366f1' }} />
+          <h2 className="text-base font-bold text-white">Quick Notes</h2>
+          <span className="text-xs" style={{ color: '#374151' }}>Auto-saved locally</span>
+        </div>
+        <textarea
+          value={quickNotes}
+          onChange={e => handleNotesChange(e.target.value)}
+          placeholder="Jot down anything…"
+          className="w-full rounded-xl resize-none"
+          style={{
+            background: '#13162a', border: '1px solid #1e2240', color: 'white',
+            padding: '0.875rem', fontSize: '0.875rem', lineHeight: '1.6',
+            outline: 'none', minHeight: '120px',
+          }}
+        />
       </div>
     </div>
   );

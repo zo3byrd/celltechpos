@@ -4,7 +4,6 @@ import {
   HomeIcon, BuildingStorefrontIcon, CurrencyDollarIcon,
   ChartBarIcon, MegaphoneIcon, PencilSquareIcon,
   Cog6ToothIcon, ArrowRightOnRectangleIcon, ArrowTopRightOnSquareIcon,
-  LockClosedIcon,
 } from '@heroicons/react/24/outline';
 
 const nav = [
@@ -16,14 +15,14 @@ const nav = [
     { to: '/superadmin/pricing',      label: 'Pricing',         icon: CurrencyDollarIcon },
   ]},
   { section: 'ANALYTICS', items: [
-    { to: '/superadmin/reports', label: 'Reports', icon: ChartBarIcon },
+    { to: '/superadmin/reports',      label: 'Reports',         icon: ChartBarIcon },
   ]},
   { section: 'MARKETING', items: [
-    { to: '/superadmin/campaigns', label: 'Campaigns', icon: MegaphoneIcon },
+    { to: '/superadmin/campaigns',    label: 'Campaigns',       icon: MegaphoneIcon },
   ]},
-  { section: 'COMING SOON', items: [
-    { label: 'Content Editor',  icon: PencilSquareIcon,   soon: true },
-    { label: 'Settings',        icon: Cog6ToothIcon,      soon: true },
+  { section: 'PLATFORM', items: [
+    { to: '/superadmin/content',      label: 'Content Editor',  icon: PencilSquareIcon },
+    { to: '/superadmin/settings',     label: 'Settings',        icon: Cog6ToothIcon },
   ]},
 ];
 
@@ -59,31 +58,21 @@ export default function SuperAdminLayout() {
               <div className="px-2 pt-4 pb-1.5 text-xs font-bold uppercase tracking-widest" style={{ color: '#3d4270' }}>
                 {group.section}
               </div>
-              {group.items.map(item =>
-                item.soon ? (
-                  <div key={item.label}
-                    className="flex items-center gap-2.5 px-2.5 py-2 rounded text-sm font-medium cursor-not-allowed opacity-40"
-                    style={{ color: '#6b7280' }}>
-                    <item.icon className="w-4 h-4 flex-shrink-0" />
-                    <span className="flex-1 truncate">{item.label}</span>
-                    <LockClosedIcon className="w-3 h-3" />
-                  </div>
-                ) : (
-                  <NavLink key={item.to} to={item.to} end={item.exact}
-                    className={({ isActive }) =>
-                      `flex items-center gap-2.5 px-2.5 py-2 rounded text-sm font-semibold transition-all ${
-                        isActive
-                          ? 'text-white'
-                          : 'text-gray-400 hover:text-gray-100'
-                      }`
-                    }
-                    style={({ isActive }) => isActive ? { background: 'rgba(99,102,241,0.2)', color: '#a5b4fc' } : {}}
-                  >
-                    <item.icon className="w-4 h-4 flex-shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                  </NavLink>
-                )
-              )}
+              {group.items.map(item => (
+                <NavLink key={item.to} to={item.to} end={item.exact}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2.5 px-2.5 py-2 rounded text-sm font-semibold transition-all ${
+                      isActive
+                        ? 'text-white'
+                        : 'text-gray-400 hover:text-gray-100'
+                    }`
+                  }
+                  style={({ isActive }) => isActive ? { background: 'rgba(99,102,241,0.2)', color: '#a5b4fc' } : {}}
+                >
+                  <item.icon className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </NavLink>
+              ))}
             </div>
           ))}
         </nav>
