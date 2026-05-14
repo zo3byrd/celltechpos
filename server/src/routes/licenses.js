@@ -306,6 +306,31 @@ router.post('/:storeId/cancel-stripe', superadminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// POST mark as paid manually — Zelle, cash, check, etc. (superadmin only)
+router.post('/:storeId/mark-paid', superadminOnly, async (req, res) => {
+  try {
+    const { price, period, note } = req.body; // period: 'month' | 'year'
+    const existing = await rawLicense(req.params.storeId);
+    if (!existing) return res.status(404).json({ error: 'License not found' });
+
+    const base = existing.expiresAt && new Date(existing.expiresAt) > new Date()
+      ? new Date(existing.expiresAt) : new Date();
+
+    const ext = period === 'year' ? 'yearly' : 'monthly';
+    if (period === 'year') base.setFullYear(base.getFullYear() + 1);
+    else base.setMonth(base.getMonth() + 1);
+
+    const now = new Date().toISOString();
+    await sequelize.query(
+      `UPDATE \`Licenses\` SET expiresAt=?, status='active', plan=?, lastPaidAt=?, price=?, notes=?, updatedAt=? WHERE storeId=?`,
+      { replacements: [base.toISOString(), ext, now, price || existing.price || 0, note || existing.notes || null, now, req.params.storeId] }
+    );
+    const result = await rawLicense(req.params.storeId);
+    result.daysLeft = daysUntil(result.expiresAt);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // POST generate PayPal subscription approval link (superadmin only)
 router.post('/:storeId/paypal-link', superadminOnly, async (req, res) => {
   if (!paypalConfigured()) return res.status(503).json({ error: 'PayPal not configured. Add PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET to your server .env' });

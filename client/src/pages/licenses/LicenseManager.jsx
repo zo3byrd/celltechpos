@@ -5,8 +5,10 @@ import {
   NoSymbolIcon, CheckCircleIcon, ExclamationTriangleIcon,
   MagnifyingGlassIcon, ChevronRightIcon, UserGroupIcon,
   BuildingStorefrontIcon, CurrencyDollarIcon, ChartBarIcon,
-  LinkIcon, PencilIcon, CreditCardIcon,
+  LinkIcon, PencilIcon, CreditCardIcon, BanknotesIcon,
 } from '@heroicons/react/24/outline';
+
+const ZELLE_EMAIL = 'Pcworldexchange@gmail.com';
 import api from '../../api/client';
 
 const fmt$ = n => '$' + parseFloat(n || 0).toFixed(2);
@@ -56,6 +58,7 @@ export default function LicenseManager() {
   const [editPlan, setEditPlan]   = useState(null);
   const [checkoutUrl, setCheckoutUrl] = useState(null);
   const [payLinkLic, setPayLinkLic]   = useState(null);
+  const [markPaidForm, setMarkPaidForm] = useState({ price: '', period: 'month', note: '' });
   const [saving, setSaving]       = useState(false);
 
   async function load() {
@@ -152,6 +155,27 @@ export default function LicenseManager() {
       const { data } = await api.post(`/licenses/${lic.storeId}/paypal-link`, { stripePlanKey: lic.stripePlanKey });
       setCheckoutUrl(data.approvalUrl);
       setModal('checkout');
+    } catch (err) { toast.error(err.response?.data?.error || 'Failed'); }
+    finally { setSaving(false); }
+  }
+
+  function openMarkPaid(lic, note = '') {
+    setSelected(lic);
+    setMarkPaidForm({
+      price: lic.price > 0 ? parseFloat(lic.price).toFixed(2) : '',
+      period: lic.plan === 'yearly' ? 'year' : 'month',
+      note,
+    });
+    setModal('markPaid');
+  }
+
+  async function submitMarkPaid() {
+    if (!markPaidForm.price) return toast.error('Enter the amount received');
+    setSaving(true);
+    try {
+      await api.post(`/licenses/${selected.storeId}/mark-paid`, markPaidForm);
+      toast.success('License marked as paid and extended');
+      setModal(null); load();
     } catch (err) { toast.error(err.response?.data?.error || 'Failed'); }
     finally { setSaving(false); }
   }
@@ -298,6 +322,9 @@ export default function LicenseManager() {
                           <button onClick={e => getPaymentLink(lic, e)} title="Get payment link" className="p-1 text-blue-600 hover:bg-blue-50 rounded">
                             <LinkIcon className="w-4 h-4" />
                           </button>
+                          <button onClick={e => { e.stopPropagation(); openMarkPaid(lic); }} title="Mark as paid" className="p-1 text-emerald-600 hover:bg-emerald-50 rounded">
+                            <BanknotesIcon className="w-4 h-4" />
+                          </button>
                           <button onClick={e => { e.stopPropagation(); setSelected(lic); setExtForm(extendFormDefault); setModal('extend'); }}
                             title="Extend" className="p-1 text-green-700 hover:bg-green-50 rounded">
                             <ArrowPathIcon className="w-4 h-4" />
@@ -365,14 +392,14 @@ export default function LicenseManager() {
             </div>
             <div className="modal-body space-y-3">
               <p className="text-sm text-gray-600">Choose payment processor for <strong>{payLinkLic.storeName}</strong>:</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   disabled={saving}
                   onClick={() => generateStripeLink(payLinkLic)}
                   className="flex flex-col items-center gap-2 p-4 border-2 border-blue-200 hover:border-blue-500 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors disabled:opacity-50">
                   <CreditCardIcon className="w-8 h-8 text-blue-600" />
                   <span className="font-bold text-blue-700 text-sm">Stripe</span>
-                  <span className="text-xs text-blue-500">Credit / Debit card</span>
+                  <span className="text-xs text-blue-500">Credit / Debit</span>
                 </button>
                 <button
                   disabled={saving}
@@ -380,13 +407,111 @@ export default function LicenseManager() {
                   className="flex flex-col items-center gap-2 p-4 border-2 border-yellow-200 hover:border-yellow-500 rounded-lg bg-yellow-50 hover:bg-yellow-100 transition-colors disabled:opacity-50">
                   <span className="text-2xl">🅿</span>
                   <span className="font-bold text-yellow-700 text-sm">PayPal</span>
-                  <span className="text-xs text-yellow-600">PayPal balance / card</span>
+                  <span className="text-xs text-yellow-600">PayPal / card</span>
+                </button>
+                <button
+                  disabled={saving}
+                  onClick={() => { setModal('zelle'); }}
+                  className="flex flex-col items-center gap-2 p-4 border-2 border-purple-200 hover:border-purple-500 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors disabled:opacity-50">
+                  <BanknotesIcon className="w-8 h-8 text-purple-600" />
+                  <span className="font-bold text-purple-700 text-sm">Zelle</span>
+                  <span className="text-xs text-purple-500">Manual transfer</span>
                 </button>
               </div>
               {saving && <p className="text-xs text-center text-gray-400 animate-pulse">Generating link…</p>}
             </div>
             <div className="modal-footer">
               <button className="btn-secondary" onClick={() => setModal(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Zelle Info Modal ── */}
+      {modal === 'zelle' && payLinkLic && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setModal(null)}>
+          <div className="modal-box max-w-md">
+            <div className="modal-header">
+              <h2 className="font-bold text-gray-800 flex items-center gap-2"><BanknotesIcon className="w-5 h-5 text-purple-600" />Zelle Payment</h2>
+              <button onClick={() => setModal(null)}><XMarkIcon className="w-5 h-5 text-gray-400" /></button>
+            </div>
+            <div className="modal-body space-y-4">
+              <p className="text-sm text-gray-600">Send payment instructions to <strong>{payLinkLic.storeName}</strong>:</p>
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-3">
+                <div>
+                  <div className="text-xs text-purple-500 font-semibold uppercase tracking-wide mb-1">Send Zelle payment to</div>
+                  <div className="flex items-center justify-between bg-white border border-purple-200 rounded px-3 py-2">
+                    <span className="font-mono font-semibold text-purple-800">{ZELLE_EMAIL}</span>
+                    <button className="text-xs text-purple-600 hover:text-purple-800 font-semibold ml-3"
+                      onClick={() => { navigator.clipboard.writeText(ZELLE_EMAIL); toast.success('Copied!'); }}>Copy</button>
+                  </div>
+                </div>
+                {payLinkLic.price > 0 && (
+                  <div>
+                    <div className="text-xs text-purple-500 font-semibold uppercase tracking-wide mb-1">Amount</div>
+                    <div className="text-lg font-bold text-purple-800">{fmt$(payLinkLic.price)}<span className="text-sm font-normal text-purple-500">/{payLinkLic.plan === 'yearly' ? 'year' : 'month'}</span></div>
+                  </div>
+                )}
+                <div>
+                  <div className="text-xs text-purple-500 font-semibold uppercase tracking-wide mb-1">Memo / Note</div>
+                  <div className="bg-white border border-purple-200 rounded px-3 py-2 text-sm text-gray-700">{payLinkLic.storeName} — CellTechPOS license</div>
+                </div>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded p-3 text-xs text-amber-700">
+                Once you receive the Zelle payment, click <strong>Mark as Paid</strong> below to activate their license.
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setModal(null)}>Close</button>
+              <button className="btn-primary" onClick={() => openMarkPaid(payLinkLic, 'Zelle payment')}>
+                <BanknotesIcon className="w-4 h-4" />Mark as Paid
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Mark as Paid Modal ── */}
+      {modal === 'markPaid' && selected && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setModal(null)}>
+          <div className="modal-box max-w-sm">
+            <div className="modal-header">
+              <h2 className="font-bold text-gray-800 flex items-center gap-2"><BanknotesIcon className="w-5 h-5 text-emerald-600" />Mark as Paid — {selected.storeName}</h2>
+              <button onClick={() => setModal(null)}><XMarkIcon className="w-5 h-5 text-gray-400" /></button>
+            </div>
+            <div className="modal-body space-y-3">
+              <p className="text-xs text-gray-500">Record a manual payment (Zelle, cash, check, etc.) and extend the license.</p>
+              <div>
+                <label className="label">Amount Received ($)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">$</span>
+                  <input type="number" className="input pl-7" value={markPaidForm.price}
+                    onChange={e => setMarkPaidForm(f => ({ ...f, price: e.target.value }))}
+                    min="0" step="0.01" placeholder="49.00" />
+                </div>
+              </div>
+              <div>
+                <label className="label">Extend By</label>
+                <select className="input" value={markPaidForm.period} onChange={e => setMarkPaidForm(f => ({ ...f, period: e.target.value }))}>
+                  <option value="month">1 Month</option>
+                  <option value="year">1 Year</option>
+                </select>
+              </div>
+              <div>
+                <label className="label">Note (optional)</label>
+                <input className="input" value={markPaidForm.note}
+                  onChange={e => setMarkPaidForm(f => ({ ...f, note: e.target.value }))}
+                  placeholder="Zelle payment, cash, etc." />
+              </div>
+              {markPaidForm.price && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded p-3 text-sm">
+                  Will extend license by <strong>1 {markPaidForm.period}</strong> and set price to <strong>{fmt$(markPaidForm.price)}</strong>.
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setModal(null)}>Cancel</button>
+              <button className="btn-primary" onClick={submitMarkPaid} disabled={saving}>{saving ? 'Saving…' : 'Confirm Payment'}</button>
             </div>
           </div>
         </div>
@@ -587,6 +712,7 @@ export default function LicenseManager() {
             <div className="modal-footer">
               <button className="btn-secondary" onClick={() => setModal(null)}>Close</button>
               <button className="btn-outline text-sm" onClick={e => getPaymentLink(selected, e)}><LinkIcon className="w-4 h-4" />Payment Link</button>
+              <button className="btn-outline text-sm text-emerald-700 border-emerald-300 hover:bg-emerald-50" onClick={() => openMarkPaid(selected)}><BanknotesIcon className="w-4 h-4" />Mark Paid</button>
               <button className="btn-primary" onClick={() => { setExtForm(extendFormDefault); setModal('extend'); }}><ArrowPathIcon className="w-4 h-4" />Extend</button>
             </div>
           </div>
