@@ -44,6 +44,12 @@ async function runMigrations() {
   await addColumn('Transactions', 'loyaltyPointsEarned', 'INTEGER DEFAULT 0');
   await addColumn('Transactions', 'loyaltyPointsRedeemed', 'INTEGER DEFAULT 0');
 
+  // Stripe fields on License
+  await addColumn('Licenses', 'stripeCustomerId',     'VARCHAR(255)');
+  await addColumn('Licenses', 'stripeSubscriptionId', 'VARCHAR(255)');
+  await addColumn('Licenses', 'stripeStatus',         'VARCHAR(50)');
+  await addColumn('Licenses', 'stripePlanKey',        'VARCHAR(100)');
+
   // Auto-create license for every store (ISO strings — no DATE type issues)
   const { License } = require('./models');
   const [stores] = await sequelize.query('SELECT id FROM `Stores`');

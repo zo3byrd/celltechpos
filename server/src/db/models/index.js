@@ -422,16 +422,32 @@ const Message = sequelize.define('Message', {
 // ── License ───────────────────────────────────────────────────────────────────
 // Date fields stored as ISO strings (avoids Sequelize/SQLite DATE parsing issues)
 const License = sequelize.define('License', {
-  id:         { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-  storeId:    { type: DataTypes.UUID, unique: true },
-  plan:       { type: DataTypes.ENUM('trial', 'monthly', 'yearly'), defaultValue: 'trial' },
-  status:     { type: DataTypes.ENUM('active', 'expired', 'suspended', 'cancelled'), defaultValue: 'active' },
-  startedAt:  { type: DataTypes.STRING },
-  expiresAt:  { type: DataTypes.STRING },
-  price:      { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
-  lastPaidAt: { type: DataTypes.STRING },
-  autoRenew:  { type: DataTypes.BOOLEAN, defaultValue: false },
-  notes:      { type: DataTypes.TEXT },
+  id:                   { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  storeId:              { type: DataTypes.UUID, unique: true },
+  plan:                 { type: DataTypes.ENUM('trial', 'monthly', 'yearly'), defaultValue: 'trial' },
+  status:               { type: DataTypes.ENUM('active', 'expired', 'suspended', 'cancelled'), defaultValue: 'active' },
+  startedAt:            { type: DataTypes.STRING },
+  expiresAt:            { type: DataTypes.STRING },
+  price:                { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
+  lastPaidAt:           { type: DataTypes.STRING },
+  autoRenew:            { type: DataTypes.BOOLEAN, defaultValue: false },
+  notes:                { type: DataTypes.TEXT },
+  stripeCustomerId:     { type: DataTypes.STRING },
+  stripeSubscriptionId: { type: DataTypes.STRING },
+  stripeStatus:         { type: DataTypes.STRING },
+  stripePlanKey:        { type: DataTypes.STRING },
+});
+
+// ── StripePlan ────────────────────────────────────────────────────────────────
+const StripePlan = sequelize.define('StripePlan', {
+  id:              { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  key:             { type: DataTypes.STRING, unique: true, allowNull: false },
+  label:           { type: DataTypes.STRING, allowNull: false },
+  amount:          { type: DataTypes.INTEGER, allowNull: false },
+  interval:        { type: DataTypes.ENUM('month', 'year'), defaultValue: 'month' },
+  stripePriceId:   { type: DataTypes.STRING },
+  stripeProductId: { type: DataTypes.STRING },
+  active:          { type: DataTypes.BOOLEAN, defaultValue: true },
 });
 
 // ── InventoryCount ────────────────────────────────────────────────────────────
@@ -596,7 +612,7 @@ InventoryItem.hasMany(InventoryCountItem, { foreignKey: 'itemId' });
 InventoryCountItem.belongsTo(InventoryItem, { foreignKey: 'itemId', as: 'item' });
 
 module.exports = {
-  Store, User, Customer, InventoryItem, License, Message,
+  Store, User, Customer, InventoryItem, License, StripePlan, Message,
   RepairTicket, RepairPart,
   Transaction, TransactionItem,
   Activation, Commission,

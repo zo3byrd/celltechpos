@@ -14,6 +14,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 const { sequelize } = require('./db');
 const { runMigrations, seedIfEmpty } = require('./db/migrate');
+const { ensurePlans } = require('./stripe');
 const { checkLicense } = require('./middleware/checkLicense');
 
 const app = express();
@@ -33,6 +34,10 @@ app.use(cors({
 }));
 
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+
+// Stripe webhook needs raw body — must be before express.json()
+app.post('/api/licenses/webhook', express.raw({ type: 'application/json' }), require('./routes/stripeWebhook'));
+
 app.use(express.json());
 
 // ── Rate limiting on auth ─────────────────────────────────────────────────────
@@ -214,5 +219,6 @@ sequelize
   .sync()
   .then(() => runMigrations())
   .then(() => seedIfEmpty())
+  .then(() => ensurePlans(sequelize))
   .then(() => app.listen(PORT, () => console.log(`API ready → http://localhost:${PORT}/api`)))
   .catch(err => { console.error('DB init failed:', err); process.exit(1); });

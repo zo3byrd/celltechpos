@@ -1,9 +1,10 @@
 const router = require('express').Router();
 const { sequelize } = require('../db');
-const { License, Store, User } = require('../db/models');
+const { License, Store, User, StripePlan } = require('../db/models');
 const { auth, requireRole } = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
+const { getStripe } = require('../stripe');
 
 const superadminOnly = requireRole('superadmin');
 
@@ -146,13 +147,14 @@ router.delete('/:storeId', superadminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST onboard new store (superadmin only) — creates store + admin user + license in one shot
+// POST onboard new store (superadmin only) — creates store + admin user + license + Stripe customer
 router.post('/onboard', superadminOnly, async (req, res) => {
   const { storeName, storeEmail, storePhone, storeAddress, storeCity, storeState, storeZip,
-          adminName, adminEmail, adminPassword, plan, price, months, notes } = req.body;
+          adminName, adminEmail, adminPassword, stripePlanKey, notes } = req.body;
   if (!storeName || !adminEmail || !adminPassword)
     return res.status(400).json({ error: 'storeName, adminEmail, adminPassword required' });
 
+  const stripe = getStripe();
   const t = await sequelize.transaction();
   try {
     const store = await Store.create({
@@ -167,18 +169,54 @@ router.post('/onboard', superadminOnly, async (req, res) => {
       email: adminEmail, passwordHash: hash, role: 'admin',
     }, { transaction: t });
 
-    const mo = parseInt(months) || 1;
+    // Get plan details
+    const planRow = stripePlanKey ? await StripePlan.findOne({ where: { key: stripePlanKey } }) : null;
+    const planInterval = planRow?.interval === 'year' ? 'yearly' : 'monthly';
+    const planPrice = planRow ? (planRow.amount / 100).toFixed(2) : 0;
+
+    // Create Stripe customer
+    let stripeCustomerId = null;
+    let checkoutUrl = null;
+    if (stripe && planRow?.stripePriceId) {
+      const customer = await stripe.customers.create({
+        name: storeName,
+        email: storeEmail || adminEmail,
+        metadata: { storeId: store.id },
+      });
+      stripeCustomerId = customer.id;
+
+      // Create checkout session so store owner can enter their card
+      const appUrl = process.env.APP_URL || 'https://celltechpos.com';
+      const session = await stripe.checkout.sessions.create({
+        customer: customer.id,
+        mode: 'subscription',
+        line_items: [{ price: planRow.stripePriceId, quantity: 1 }],
+        subscription_data: {
+          trial_period_days: 14,
+          metadata: { storeId: store.id },
+        },
+        metadata: { storeId: store.id },
+        success_url: `${appUrl}/login?welcome=1`,
+        cancel_url: `${appUrl}/login`,
+      });
+      checkoutUrl = session.url;
+    }
+
+    // Trial expiry: 14 days
     const expiry = new Date();
-    expiry.setMonth(expiry.getMonth() + mo);
+    expiry.setDate(expiry.getDate() + 14);
     await License.create({
-      storeId: store.id, plan: plan || 'monthly', status: 'active',
+      storeId: store.id, plan: planInterval, status: 'active',
       startedAt: new Date().toISOString(),
       expiresAt: expiry.toISOString(),
-      price: price || 0, autoRenew: false, notes,
+      price: planPrice, autoRenew: !!stripe,
+      notes, stripeCustomerId,
+      stripeStatus: stripeCustomerId ? 'trialing' : null,
+      stripePlanKey: stripePlanKey || null,
     }, { transaction: t });
 
     await t.commit();
-    res.status(201).json({ storeId: store.id, message: 'Store onboarded successfully' });
+    res.status(201).json({ storeId: store.id, checkoutUrl, message: 'Store onboarded' });
   } catch (err) {
     await t.rollback();
     res.status(500).json({ error: err.message });
@@ -203,6 +241,113 @@ router.get('/:storeId/details', superadminOnly, async (req, res) => {
     );
     lic.daysLeft = daysUntil(lic.expiresAt);
     res.json({ license: lic, users, stats: counts[0] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST generate payment/checkout link for an existing store (superadmin only)
+router.post('/:storeId/payment-link', superadminOnly, async (req, res) => {
+  const stripe = getStripe();
+  if (!stripe) return res.status(503).json({ error: 'Stripe not configured' });
+
+  try {
+    const lic = await rawLicense(req.params.storeId);
+    if (!lic) return res.status(404).json({ error: 'License not found' });
+
+    const { stripePlanKey } = req.body;
+    const planKey = stripePlanKey || lic.stripePlanKey;
+    const planRow = planKey ? await StripePlan.findOne({ where: { key: planKey } }) : null;
+    if (!planRow?.stripePriceId) return res.status(400).json({ error: 'No Stripe plan configured for this store' });
+
+    // Ensure customer exists
+    let customerId = lic.stripeCustomerId;
+    if (!customerId) {
+      const [storeRows] = await sequelize.query('SELECT * FROM `Stores` WHERE id=? LIMIT 1', { replacements: [req.params.storeId] });
+      const store = storeRows[0];
+      const customer = await stripe.customers.create({
+        name: store?.name, email: store?.email,
+        metadata: { storeId: req.params.storeId },
+      });
+      customerId = customer.id;
+      await sequelize.query(
+        'UPDATE `Licenses` SET stripeCustomerId=?, stripePlanKey=?, updatedAt=? WHERE storeId=?',
+        { replacements: [customerId, planKey, new Date().toISOString(), req.params.storeId] }
+      );
+    }
+
+    const appUrl = process.env.APP_URL || 'https://celltechpos.com';
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      mode: 'subscription',
+      line_items: [{ price: planRow.stripePriceId, quantity: 1 }],
+      subscription_data: { trial_period_days: 14, metadata: { storeId: req.params.storeId } },
+      metadata: { storeId: req.params.storeId },
+      success_url: `${appUrl}/login?welcome=1`,
+      cancel_url: `${appUrl}/login`,
+    });
+    res.json({ checkoutUrl: session.url });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST cancel Stripe subscription (superadmin only)
+router.post('/:storeId/cancel-stripe', superadminOnly, async (req, res) => {
+  const stripe = getStripe();
+  try {
+    const lic = await rawLicense(req.params.storeId);
+    if (!lic) return res.status(404).json({ error: 'Not found' });
+    if (stripe && lic.stripeSubscriptionId) {
+      await stripe.subscriptions.cancel(lic.stripeSubscriptionId);
+    }
+    await sequelize.query(
+      "UPDATE `Licenses` SET status='cancelled', stripeStatus='cancelled', updatedAt=? WHERE storeId=?",
+      { replacements: [new Date().toISOString(), req.params.storeId] }
+    );
+    res.json({ message: 'Cancelled' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── Stripe Plan Management ────────────────────────────────────────────────────
+
+// GET all Stripe plans
+router.get('/stripe-plans', superadminOnly, async (req, res) => {
+  try {
+    const plans = await StripePlan.findAll({ order: [['interval', 'ASC'], ['amount', 'ASC']] });
+    res.json(plans);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// PUT update plan price (creates new Stripe price, keeps product)
+router.put('/stripe-plans/:key', superadminOnly, async (req, res) => {
+  const stripe = getStripe();
+  if (!stripe) return res.status(503).json({ error: 'Stripe not configured' });
+
+  try {
+    const plan = await StripePlan.findOne({ where: { key: req.params.key } });
+    if (!plan) return res.status(404).json({ error: 'Plan not found' });
+
+    const { amount, label } = req.body;
+    const newAmount = parseInt(amount);
+    if (!newAmount || newAmount < 100) return res.status(400).json({ error: 'Amount must be at least 100 cents ($1.00)' });
+
+    // Archive old Stripe price and create new one
+    if (plan.stripePriceId) {
+      await stripe.prices.update(plan.stripePriceId, { active: false }).catch(() => {});
+    }
+    const newPrice = await stripe.prices.create({
+      product: plan.stripeProductId,
+      unit_amount: newAmount,
+      currency: 'usd',
+      recurring: { interval: plan.interval },
+      lookup_key: plan.key,
+      transfer_lookup_key: true,
+    });
+
+    await plan.update({
+      amount: newAmount,
+      label: label || plan.label,
+      stripePriceId: newPrice.id,
+    });
+
+    res.json(plan);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
