@@ -1,6 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
-import LicenseManager from './pages/licenses/LicenseManager';
+import SuperAdminLayout from './pages/superadmin/SuperAdminLayout';
+import SADashboard from './pages/superadmin/SADashboard';
+import Subscribers from './pages/superadmin/Subscribers';
+import Pricing from './pages/superadmin/Pricing';
 import SubscriptionExpired from './components/SubscriptionExpired';
 import Layout from './components/Layout';
 import Login from './pages/auth/Login';
@@ -42,9 +45,17 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={token ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/login" element={token ? <Navigate to={user?.role === 'superadmin' ? '/superadmin' : '/'} replace /> : <Login />} />
+
+      {/* ── Superadmin portal (completely separate from POS) ── */}
+      <Route path="/superadmin" element={<PrivateRoute roles={['superadmin']}><SuperAdminLayout /></PrivateRoute>}>
+        <Route index element={<SADashboard />} />
+        <Route path="subscribers" element={<Subscribers />} />
+        <Route path="pricing" element={<Pricing />} />
+      </Route>
+
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-        <Route index element={<Dashboard />} />
+        <Route index element={user?.role === 'superadmin' ? <Navigate to="/superadmin" replace /> : <Dashboard />} />
         <Route path="repairs" element={<RepairList />} />
         <Route path="repairs/new" element={<RepairForm />} />
         <Route path="repairs/:id" element={<RepairForm />} />
