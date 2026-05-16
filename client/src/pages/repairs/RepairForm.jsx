@@ -335,8 +335,19 @@ export default function RepairForm() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [storeInfo, setStoreInfo] = useState(null);
+  const [warranty, setWarranty] = useState(null);
 
   useEffect(() => { api.get('/admin/store').then(r => setStoreInfo(r.data)).catch(() => {}); }, []);
+
+  useEffect(() => {
+    if (!form.customerId) { setWarranty(null); return; }
+    const t = setTimeout(() => {
+      api.get(`/repairs/warranty-check?customerId=${form.customerId}${form.deviceBrand ? `&deviceBrand=${encodeURIComponent(form.deviceBrand)}` : ''}`)
+        .then(r => setWarranty(r.data))
+        .catch(() => setWarranty(null));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [form.customerId, form.deviceBrand]);
 
   useEffect(() => {
     if (isEdit) {
@@ -518,6 +529,20 @@ export default function RepairForm() {
       </div>
 
       <h1 className="text-2xl font-bold">{isEdit ? 'Edit Repair Ticket' : 'New Repair Ticket'}</h1>
+
+      {warranty?.inWarranty && (
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 flex items-start gap-3">
+          <span className="text-2xl">⚠️</span>
+          <div>
+            <p className="font-semibold text-amber-800">Active Warranty Detected</p>
+            <p className="text-sm text-amber-700 mt-0.5">
+              This customer's {warranty.ticket?.deviceBrand} {warranty.ticket?.deviceModel} (ticket {warranty.ticket?.ticketNumber}) is under warranty until{' '}
+              <strong>{new Date(warranty.expiresAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>.
+              Verify if this repair may be covered before charging.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-2 gap-6">
         <div className="card space-y-4">

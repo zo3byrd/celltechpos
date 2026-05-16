@@ -48,6 +48,9 @@ async function runMigrations() {
   // Refund tracking
   await addColumn('Transactions', 'originalTransactionId', 'CHAR(36)');
   await addColumn('Transactions', 'reason', 'VARCHAR(255)');
+  // Store — review + tax config
+  await addColumn('Stores', 'googleReviewUrl', 'VARCHAR(500)');
+  await addColumn('Stores', 'taxConfigJson', 'TEXT');
 
   // Stripe fields on License
   await addColumn('Licenses', 'stripeCustomerId',     'VARCHAR(255)');

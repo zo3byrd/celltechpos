@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { sequelize } = require('../db');
-const { Transaction, TransactionItem, InventoryItem, Customer, Store } = require('../db/models');
+const { Transaction, TransactionItem, InventoryItem, Customer, Store, GiftCard } = require('../db/models');
 const { auth } = require('../middleware/auth');
 const webpos = require('../integrations/webpos');
 
@@ -31,14 +31,38 @@ router.post('/sale', auth, async (req, res) => {
       resolvedItems.push({ inv, li, lineTotal });
     }
 
-    const taxAmount = parseFloat(((subtotal - discountAmount) * store.taxRate).toFixed(2));
+    // Category-aware tax
+    const taxConfig = store.taxConfigJson ? JSON.parse(store.taxConfigJson) : null;
+    let taxableSubtotal = 0;
+    for (const { inv, lineTotal } of resolvedItems) {
+      const taxable = taxConfig ? taxConfig[inv.category] !== false : true;
+      if (taxable) taxableSubtotal += lineTotal;
+    }
+    const discountRatio = subtotal > 0 ? (subtotal - discountAmount) / subtotal : 1;
+    const taxableAfterDiscount = taxableSubtotal * discountRatio;
+    const taxAmount = parseFloat((taxableAfterDiscount * store.taxRate).toFixed(2));
     const total = subtotal - discountAmount + taxAmount;
+
+    // Gift card validation
+    let giftCard = null;
+    if (paymentMethod === 'gift_card') {
+      const code = req.body.giftCardCode;
+      if (!code) throw new Error('Gift card code required');
+      giftCard = await GiftCard.findOne({ where: { code: code.toUpperCase(), storeId: req.user.storeId, status: 'active' }, transaction: t });
+      if (!giftCard) throw new Error('Gift card not found or not active');
+      if (parseFloat(giftCard.balance) < total) {
+        throw new Error(`Insufficient gift card balance. Available: $${parseFloat(giftCard.balance).toFixed(2)}, needed: $${total.toFixed(2)}`);
+      }
+    }
 
     // Process payment via integration if needed
     let referenceNumber = paymentRef;
     if (paymentMethod === 'webpos') {
       const result = await webpos.processPayment({ amount: total, reference: txNumber() });
       referenceNumber = result.referenceNumber;
+    }
+    if (paymentMethod === 'gift_card' && giftCard) {
+      referenceNumber = giftCard.code;
     }
 
     const tx = await Transaction.create({
@@ -70,6 +94,12 @@ router.post('/sale', auth, async (req, res) => {
       if (inv.category !== 'service') {
         await inv.decrement('quantity', { by: li.quantity, transaction: t });
       }
+    }
+
+    // Deduct gift card balance
+    if (giftCard) {
+      const newBalance = parseFloat(giftCard.balance) - total;
+      await giftCard.update({ balance: newBalance, status: newBalance <= 0 ? 'depleted' : 'active' }, { transaction: t });
     }
 
     await t.commit();
@@ -243,7 +273,7 @@ router.get('/transactions/:id/refunds', auth, async (req, res) => {
 // Public store info for receipt printing (any authenticated user)
 router.get('/store-info', auth, async (req, res) => {
   const store = await Store.findByPk(req.user.storeId, {
-    attributes: ['name', 'address', 'city', 'state', 'zip', 'phone', 'email', 'logoUrl', 'receiptPolicy'],
+    attributes: ['id', 'name', 'address', 'city', 'state', 'zip', 'phone', 'email', 'logoUrl', 'receiptPolicy', 'taxRate', 'taxConfigJson'],
   });
   res.json(store || {});
 });

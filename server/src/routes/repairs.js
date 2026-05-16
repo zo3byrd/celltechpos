@@ -15,6 +15,14 @@ const STATUS_MESSAGES = {
     sms: `Great news, ${customer.firstName}! Your ${ticket.deviceBrand} ${ticket.deviceModel} repair at ${store.name} is ready for pickup. Ticket: ${ticket.ticketNumber}`,
     email: `<p>Hi ${customer.firstName},</p><p>Your <strong>${ticket.deviceBrand} ${ticket.deviceModel}</strong> repair at <strong>${store.name}</strong> is <strong>ready for pickup</strong>! 🎉</p><p>Ticket #: <strong>${ticket.ticketNumber}</strong></p><p>Please come in at your earliest convenience. Our team looks forward to seeing you!</p>`,
   }),
+  picked_up: (ticket, store, customer) => {
+    const reviewPart = store.googleReviewUrl ? ` We'd love your feedback: ${store.googleReviewUrl}` : '';
+    return {
+      subject: `Thanks for choosing ${store.name}!`,
+      sms: `Thanks ${customer.firstName}! We hope your ${ticket.deviceBrand} ${ticket.deviceModel} is working great.${reviewPart}`,
+      email: `<p>Hi ${customer.firstName},</p><p>Thank you for choosing <strong>${store.name}</strong> for your repair!</p><p>We hope your <strong>${ticket.deviceBrand} ${ticket.deviceModel}</strong> is working perfectly. If you experience any issues, don't hesitate to reach out — your repair is covered by our warranty.</p>${store.googleReviewUrl ? `<p style="margin-top:16px"><a href="${store.googleReviewUrl}" style="background:#166534;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:bold;">Leave Us a Review ⭐</a></p>` : ''}`,
+    };
+  },
   cancelled: (ticket, store, customer) => ({
     subject: `Repair Cancelled — ${ticket.ticketNumber}`,
     sms: `Hi ${customer.firstName}, your repair ticket ${ticket.ticketNumber} at ${store.name} has been cancelled. Please contact us if you have questions.`,
@@ -48,6 +56,32 @@ async function notifyCustomer(ticket, newStatus) {
 function ticketNumber() {
   return 'RPR-' + Date.now().toString().slice(-8);
 }
+
+// Warranty check — must come before /:id to avoid conflict
+router.get('/warranty-check', auth, async (req, res) => {
+  try {
+    const { customerId, deviceBrand } = req.query;
+    if (!customerId) return res.json({ inWarranty: false });
+    const where = {
+      storeId: req.user.storeId,
+      customerId,
+      status: 'picked_up',
+      completedAt: { [Op.ne]: null },
+    };
+    if (deviceBrand) where.deviceBrand = { [Op.like]: `%${deviceBrand}%` };
+    const tickets = await RepairTicket.findAll({ where, order: [['completedAt', 'DESC']], limit: 10 });
+    const now = new Date();
+    for (const t of tickets) {
+      if (!t.warrantyDays) continue;
+      const expiry = new Date(t.completedAt);
+      expiry.setDate(expiry.getDate() + t.warrantyDays);
+      if (expiry >= now) {
+        return res.json({ inWarranty: true, ticket: t, expiresAt: expiry.toISOString() });
+      }
+    }
+    res.json({ inWarranty: false });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 // List tickets
 router.get('/', auth, async (req, res) => {

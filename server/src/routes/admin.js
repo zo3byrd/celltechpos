@@ -60,7 +60,7 @@ router.get('/store', auth, requireRole('superadmin', 'admin'), async (req, res) 
 router.put('/store', auth, requireRole('superadmin', 'admin'), async (req, res) => {
   const store = await Store.findByPk(req.user.storeId);
   if (!store) return res.status(404).json({ error: 'Store not found' });
-  const allowed = ['name','address','city','state','zip','phone','email','taxRate','logoUrl','receiptPolicy'];
+  const allowed = ['name','address','city','state','zip','phone','email','taxRate','logoUrl','receiptPolicy','googleReviewUrl','taxConfigJson'];
   const updates = Object.fromEntries(Object.entries(req.body).filter(([k]) => allowed.includes(k)));
   await store.update(updates);
   res.json(store);

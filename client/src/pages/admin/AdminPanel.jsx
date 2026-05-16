@@ -159,24 +159,34 @@ function Overview({ sys, store }) {
   );
 }
 
+const TAX_CATEGORIES = ['part','accessory','device','service','plan','other'];
+
 // ── Store Settings tab ────────────────────────────────────────────────────────
 function StoreSettings({ store, onSaved }) {
   const [form, setForm] = useState(null);
+  const [taxables, setTaxables] = useState({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (store) setForm({
-      name:          store.name    || '',
-      address:       store.address || '',
-      city:          store.city    || '',
-      state:         store.state   || '',
-      zip:           store.zip     || '',
-      phone:         store.phone   || '',
-      email:         store.email   || '',
-      taxRate:       store.taxRate ? (parseFloat(store.taxRate) * 100).toFixed(2) : '8.75',
-      logoUrl:       store.logoUrl       || '',
-      receiptPolicy: store.receiptPolicy || '',
-    });
+    if (store) {
+      setForm({
+        name:             store.name    || '',
+        address:          store.address || '',
+        city:             store.city    || '',
+        state:            store.state   || '',
+        zip:              store.zip     || '',
+        phone:            store.phone   || '',
+        email:            store.email   || '',
+        taxRate:          store.taxRate ? (parseFloat(store.taxRate) * 100).toFixed(2) : '8.75',
+        logoUrl:          store.logoUrl          || '',
+        receiptPolicy:    store.receiptPolicy    || '',
+        googleReviewUrl:  store.googleReviewUrl  || '',
+      });
+      const config = store.taxConfigJson ? JSON.parse(store.taxConfigJson) : {};
+      const t = {};
+      for (const cat of TAX_CATEGORIES) t[cat] = config[cat] !== false;
+      setTaxables(t);
+    }
   }, [store]);
 
   function handleLogoChange(e) {
@@ -191,7 +201,13 @@ function StoreSettings({ store, onSaved }) {
   async function save() {
     setSaving(true);
     try {
-      await api.put('/admin/store', { ...form, taxRate: parseFloat(form.taxRate) / 100 });
+      const taxConfigObj = {};
+      for (const cat of TAX_CATEGORIES) { if (!taxables[cat]) taxConfigObj[cat] = false; }
+      await api.put('/admin/store', {
+        ...form,
+        taxRate: parseFloat(form.taxRate) / 100,
+        taxConfigJson: Object.keys(taxConfigObj).length > 0 ? JSON.stringify(taxConfigObj) : null,
+      });
       toast.success('Store settings saved');
       onSaved();
     } catch { toast.error('Failed to save'); }
@@ -242,6 +258,38 @@ function StoreSettings({ store, onSaved }) {
             onChange={e => setForm(p => ({ ...p, taxRate: e.target.value }))}
           />
           <p className="text-xs text-gray-400 mt-1">Applied to all taxable sales transactions</p>
+        </div>
+        <div>
+          <label className="label mb-2">Taxable Categories</label>
+          <p className="text-xs text-gray-400 mb-2">Uncheck a category to make it tax-exempt</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {TAX_CATEGORIES.map(cat => (
+              <label key={cat} className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={taxables[cat] ?? true}
+                  onChange={e => setTaxables(t => ({ ...t, [cat]: e.target.checked }))}
+                  className="rounded"
+                />
+                <span className="capitalize">{cat}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+        <h3 className="font-semibold text-gray-800">Reviews & Growth</h3>
+        <div>
+          <label className="label">Google Review URL</label>
+          <input
+            type="url"
+            className="input"
+            placeholder="https://g.page/r/..."
+            value={form.googleReviewUrl}
+            onChange={e => setForm(p => ({ ...p, googleReviewUrl: e.target.value }))}
+          />
+          <p className="text-xs text-gray-400 mt-1">Sent to customers automatically after they pick up a completed repair</p>
         </div>
       </div>
 

@@ -101,6 +101,7 @@ app.use('/api/auth/register', signupLimiter);
 app.use('/api/auth/forgot-password', forgotPasswordLimiter);
 app.use('/api/auth/refresh', refreshLimiter);
 app.use('/api/public/repair-status', repairStatusLimiter);
+app.use('/api/public/repair-request', require('./routes/repair-request'));
 
 // ── Public repair status lookup (no auth) ────────────────────────────────────
 app.get('/api/public/repair-status/:ticketNumber', async (req, res) => {
@@ -284,6 +285,8 @@ app.use('/api/buyback',        require('./routes/buyback'));
 app.use('/api/estimates',      require('./routes/estimates'));
 app.use('/api/recurring',      require('./routes/recurring-invoices'));
 app.use('/api/uploads',        require('./routes/uploads'));
+app.use('/api/gift-cards',     require('./routes/gift-cards'));
+app.use('/api/expenses',       require('./routes/expenses'));
 
 // Serve uploaded files
 app.use('/uploads', express.static(process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads')));

@@ -58,6 +58,9 @@ const Billing          = lazy(() => import('./pages/billing/Billing'));
 const Subscriptions    = lazy(() => import('./pages/subscriptions/Subscriptions'));
 const Serials          = lazy(() => import('./pages/serials/Serials'));
 const Returns          = lazy(() => import('./pages/returns/Returns'));
+const GiftCards        = lazy(() => import('./pages/giftcards/GiftCards'));
+const Expenses         = lazy(() => import('./pages/expenses/Expenses'));
+const RepairRequest    = lazy(() => import('./pages/repairrequest/RepairRequest'));
 
 function Spin() {
   return (
@@ -94,6 +97,7 @@ export default function App() {
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/status" element={<RepairStatus />} />
         <Route path="/status/:ticketNumber" element={<RepairStatus />} />
+        <Route path="/request" element={<RepairRequest />} />
 
         <Route path="/login" element={
           token ? <Navigate to={user?.role === 'superadmin' ? '/superadmin' : '/app'} replace /> : <Login />
@@ -138,6 +142,8 @@ export default function App() {
           <Route path="layaway" element={<Layaway />} />
           <Route path="messages" element={<Messages />} />
           <Route path="returns" element={<Returns />} />
+          <Route path="gift-cards" element={<GiftCards />} />
+          <Route path="expenses" element={<Expenses />} />
           <Route path="buyback" element={<Buyback />} />
           <Route path="estimates" element={<Estimates />} />
           <Route path="recurring" element={<RecurringInvoices />} />

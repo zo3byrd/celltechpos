@@ -18,6 +18,8 @@ const Store = sequelize.define('Store', {
   loyaltyPointValue:   { type: DataTypes.DECIMAL(5, 4), defaultValue: 0.01 },
   logoUrl:             { type: DataTypes.TEXT },
   receiptPolicy:       { type: DataTypes.TEXT },
+  googleReviewUrl:     { type: DataTypes.STRING(500) },
+  taxConfigJson:       { type: DataTypes.TEXT },
 });
 
 // ── User ──────────────────────────────────────────────────────────────────────
@@ -134,7 +136,7 @@ const Transaction = sequelize.define('Transaction', {
   taxAmount:         { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
   discountAmount:    { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
   total:             { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
-  paymentMethod:     { type: DataTypes.ENUM('cash', 'card', 'epay', 'vidapay', 'webpos', 'check', 'split'), defaultValue: 'cash' },
+  paymentMethod:     { type: DataTypes.ENUM('cash', 'card', 'epay', 'vidapay', 'webpos', 'check', 'split', 'gift_card'), defaultValue: 'cash' },
   paymentStatus:     { type: DataTypes.ENUM('pending', 'completed', 'failed', 'refunded'), defaultValue: 'completed' },
   referenceNumber:   { type: DataTypes.STRING },
   notes:             { type: DataTypes.TEXT },
@@ -635,6 +637,32 @@ const Buyback = sequelize.define('Buyback', {
   notes:        { type: DataTypes.TEXT },
 });
 
+// ── GiftCard ──────────────────────────────────────────────────────────────────
+const GiftCard = sequelize.define('GiftCard', {
+  id:             { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  storeId:        { type: DataTypes.UUID, allowNull: false },
+  code:           { type: DataTypes.STRING(20), allowNull: false, unique: true },
+  initialBalance: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+  balance:        { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+  customerId:     { type: DataTypes.UUID, allowNull: true },
+  userId:         { type: DataTypes.UUID },
+  status:         { type: DataTypes.ENUM('active', 'depleted', 'void'), defaultValue: 'active' },
+  note:           { type: DataTypes.STRING },
+});
+
+// ── Expense ───────────────────────────────────────────────────────────────────
+const Expense = sequelize.define('Expense', {
+  id:          { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  storeId:     { type: DataTypes.UUID, allowNull: false },
+  userId:      { type: DataTypes.UUID },
+  category:    { type: DataTypes.ENUM('rent', 'utilities', 'supplies', 'parts', 'payroll', 'marketing', 'equipment', 'other'), defaultValue: 'other' },
+  amount:      { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+  description: { type: DataTypes.STRING, allowNull: false },
+  vendor:      { type: DataTypes.STRING },
+  date:        { type: DataTypes.DATEONLY, allowNull: false },
+  notes:       { type: DataTypes.TEXT },
+});
+
 // ── Associations ──────────────────────────────────────────────────────────────
 Store.hasMany(User,          { foreignKey: 'storeId' });
 User.belongsTo(Store,        { foreignKey: 'storeId' });
@@ -822,6 +850,18 @@ RepairTimeLog.belongsTo(RepairTicket, { foreignKey: 'repairId' });
 User.hasMany(RepairTimeLog, { foreignKey: 'userId' });
 RepairTimeLog.belongsTo(User, { foreignKey: 'userId' });
 
+Store.hasMany(GiftCard,   { foreignKey: 'storeId' });
+GiftCard.belongsTo(Store, { foreignKey: 'storeId' });
+Customer.hasMany(GiftCard, { foreignKey: 'customerId' });
+GiftCard.belongsTo(Customer, { foreignKey: 'customerId' });
+User.hasMany(GiftCard,    { foreignKey: 'userId' });
+GiftCard.belongsTo(User,  { foreignKey: 'userId' });
+
+Store.hasMany(Expense,    { foreignKey: 'storeId' });
+Expense.belongsTo(Store,  { foreignKey: 'storeId' });
+User.hasMany(Expense,     { foreignKey: 'userId' });
+Expense.belongsTo(User,   { foreignKey: 'userId' });
+
 module.exports = {
   Store, User, Customer, InventoryItem, License, StripePlan, Message,
   RepairTicket, RepairPart,
@@ -838,6 +878,7 @@ module.exports = {
   InventoryCount, InventoryCountItem,
   SubscriptionPlan, Subscription,
   Setting, Announcement, StoreNote,
+  GiftCard, Expense,
   Buyback,
   Estimate,
   RepairAttachment,

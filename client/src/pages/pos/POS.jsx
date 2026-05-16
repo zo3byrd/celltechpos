@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import {
   MagnifyingGlassIcon, XMarkIcon, UserIcon, TrashIcon,
   PrinterIcon, BanknotesIcon, CreditCardIcon, ShoppingCartIcon,
-  DevicePhoneMobileIcon, EnvelopeIcon, CheckCircleIcon,
+  DevicePhoneMobileIcon, EnvelopeIcon, CheckCircleIcon, GiftIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 
@@ -11,10 +11,11 @@ const CATEGORIES = ['all', 'part', 'accessory', 'device', 'service', 'plan', 'ot
 const fmt$ = n => '$' + parseFloat(n || 0).toFixed(2);
 
 const PAY_METHODS = [
-  { key: 'cash',  label: 'Cash',  icon: BanknotesIcon,  color: 'bg-green-600 text-white border-green-600' },
-  { key: 'card',  label: 'Card',  icon: CreditCardIcon, color: 'bg-blue-600 text-white border-blue-600' },
-  { key: 'check', label: 'Check', icon: BanknotesIcon,  color: 'bg-gray-600 text-white border-gray-600' },
-  { key: 'split', label: 'Split', icon: BanknotesIcon,  color: 'bg-amber-600 text-white border-amber-600' },
+  { key: 'cash',      label: 'Cash',  icon: BanknotesIcon,  color: 'bg-green-600 text-white border-green-600' },
+  { key: 'card',      label: 'Card',  icon: CreditCardIcon, color: 'bg-blue-600 text-white border-blue-600' },
+  { key: 'check',     label: 'Check', icon: BanknotesIcon,  color: 'bg-gray-600 text-white border-gray-600' },
+  { key: 'split',     label: 'Split', icon: BanknotesIcon,  color: 'bg-amber-600 text-white border-amber-600' },
+  { key: 'gift_card', label: 'Gift',  icon: GiftIcon,       color: 'bg-purple-600 text-white border-purple-600' },
 ];
 
 function catLabel(c) {
@@ -38,8 +39,8 @@ export default function POS() {
   const [cardRef, setCardRef]           = useState('');
   const [splitCash, setSplitCash]       = useState('');
   const [splitCard, setSplitCard]       = useState('');
+  const [giftCardCode, setGiftCardCode] = useState('');
   const [discount, setDiscount] = useState('');
-  const [taxRate] = useState(0.0825);
   const [storeInfo, setStoreInfo] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [receipt, setReceipt] = useState(null);
@@ -103,6 +104,7 @@ export default function POS() {
 
   function clearCustomer() { setCustomerId(''); setSelectedCust(null); setCustSearch(''); }
 
+  const taxRate  = storeInfo ? parseFloat(storeInfo.taxRate) : 0.0825;
   const subtotal = cart.reduce((s, i) => s + i.unitPrice * i.qty, 0);
   const discAmt  = parseFloat(discount) || 0;
   const taxAmt   = Math.max(0, (subtotal - discAmt) * taxRate);
@@ -110,7 +112,7 @@ export default function POS() {
 
   function resetPaymentFields() {
     setCashReceived(''); setCheckNumber(''); setCardRef('');
-    setSplitCash(''); setSplitCard('');
+    setSplitCash(''); setSplitCard(''); setGiftCardCode('');
   }
 
   function selectMethod(key, currentTotal) {
@@ -126,6 +128,9 @@ export default function POS() {
       const sd = parseFloat(splitCard) || 0;
       if (Math.abs(sc + sd - total) > 0.01) return toast.error(`Split amounts must add up to ${fmt$(total)}`);
     }
+    if (paymentMethod === 'gift_card' && !giftCardCode.trim()) {
+      return toast.error('Enter the gift card code');
+    }
     setProcessing(true);
     try {
       const notes = paymentMethod === 'check'
@@ -139,6 +144,7 @@ export default function POS() {
       const { data } = await api.post('/pos/sale', {
         customerId: customerId || undefined,
         paymentMethod,
+        giftCardCode: paymentMethod === 'gift_card' ? giftCardCode.trim().toUpperCase() : undefined,
         discountAmount: discAmt,
         notes: notes || undefined,
         items: cart.map(i => ({ itemId: i.id, quantity: i.qty, unitPrice: i.unitPrice })),
@@ -476,7 +482,7 @@ ${policyHtml}
               </div>
             )}
             <div className="flex justify-between text-xs text-gray-500">
-              <span>Tax (8.25%)</span><span>{fmt$(taxAmt)}</span>
+              <span>Tax ({(taxRate * 100).toFixed(2)}%)</span><span>{fmt$(taxAmt)}</span>
             </div>
             <div className="flex justify-between text-base font-bold text-gray-900 border-t border-gray-200 mt-1 pt-1.5">
               <span>TOTAL</span><span className="text-green-700">{fmt$(total)}</span>
@@ -486,7 +492,7 @@ ${policyHtml}
           {/* Payment method */}
           <div>
             <p className="text-xs font-bold text-gray-500 mb-2">PAYMENT METHOD</p>
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-5 gap-1.5">
               {PAY_METHODS.map(pm => (
                 <button key={pm.key} onClick={() => selectMethod(pm.key, total)}
                   className={`flex flex-col items-center py-2 rounded border text-xs font-bold transition-all ${
@@ -604,6 +610,23 @@ ${policyHtml}
             </div>
           )}
 
+          {paymentMethod === 'gift_card' && (
+            <div className="bg-purple-50 border border-purple-200 rounded p-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold text-purple-800 w-24 flex-shrink-0">Card Code</label>
+                <input
+                  type="text"
+                  className="flex-1 text-sm border border-purple-300 rounded px-2 py-1.5 bg-white font-mono uppercase tracking-wider"
+                  value={giftCardCode}
+                  onChange={e => setGiftCardCode(e.target.value.toUpperCase())}
+                  placeholder="GC____-____-____"
+                  autoFocus
+                />
+              </div>
+              <p className="text-xs text-purple-600">Enter the gift card code printed on the card.</p>
+            </div>
+          )}
+
           {/* Charge button */}
           <button
             className="w-full py-3 rounded font-bold text-base text-white transition-all disabled:opacity-50"
@@ -662,7 +685,7 @@ ${policyHtml}
                 {receipt.transaction.discountAmount > 0 && (
                   <div className="flex justify-between text-green-600"><span>Discount</span><span>−{fmt$(receipt.transaction.discountAmount)}</span></div>
                 )}
-                <div className="flex justify-between text-gray-500"><span>Tax (8.25%)</span><span>{fmt$(receipt.taxAmount)}</span></div>
+                <div className="flex justify-between text-gray-500"><span>Tax</span><span>{fmt$(receipt.taxAmount)}</span></div>
                 <div className="flex justify-between font-bold text-base border-t border-gray-200 pt-1.5 mt-1">
                   <span>Total</span><span className="text-green-700">{fmt$(receipt.total)}</span>
                 </div>
