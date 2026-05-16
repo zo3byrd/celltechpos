@@ -51,6 +51,8 @@ async function runMigrations() {
   // Store — review + tax config
   await addColumn('Stores', 'googleReviewUrl', 'VARCHAR(500)');
   await addColumn('Stores', 'taxConfigJson', 'TEXT');
+  // Tip on transactions
+  await addColumn('Transactions', 'tipAmount', 'DECIMAL(10,2) DEFAULT 0');
 
   // Stripe fields on License
   await addColumn('Licenses', 'stripeCustomerId',     'VARCHAR(255)');

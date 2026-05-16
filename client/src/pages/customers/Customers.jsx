@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { ArrowDownTrayIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import MessageModal from '../../components/MessageModal';
 
@@ -23,6 +23,7 @@ export default function Customers() {
   const [detail, setDetail] = useState(null);
   const [msgCustomer, setMsgCustomer] = useState(null);
   const [form, setForm] = useState({ firstName:'', lastName:'', email:'', phone:'', address:'', city:'', state:'', zip:'', notes:'' });
+  const importRef = useRef(null);
 
   function load() {
     setLoading(true);
@@ -53,6 +54,22 @@ export default function Customers() {
 
   const set = (f, v) => setForm(p => ({ ...p, [f]: v }));
 
+  async function handleImport(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    e.target.value = '';
+    const tid = toast.loading('Importing…');
+    try {
+      const { data } = await api.post('/customers/import/csv', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      toast.success(`Imported ${data.created} customers${data.skipped ? `, ${data.skipped} skipped` : ''}${data.errors ? `, ${data.errors} errors` : ''}`, { id: tid });
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Import failed', { id: tid });
+    }
+  }
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -61,6 +78,10 @@ export default function Customers() {
           <p className="text-sm text-gray-500">{total} total</p>
         </div>
         <div className="flex gap-2">
+          <input ref={importRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
+          <button className="btn-secondary flex items-center gap-1.5" onClick={() => importRef.current?.click()}>
+            <ArrowUpTrayIcon className="w-4 h-4" /> Import CSV
+          </button>
           <button className="btn-secondary flex items-center gap-1.5" onClick={() => exportCSV('/customers/export/csv', 'customers.csv')}>
             <ArrowDownTrayIcon className="w-4 h-4" /> Export CSV
           </button>

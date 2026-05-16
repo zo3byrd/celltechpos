@@ -12,7 +12,7 @@ function txNumber() {
 router.post('/sale', auth, async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { customerId, items, paymentMethod, paymentRef, notes, discountAmount = 0 } = req.body;
+    const { customerId, items, paymentMethod, paymentRef, notes, discountAmount = 0, tipAmount = 0 } = req.body;
 
     const store = await Store.findByPk(req.user.storeId);
     if (!store) throw new Error('Store not found');
@@ -41,7 +41,14 @@ router.post('/sale', auth, async (req, res) => {
     const discountRatio = subtotal > 0 ? (subtotal - discountAmount) / subtotal : 1;
     const taxableAfterDiscount = taxableSubtotal * discountRatio;
     const taxAmount = parseFloat((taxableAfterDiscount * store.taxRate).toFixed(2));
-    const total = subtotal - discountAmount + taxAmount;
+    const tip = parseFloat(tipAmount) || 0;
+    const total = subtotal - discountAmount + taxAmount + tip;
+
+    // Stripe payment validation
+    if (paymentMethod === 'stripe') {
+      const piId = req.body.stripePaymentIntentId;
+      if (!piId) throw new Error('Stripe payment intent ID required');
+    }
 
     // Gift card validation
     let giftCard = null;
@@ -64,6 +71,9 @@ router.post('/sale', auth, async (req, res) => {
     if (paymentMethod === 'gift_card' && giftCard) {
       referenceNumber = giftCard.code;
     }
+    if (paymentMethod === 'stripe') {
+      referenceNumber = req.body.stripePaymentIntentId;
+    }
 
     const tx = await Transaction.create({
       transactionNumber: txNumber(),
@@ -74,6 +84,7 @@ router.post('/sale', auth, async (req, res) => {
       subtotal,
       taxAmount,
       discountAmount,
+      tipAmount: tip,
       total,
       paymentMethod,
       paymentStatus: 'completed',
@@ -103,7 +114,7 @@ router.post('/sale', auth, async (req, res) => {
     }
 
     await t.commit();
-    res.status(201).json({ transaction: tx, total, taxAmount, subtotal });
+    res.status(201).json({ transaction: tx, total, taxAmount, subtotal, tipAmount: tip });
   } catch (err) {
     await t.rollback();
     res.status(400).json({ error: err.message });
@@ -256,6 +267,28 @@ router.post('/refund', auth, async (req, res) => {
     res.status(201).json({ refund: refundTx, total: -refundTotal });
   } catch (err) {
     await t.rollback();
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Stripe: create payment intent for POS sale
+router.post('/stripe/payment-intent', auth, async (req, res) => {
+  try {
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const { amount } = req.body;
+    if (!amount || amount <= 0) return res.status(400).json({ error: 'Invalid amount' });
+    const intent = await stripe.paymentIntents.create({
+      amount: Math.round(parseFloat(amount) * 100),
+      currency: 'usd',
+      automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
+      metadata: { storeId: req.user.storeId },
+    });
+    res.json({
+      clientSecret: intent.client_secret,
+      paymentIntentId: intent.id,
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+    });
+  } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });

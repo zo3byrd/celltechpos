@@ -4,23 +4,109 @@ import {
   MagnifyingGlassIcon, XMarkIcon, UserIcon, TrashIcon,
   PrinterIcon, BanknotesIcon, CreditCardIcon, ShoppingCartIcon,
   DevicePhoneMobileIcon, EnvelopeIcon, CheckCircleIcon, GiftIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import api from '../../api/client';
 
 const CATEGORIES = ['all', 'part', 'accessory', 'device', 'service', 'plan', 'other'];
 const fmt$ = n => '$' + parseFloat(n || 0).toFixed(2);
 
 const PAY_METHODS = [
-  { key: 'cash',      label: 'Cash',  icon: BanknotesIcon,  color: 'bg-green-600 text-white border-green-600' },
-  { key: 'card',      label: 'Card',  icon: CreditCardIcon, color: 'bg-blue-600 text-white border-blue-600' },
-  { key: 'check',     label: 'Check', icon: BanknotesIcon,  color: 'bg-gray-600 text-white border-gray-600' },
-  { key: 'split',     label: 'Split', icon: BanknotesIcon,  color: 'bg-amber-600 text-white border-amber-600' },
-  { key: 'gift_card', label: 'Gift',  icon: GiftIcon,       color: 'bg-purple-600 text-white border-purple-600' },
+  { key: 'cash',      label: 'Cash',   icon: BanknotesIcon,  color: 'bg-green-600 text-white border-green-600' },
+  { key: 'card',      label: 'Card',   icon: CreditCardIcon, color: 'bg-blue-600 text-white border-blue-600' },
+  { key: 'check',     label: 'Check',  icon: BanknotesIcon,  color: 'bg-gray-600 text-white border-gray-600' },
+  { key: 'split',     label: 'Split',  icon: BanknotesIcon,  color: 'bg-amber-600 text-white border-amber-600' },
+  { key: 'gift_card', label: 'Gift',   icon: GiftIcon,       color: 'bg-purple-600 text-white border-purple-600' },
+  { key: 'stripe',    label: 'Stripe', icon: SparklesIcon,   color: 'bg-indigo-600 text-white border-indigo-600' },
 ];
+
+let stripePromise = null;
+
+function StripeCardForm({ total, onSuccess, onCancel }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [error, setError] = useState('');
+  const [processing, setProcessing] = useState(false);
+
+  async function handlePay() {
+    if (!stripe || !elements) return;
+    setError(''); setProcessing(true);
+    try {
+      const { data } = await api.post('/pos/stripe/payment-intent', { amount: total });
+      const { error: stripeErr, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
+        payment_method: { card: elements.getElement(CardElement) },
+      });
+      if (stripeErr) { setError(stripeErr.message); setProcessing(false); return; }
+      if (paymentIntent.status === 'succeeded') {
+        onSuccess(paymentIntent.id);
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Payment failed');
+      setProcessing(false);
+    }
+  }
+
+  return (
+    <div className="bg-indigo-50 border border-indigo-200 rounded p-3 space-y-3">
+      <p className="text-xs font-bold text-indigo-800">Pay with Stripe — {fmt$(total)}</p>
+      <div className="bg-white border border-indigo-200 rounded px-3 py-2.5">
+        <CardElement options={{ style: { base: { fontSize: '14px', color: '#1f2937' } } }} />
+      </div>
+      {error && <p className="text-xs text-red-500">{error}</p>}
+      <div className="flex gap-2">
+        <button onClick={handlePay} disabled={processing || !stripe}
+          className="flex-1 py-2 rounded bg-indigo-600 text-white text-xs font-bold disabled:opacity-50">
+          {processing ? 'Processing…' : `Charge ${fmt$(total)}`}
+        </button>
+        <button onClick={onCancel} className="px-3 py-2 rounded border border-gray-200 text-xs text-gray-600">Cancel</button>
+      </div>
+    </div>
+  );
+}
 
 function catLabel(c) {
   if (c === 'all') return 'All';
   return c.charAt(0).toUpperCase() + c.slice(1) + 's';
+}
+
+function StripeElementsWrapper({ total, onSuccess, onCancel }) {
+  const [stripe, setStripe] = useState(null);
+
+  useEffect(() => {
+    api.get('/pos/stripe/payment-intent', { params: { amount: 0.01 } }).catch(err => {
+      const key = err?.response?.data?.publishableKey;
+      if (key) { setStripe(loadStripe(key)); return; }
+      api.post('/pos/stripe/payment-intent', { amount: 0.01 }).then(r => {
+        if (r.data.publishableKey) setStripe(loadStripe(r.data.publishableKey));
+      }).catch(() => {});
+    });
+  }, []);
+
+  if (!stripe) {
+    return (
+      <div className="bg-indigo-50 border border-indigo-200 rounded p-3 space-y-2">
+        <button onClick={async () => {
+          try {
+            const { data } = await api.post('/pos/stripe/payment-intent', { amount: total });
+            if (data.publishableKey) setStripe(loadStripe(data.publishableKey));
+          } catch (err) {
+            toast.error(err.response?.data?.error || 'Stripe not configured');
+          }
+        }} className="w-full py-2 rounded bg-indigo-600 text-white text-xs font-bold">
+          Initialize Stripe Payment
+        </button>
+        <p className="text-xs text-indigo-600">Requires STRIPE_PUBLISHABLE_KEY in server .env</p>
+      </div>
+    );
+  }
+
+  return (
+    <Elements stripe={stripe}>
+      <StripeCardForm total={total} onSuccess={onSuccess} onCancel={onCancel} />
+    </Elements>
+  );
 }
 
 export default function POS() {
@@ -40,6 +126,9 @@ export default function POS() {
   const [splitCash, setSplitCash]       = useState('');
   const [splitCard, setSplitCard]       = useState('');
   const [giftCardCode, setGiftCardCode] = useState('');
+  const [tip, setTip] = useState('');
+  const [stripePaymentIntentId, setStripePaymentIntentId] = useState('');
+  const [stripeReady, setStripeReady] = useState(false);
   const [discount, setDiscount] = useState('');
   const [storeInfo, setStoreInfo] = useState(null);
   const [processing, setProcessing] = useState(false);
@@ -107,12 +196,14 @@ export default function POS() {
   const taxRate  = storeInfo ? parseFloat(storeInfo.taxRate) : 0.0825;
   const subtotal = cart.reduce((s, i) => s + i.unitPrice * i.qty, 0);
   const discAmt  = parseFloat(discount) || 0;
+  const tipAmt   = parseFloat(tip) || 0;
   const taxAmt   = Math.max(0, (subtotal - discAmt) * taxRate);
-  const total    = Math.max(0, subtotal - discAmt + taxAmt);
+  const total    = Math.max(0, subtotal - discAmt + taxAmt + tipAmt);
 
   function resetPaymentFields() {
     setCashReceived(''); setCheckNumber(''); setCardRef('');
     setSplitCash(''); setSplitCard(''); setGiftCardCode('');
+    setStripePaymentIntentId(''); setStripeReady(false);
   }
 
   function selectMethod(key, currentTotal) {
@@ -131,6 +222,9 @@ export default function POS() {
     if (paymentMethod === 'gift_card' && !giftCardCode.trim()) {
       return toast.error('Enter the gift card code');
     }
+    if (paymentMethod === 'stripe' && !stripePaymentIntentId) {
+      return toast.error('Complete the Stripe payment first');
+    }
     setProcessing(true);
     try {
       const notes = paymentMethod === 'check'
@@ -145,6 +239,8 @@ export default function POS() {
         customerId: customerId || undefined,
         paymentMethod,
         giftCardCode: paymentMethod === 'gift_card' ? giftCardCode.trim().toUpperCase() : undefined,
+        stripePaymentIntentId: paymentMethod === 'stripe' ? stripePaymentIntentId : undefined,
+        tipAmount: tipAmt || undefined,
         discountAmount: discAmt,
         notes: notes || undefined,
         items: cart.map(i => ({ itemId: i.id, quantity: i.qty, unitPrice: i.unitPrice })),
@@ -159,6 +255,7 @@ export default function POS() {
       setCustomerId('');
       setSelectedCust(null);
       setDiscount('');
+      setTip('');
       resetPaymentFields();
       toast.success(`Sale ${data.transaction.transactionNumber} complete!`);
       setTimeout(() => searchRef.current?.focus(), 100);
@@ -464,11 +561,30 @@ ${policyHtml}
 
         {/* Totals + Payment */}
         <div className="flex-shrink-0 border-t border-gray-200 px-4 py-3 pb-20 md:pb-3 space-y-3 overflow-y-auto" style={{ maxHeight: '62vh' }}>
-          {/* Discount */}
+          {/* Discount + Tip */}
           <div className="flex items-center gap-2">
             <label className="text-xs font-bold text-gray-500 w-20">Discount $</label>
             <input type="number" className="input text-sm py-1 flex-1" value={discount}
               onChange={e => setDiscount(e.target.value)} min="0" step="0.50" placeholder="0.00" />
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-bold text-gray-500 w-20">Tip $</label>
+              <input type="number" className="input text-sm py-1 flex-1" value={tip}
+                onChange={e => setTip(e.target.value)} min="0" step="0.50" placeholder="0.00" />
+            </div>
+            <div className="flex gap-1.5 pl-20">
+              {[10, 15, 18, 20].map(pct => {
+                const amt = ((subtotal - discAmt) * pct / 100).toFixed(2);
+                return (
+                  <button key={pct} onClick={() => setTip(amt)}
+                    className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-500 hover:border-green-400 hover:text-green-700">
+                    {pct}%
+                  </button>
+                );
+              })}
+              {tip && <button onClick={() => setTip('')} className="text-xs px-2 py-1 rounded text-gray-400 hover:text-red-500">✕</button>}
+            </div>
           </div>
 
           {/* Totals */}
@@ -484,6 +600,11 @@ ${policyHtml}
             <div className="flex justify-between text-xs text-gray-500">
               <span>Tax ({(taxRate * 100).toFixed(2)}%)</span><span>{fmt$(taxAmt)}</span>
             </div>
+            {tipAmt > 0 && (
+              <div className="flex justify-between text-xs text-blue-600 font-semibold">
+                <span>Tip</span><span>+{fmt$(tipAmt)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-base font-bold text-gray-900 border-t border-gray-200 mt-1 pt-1.5">
               <span>TOTAL</span><span className="text-green-700">{fmt$(total)}</span>
             </div>
@@ -624,6 +745,15 @@ ${policyHtml}
                 />
               </div>
               <p className="text-xs text-purple-600">Enter the gift card code printed on the card.</p>
+            </div>
+          )}
+
+          {paymentMethod === 'stripe' && !stripeReady && (
+            <StripeElementsWrapper total={total} onSuccess={id => { setStripePaymentIntentId(id); setStripeReady(true); }} onCancel={() => setPaymentMethod('cash')} />
+          )}
+          {paymentMethod === 'stripe' && stripeReady && (
+            <div className="bg-indigo-50 border border-indigo-200 rounded p-3 text-xs text-indigo-700 font-semibold">
+              ✓ Stripe payment authorized — {fmt$(total)}
             </div>
           )}
 

@@ -48,6 +48,8 @@ export default function Reports() {
   const [activations, setActivations] = useState(null);
   const [pl, setPL] = useState(null);
   const [plLoading, setPLLoading] = useState(false);
+  const [staff, setStaff] = useState([]);
+  const [staffLoading, setStaffLoading] = useState(false);
   const [start, setStart] = useState(() => new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10));
   const [end, setEnd] = useState(() => new Date().toISOString().slice(0, 10));
   const [activeTab, setActiveTab] = useState('pl');
@@ -60,6 +62,7 @@ export default function Reports() {
     api.get(`/reports/repairs?startDate=${start}&endDate=${end}`).then(r => setRepairs(r.data));
     api.get(`/reports/activations?startDate=${start}&endDate=${end}`).then(r => setActivations(r.data));
     loadPL();
+    loadStaff();
   }
 
   function loadPL() {
@@ -69,6 +72,13 @@ export default function Reports() {
       .finally(() => setPLLoading(false));
   }
 
+  function loadStaff() {
+    setStaffLoading(true);
+    api.get(`/reports/staff?startDate=${start}&endDate=${end}`)
+      .then(r => setStaff(r.data))
+      .finally(() => setStaffLoading(false));
+  }
+
   useEffect(load, [start, end]);
 
   const tabs = [
@@ -76,6 +86,7 @@ export default function Reports() {
     { key: 'sales',       label: 'Sales' },
     { key: 'repairs',     label: 'Repairs' },
     { key: 'activations', label: 'Activations' },
+    { key: 'staff',       label: 'Staff' },
   ];
 
   return (
@@ -302,6 +313,61 @@ export default function Reports() {
             <div className="text-4xl font-bold text-blue-600">{fmt(repairs.revenue)}</div>
             <p className="text-sm text-gray-500 mt-1">Repair payments received in period</p>
           </div>
+        </div>
+      )}
+
+      {/* ── Staff Leaderboard Tab ───────────────────────────────────────── */}
+      {activeTab === 'staff' && (
+        <div className="space-y-4">
+          {staffLoading && (
+            <div className="card animate-pulse h-48 bg-gray-100" />
+          )}
+          {!staffLoading && (
+            <div className="card p-0 overflow-hidden">
+              <div className="bg-gray-50 px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Sales Leaderboard</h3>
+                <span className="text-xs text-gray-400">{start} → {end}</span>
+              </div>
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    {['#','Name','Role','Sales','Sales $','Repairs','Repair $','Tips'].map(h => (
+                      <th key={h} className="table-th text-left">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {staff.length === 0 && (
+                    <tr><td colSpan={8} className="text-center py-8 text-gray-400">No data for this period</td></tr>
+                  )}
+                  {staff.map((s, i) => (
+                    <tr key={s.id} className={`hover:bg-gray-50 ${i === 0 && parseFloat(s.salesTotal) > 0 ? 'bg-yellow-50' : ''}`}>
+                      <td className="table-td font-bold text-gray-400">{i === 0 && parseFloat(s.salesTotal) > 0 ? '🥇' : i + 1}</td>
+                      <td className="table-td font-semibold text-gray-900">{s.name}</td>
+                      <td className="table-td"><span className="badge badge-gray capitalize">{s.role}</span></td>
+                      <td className="table-td text-center">{s.salesCount}</td>
+                      <td className="table-td font-mono text-green-700">{fmt(s.salesTotal)}</td>
+                      <td className="table-td text-center">{s.repairCount}</td>
+                      <td className="table-td font-mono text-blue-700">{fmt(s.repairTotal)}</td>
+                      <td className="table-td font-mono text-purple-700">{parseFloat(s.tipsTotal) > 0 ? fmt(s.tipsTotal) : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                {staff.length > 0 && (
+                  <tfoot className="bg-gray-50 border-t-2 border-gray-200 font-semibold text-sm">
+                    <tr>
+                      <td className="table-td" colSpan={3}>Total</td>
+                      <td className="table-td text-center">{staff.reduce((s, r) => s + parseInt(r.salesCount || 0), 0)}</td>
+                      <td className="table-td font-mono text-green-700">{fmt(staff.reduce((s, r) => s + parseFloat(r.salesTotal || 0), 0))}</td>
+                      <td className="table-td text-center">{staff.reduce((s, r) => s + parseInt(r.repairCount || 0), 0)}</td>
+                      <td className="table-td font-mono text-blue-700">{fmt(staff.reduce((s, r) => s + parseFloat(r.repairTotal || 0), 0))}</td>
+                      <td className="table-td font-mono text-purple-700">{fmt(staff.reduce((s, r) => s + parseFloat(r.tipsTotal || 0), 0))}</td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+          )}
         </div>
       )}
 

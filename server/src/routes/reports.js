@@ -218,4 +218,45 @@ router.get('/profit-loss', auth, requireRole('superadmin', 'admin'), async (req,
   });
 });
 
+// Staff sales leaderboard
+router.get('/staff', auth, requireRole('superadmin', 'admin'), async (req, res) => {
+  const { startDate, endDate } = req.query;
+  const storeId = req.user.storeId;
+
+  const dateWhere = {};
+  if (startDate) dateWhere[Op.gte] = new Date(startDate);
+  if (endDate)   dateWhere[Op.lte] = new Date(new Date(endDate).setHours(23, 59, 59, 999));
+
+  const where = { storeId, paymentStatus: 'completed' };
+  if (Object.keys(dateWhere).length) where.createdAt = dateWhere;
+
+  const { sequelize: db } = require('../db');
+
+  const [salesRows] = await db.query(`
+    SELECT u.id, u.name, u.role,
+      COUNT(CASE WHEN t.type = 'sale'           THEN 1 END) as salesCount,
+      COALESCE(SUM(CASE WHEN t.type = 'sale'    THEN t.total ELSE 0 END), 0) as salesTotal,
+      COUNT(CASE WHEN t.type = 'repair_payment' THEN 1 END) as repairCount,
+      COALESCE(SUM(CASE WHEN t.type = 'repair_payment' THEN t.total ELSE 0 END), 0) as repairTotal,
+      COALESCE(SUM(t.tipAmount), 0) as tipsTotal
+    FROM Users u
+    LEFT JOIN Transactions t ON t.userId = u.id
+      AND t.storeId = :storeId
+      AND t.paymentStatus = 'completed'
+      ${startDate ? "AND t.createdAt >= :start" : ''}
+      ${endDate   ? "AND t.createdAt <= :end"   : ''}
+    WHERE u.storeId = :storeId AND u.active = 1
+    GROUP BY u.id, u.name, u.role
+    ORDER BY salesTotal DESC
+  `, {
+    replacements: {
+      storeId,
+      start: startDate ? new Date(startDate).toISOString() : null,
+      end:   endDate   ? new Date(new Date(endDate).setHours(23, 59, 59, 999)).toISOString() : null,
+    },
+  });
+
+  res.json(salesRows);
+});
+
 module.exports = router;

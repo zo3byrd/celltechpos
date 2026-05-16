@@ -75,4 +75,80 @@ router.get('/export/csv', auth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// CSV import
+router.post('/import/csv', auth, async (req, res) => {
+  try {
+    const multer = require('multer');
+    const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
+    upload.single('file')(req, res, async (err) => {
+      if (err) return res.status(400).json({ error: err.message });
+      if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+      const text = req.file.buffer.toString('utf-8');
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) return res.status(400).json({ error: 'CSV must have a header row and at least one data row' });
+
+      // Detect header column positions (flexible column order)
+      const header = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+      const col = name => {
+        const aliases = {
+          firstName: ['first name', 'firstname', 'first'],
+          lastName:  ['last name', 'lastname', 'last'],
+          email:     ['email', 'e-mail'],
+          phone:     ['phone', 'mobile', 'cell'],
+          address:   ['address', 'street'],
+          city:      ['city'],
+          state:     ['state'],
+          zip:       ['zip', 'zipcode', 'postal'],
+          notes:     ['notes', 'note'],
+        };
+        const opts = aliases[name] || [name];
+        for (const o of opts) {
+          const idx = header.indexOf(o);
+          if (idx !== -1) return idx;
+        }
+        return -1;
+      };
+
+      const parseRow = line => {
+        const cols = [];
+        let inQ = false, cur = '';
+        for (const ch of line) {
+          if (ch === '"') { inQ = !inQ; }
+          else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+          else cur += ch;
+        }
+        cols.push(cur.trim());
+        return cols;
+      };
+
+      let created = 0, skipped = 0, errors = 0;
+      for (const line of lines.slice(1)) {
+        if (!line.trim()) continue;
+        const row = parseRow(line);
+        const get = name => { const i = col(name); return i >= 0 ? (row[i] || '').replace(/^"|"$/g, '').trim() : ''; };
+        const firstName = get('firstName');
+        const lastName  = get('lastName');
+        if (!firstName && !lastName) { skipped++; continue; }
+        try {
+          await Customer.create({
+            storeId: req.user.storeId,
+            firstName: firstName || 'Unknown',
+            lastName:  lastName  || '',
+            email:   get('email'),
+            phone:   get('phone'),
+            address: get('address'),
+            city:    get('city'),
+            state:   get('state'),
+            zip:     get('zip'),
+            notes:   get('notes'),
+          });
+          created++;
+        } catch { errors++; }
+      }
+      res.json({ created, skipped, errors, total: lines.length - 1 });
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 module.exports = router;

@@ -136,7 +136,7 @@ const Transaction = sequelize.define('Transaction', {
   taxAmount:         { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
   discountAmount:    { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
   total:             { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
-  paymentMethod:     { type: DataTypes.ENUM('cash', 'card', 'epay', 'vidapay', 'webpos', 'check', 'split', 'gift_card'), defaultValue: 'cash' },
+  paymentMethod:     { type: DataTypes.ENUM('cash', 'card', 'epay', 'vidapay', 'webpos', 'check', 'split', 'gift_card', 'stripe'), defaultValue: 'cash' },
   paymentStatus:     { type: DataTypes.ENUM('pending', 'completed', 'failed', 'refunded'), defaultValue: 'completed' },
   referenceNumber:   { type: DataTypes.STRING },
   notes:             { type: DataTypes.TEXT },
@@ -144,6 +144,7 @@ const Transaction = sequelize.define('Transaction', {
   loyaltyPointsRedeemed: { type: DataTypes.INTEGER, defaultValue: 0 },
   originalTransactionId: { type: DataTypes.UUID, allowNull: true },
   reason:                { type: DataTypes.STRING, allowNull: true },
+  tipAmount:             { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
 });
 
 // ── TransactionItem ───────────────────────────────────────────────────────────
