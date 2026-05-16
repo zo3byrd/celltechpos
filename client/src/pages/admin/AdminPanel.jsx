@@ -79,8 +79,52 @@ function Overview({ sys, store }) {
             <p className="text-xs text-gray-400">Tax Rate</p>
             <p className="font-semibold text-gray-800">{store ? `${(parseFloat(store.taxRate) * 100).toFixed(2)}%` : '—'}</p>
           </div>
+          <div className="flex-1 min-w-40">
+            <p className="text-xs text-gray-400">Store ID</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="font-mono text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded px-2 py-1 select-all">{store?.id || '—'}</p>
+              {store?.id && (
+                <button
+                  onClick={() => { navigator.clipboard.writeText(store.id); toast.success('Store ID copied!'); }}
+                  className="text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                >Copy</button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
+
+      {store?.id && (
+        <div>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Public Links</h2>
+          <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+            {[
+              { label: 'Shop Display Board', desc: 'TV/monitor display showing repair ticket statuses', path: 'display' },
+              { label: 'Customer Portal', desc: 'Customers can look up their repair ticket status', path: 'portal' },
+            ].map(({ label, desc, path }) => {
+              const url = `${window.location.origin}/${path}?storeId=${store.id}`;
+              return (
+                <div key={path} className="flex items-center justify-between px-5 py-3 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">{label}</p>
+                    <p className="text-xs text-gray-400">{desc}</p>
+                    <p className="font-mono text-xs text-gray-500 mt-0.5">{url}</p>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(url); toast.success('Link copied!'); }}
+                      className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 font-medium"
+                    >Copy Link</button>
+                    <a href={url} target="_blank" rel="noreferrer"
+                      className="text-xs px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium"
+                    >Open</a>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div>
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Database Counts</h2>
@@ -122,16 +166,27 @@ function StoreSettings({ store, onSaved }) {
 
   useEffect(() => {
     if (store) setForm({
-      name:    store.name    || '',
-      address: store.address || '',
-      city:    store.city    || '',
-      state:   store.state   || '',
-      zip:     store.zip     || '',
-      phone:   store.phone   || '',
-      email:   store.email   || '',
-      taxRate: store.taxRate ? (parseFloat(store.taxRate) * 100).toFixed(2) : '8.75',
+      name:          store.name    || '',
+      address:       store.address || '',
+      city:          store.city    || '',
+      state:         store.state   || '',
+      zip:           store.zip     || '',
+      phone:         store.phone   || '',
+      email:         store.email   || '',
+      taxRate:       store.taxRate ? (parseFloat(store.taxRate) * 100).toFixed(2) : '8.75',
+      logoUrl:       store.logoUrl       || '',
+      receiptPolicy: store.receiptPolicy || '',
     });
   }, [store]);
+
+  function handleLogoChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 512000) { toast.error('Logo must be under 500 KB'); return; }
+    const reader = new FileReader();
+    reader.onload = () => setForm(p => ({ ...p, logoUrl: reader.result }));
+    reader.readAsDataURL(file);
+  }
 
   async function save() {
     setSaving(true);
@@ -187,6 +242,55 @@ function StoreSettings({ store, onSaved }) {
             onChange={e => setForm(p => ({ ...p, taxRate: e.target.value }))}
           />
           <p className="text-xs text-gray-400 mt-1">Applied to all taxable sales transactions</p>
+        </div>
+      </div>
+
+      {/* Receipt Customization */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+        <h3 className="font-semibold text-gray-800">Receipt Customization</h3>
+
+        {/* Logo upload */}
+        <div>
+          <label className="label">Store Logo</label>
+          <div className="flex items-start gap-4">
+            <div className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center bg-gray-50 overflow-hidden flex-shrink-0">
+              {form.logoUrl
+                ? <img src={form.logoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
+                : <span className="text-gray-300 text-xs text-center px-2">No logo</span>
+              }
+            </div>
+            <div className="space-y-2 flex-1">
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/gif,image/webp"
+                onChange={handleLogoChange}
+                className="block text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-gray-300 file:text-xs file:font-semibold file:bg-white file:text-gray-700 hover:file:bg-gray-50 cursor-pointer"
+              />
+              <p className="text-xs text-gray-400">PNG, JPG, or GIF · Max 500 KB · Displays at the top of printed and emailed receipts</p>
+              {form.logoUrl && (
+                <button
+                  type="button"
+                  onClick={() => setForm(p => ({ ...p, logoUrl: '' }))}
+                  className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                >
+                  Remove logo
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Receipt policy */}
+        <div>
+          <label className="label">Receipt Policy / Footer</label>
+          <textarea
+            className="input resize-none"
+            rows={4}
+            placeholder={`All sales are final. No refunds on opened accessories.\nRepair work carries a 30-day parts & labor warranty.\nThank you for choosing us!`}
+            value={form.receiptPolicy}
+            onChange={e => setForm(p => ({ ...p, receiptPolicy: e.target.value }))}
+          />
+          <p className="text-xs text-gray-400 mt-1">Printed at the bottom of every customer receipt — printed, texted, and emailed</p>
         </div>
       </div>
 

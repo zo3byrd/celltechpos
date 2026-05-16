@@ -16,9 +16,9 @@ router.get('/', auth, async (req, res) => {
   if (status) where.status = status;
   if (search) {
     where[Op.or] = [
-      { activationNumber: { [Op.iLike]: `%${search}%` } },
-      { phoneNumber: { [Op.iLike]: `%${search}%` } },
-      { imei: { [Op.iLike]: `%${search}%` } },
+      { activationNumber: { [Op.like]: `%${search}%` } },
+      { phoneNumber: { [Op.like]: `%${search}%` } },
+      { imei: { [Op.like]: `%${search}%` } },
     ];
   }
   const { rows, count } = await Activation.findAndCountAll({

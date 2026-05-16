@@ -60,7 +60,7 @@ router.get('/store', auth, requireRole('superadmin', 'admin'), async (req, res) 
 router.put('/store', auth, requireRole('superadmin', 'admin'), async (req, res) => {
   const store = await Store.findByPk(req.user.storeId);
   if (!store) return res.status(404).json({ error: 'Store not found' });
-  const allowed = ['name','address','city','state','zip','phone','email','taxRate'];
+  const allowed = ['name','address','city','state','zip','phone','email','taxRate','logoUrl','receiptPolicy'];
   const updates = Object.fromEntries(Object.entries(req.body).filter(([k]) => allowed.includes(k)));
   await store.update(updates);
   res.json(store);
@@ -146,6 +146,66 @@ router.delete('/stores/:id/notes/:noteId', auth, requireRole('superadmin'), asyn
     { replacements: [req.params.noteId, req.params.id] }
   );
   res.json({ ok: true });
+});
+
+// ── Superadmin Analytics ──────────────────────────────────────────────────────
+router.get('/analytics', auth, requireRole('superadmin'), async (req, res) => {
+  try {
+    const { sequelize } = require('../db');
+
+    const [storeActivity] = await sequelize.query(`
+      SELECT
+        s.id, s.name, s.city, s.state, s.email,
+        (SELECT MAX(createdAt) FROM Transactions WHERE storeId = s.id) as lastTxn,
+        (SELECT COUNT(*) FROM Transactions WHERE storeId = s.id AND createdAt >= datetime('now','-30 days')) as txn30d,
+        (SELECT COUNT(*) FROM RepairTickets WHERE storeId = s.id AND createdAt >= datetime('now','-30 days')) as repair30d,
+        (SELECT COUNT(*) FROM Activations WHERE storeId = s.id AND createdAt >= datetime('now','-30 days')) as act30d,
+        (SELECT COUNT(*) FROM InventoryItems WHERE storeId = s.id AND active = 1) as inventoryCount,
+        (SELECT COUNT(*) FROM Customers WHERE storeId = s.id) as customerCount
+      FROM Stores s
+      ORDER BY lastTxn DESC
+    `);
+
+    const [topItems] = await sequelize.query(`
+      SELECT name, category, COUNT(DISTINCT storeId) as storeCount, COUNT(*) as total
+      FROM InventoryItems
+      WHERE active = 1
+      GROUP BY LOWER(name), category
+      ORDER BY storeCount DESC, total DESC
+      LIMIT 20
+    `);
+
+    const [topCategories] = await sequelize.query(`
+      SELECT category, COUNT(*) as total, COUNT(DISTINCT storeId) as storeCount
+      FROM InventoryItems
+      WHERE active = 1
+      GROUP BY category
+      ORDER BY total DESC
+    `);
+
+    const [topBrands] = await sequelize.query(`
+      SELECT brand, COUNT(*) as total, COUNT(DISTINCT storeId) as storeCount
+      FROM InventoryItems
+      WHERE active = 1 AND brand IS NOT NULL AND brand != ''
+      GROUP BY LOWER(brand)
+      ORDER BY total DESC
+      LIMIT 12
+    `);
+
+    const [recentItems] = await sequelize.query(`
+      SELECT i.name, i.category, i.brand, i.price, i.createdAt,
+             s.name as storeName
+      FROM InventoryItems i
+      LEFT JOIN Stores s ON s.id = i.storeId
+      WHERE i.active = 1
+      ORDER BY i.createdAt DESC
+      LIMIT 25
+    `);
+
+    res.json({ storeActivity, topItems, topCategories, topBrands, recentItems });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

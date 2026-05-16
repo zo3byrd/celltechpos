@@ -4,6 +4,7 @@ import {
   HomeIcon, BuildingStorefrontIcon, CurrencyDollarIcon,
   ChartBarIcon, MegaphoneIcon, PencilSquareIcon,
   Cog6ToothIcon, ArrowRightOnRectangleIcon, ArrowTopRightOnSquareIcon,
+  ArrowTrendingUpIcon,
 } from '@heroicons/react/24/outline';
 
 const nav = [
@@ -15,6 +16,7 @@ const nav = [
     { to: '/superadmin/pricing',      label: 'Pricing',         icon: CurrencyDollarIcon },
   ]},
   { section: 'ANALYTICS', items: [
+    { to: '/superadmin/analytics',    label: 'Analytics',       icon: ArrowTrendingUpIcon },
     { to: '/superadmin/reports',      label: 'Reports',         icon: ChartBarIcon },
   ]},
   { section: 'MARKETING', items: [

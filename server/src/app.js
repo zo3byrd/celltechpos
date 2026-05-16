@@ -1,5 +1,15 @@
 require('dotenv').config();
 
+// ── Sentry (must init before everything else) ────────────────────────────────
+const Sentry = require('@sentry/node');
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'production',
+    tracesSampleRate: 0.2,
+  });
+}
+
 // ── Startup safety checks ────────────────────────────────────────────────────
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'change-this-to-a-long-random-secret') {
   const crypto = require('crypto');
@@ -49,9 +59,76 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
 });
-app.use('/api/auth/login', loginLimiter);
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok', ts: new Date() }));
+const signupLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many accounts created from this IP. Please try again in an hour.' },
+});
+
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many password reset requests. Please try again in an hour.' },
+});
+
+const repairStatusLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please slow down.' },
+});
+
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many refresh attempts. Please try again later.' },
+});
+
+app.use('/api/auth/login', loginLimiter);
+app.use('/api/auth/signup', signupLimiter);
+app.use('/api/auth/register', signupLimiter);
+app.use('/api/auth/forgot-password', forgotPasswordLimiter);
+app.use('/api/auth/refresh', refreshLimiter);
+app.use('/api/public/repair-status', repairStatusLimiter);
+
+// ── Public repair status lookup (no auth) ────────────────────────────────────
+app.get('/api/public/repair-status/:ticketNumber', async (req, res) => {
+  try {
+    const [rows] = await sequelize.query(
+      `SELECT r.ticketNumber, r.deviceType, r.deviceBrand, r.deviceModel,
+              r.issueDescription, r.status, r.estimatedCost, r.finalCost,
+              r.dueDate, r.completedAt, r.createdAt, r.warrantyDays,
+              s.name as storeName, s.phone as storePhone, s.email as storeEmail
+       FROM RepairTickets r
+       JOIN Stores s ON r.storeId = s.id
+       WHERE r.ticketNumber = ? LIMIT 1`,
+      { replacements: [req.params.ticketNumber] }
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Ticket not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Lookup failed' });
+  }
+});
+
+app.get('/api/health', async (req, res) => {
+  const start = Date.now();
+  try {
+    await sequelize.query('SELECT 1');
+    const dbMs = Date.now() - start;
+    res.json({ status: 'ok', db: 'ok', dbMs, ts: new Date() });
+  } catch (err) {
+    res.status(503).json({ status: 'error', db: 'error', error: err.message, ts: new Date() });
+  }
+});
 
 app.get('/api', (req, res) => {
   res.send(`<!DOCTYPE html><html><head><title>CellTechPOS API</title>
@@ -198,6 +275,17 @@ app.use('/api/messages',       require('./routes/messages'));
 app.use('/api/admin-campaigns', require('./routes/admin-campaigns'));
 app.use('/api/settings',       require('./routes/settings'));
 app.use('/api/announcements',  require('./routes/announcements'));
+app.use('/api/contact',        require('./routes/contact'));
+app.use('/api/buyback',        require('./routes/buyback'));
+app.use('/api/estimates',      require('./routes/estimates'));
+app.use('/api/recurring',      require('./routes/recurring-invoices'));
+app.use('/api/uploads',        require('./routes/uploads'));
+
+// Serve uploaded files
+app.use('/uploads', express.static(process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads')));
+
+// Public display board (no auth)
+app.use('/api/display',        require('./routes/display'));
 
 // ── Serve React build in production ──────────────────────────────────────────
 if (process.env.NODE_ENV === 'production') {
@@ -212,6 +300,8 @@ if (process.env.NODE_ENV === 'production') {
     app.get('*', (req, res) => res.status(503).json({ error: 'Frontend not built. Run npm run build first.' }));
   }
 }
+
+if (process.env.SENTRY_DSN) Sentry.setupExpressErrorHandler(app);
 
 app.use((err, req, res, next) => {
   console.error(err);

@@ -1,3 +1,4 @@
+const https = require('https');
 const nodemailer = require('nodemailer');
 
 // ── SMS via Twilio ─────────────────────────────────────────────────────────────
@@ -15,17 +16,55 @@ async function sendSMS(to, body) {
   return { providerRef: msg.sid };
 }
 
-// ── Email via SMTP (nodemailer) ────────────────────────────────────────────────
-async function sendEmail(to, subject, html, text) {
+// ── Email via SendGrid HTTP API (no SMTP ports needed) ─────────────────────────
+async function sendEmailSendGrid(to, subject, html, text) {
+  const apiKey = process.env.SENDGRID_API_KEY;
+  const from   = process.env.SMTP_FROM || process.env.SENDGRID_FROM || 'noreply@celltechpos.com';
+
+  const payload = JSON.stringify({
+    personalizations: [{ to: [{ email: to }] }],
+    from: { email: from, name: process.env.STORE_NAME || 'CellTechPOS' },
+    subject,
+    content: [
+      { type: 'text/plain', value: text || subject },
+      { type: 'text/html',  value: html },
+    ],
+  });
+
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'api.sendgrid.com',
+      path: '/v3/mail/send',
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+      },
+    }, (res) => {
+      let body = '';
+      res.on('data', d => { body += d; });
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve({ providerRef: res.headers['x-message-id'] || 'sendgrid-ok' });
+        } else {
+          reject(new Error(`SendGrid ${res.statusCode}: ${body}`));
+        }
+      });
+    });
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+}
+
+// ── Email via SMTP fallback (nodemailer) ───────────────────────────────────────
+async function sendEmailSMTP(to, subject, html, text) {
   const host = process.env.SMTP_HOST;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
   const port = parseInt(process.env.SMTP_PORT || '587');
   const from = process.env.SMTP_FROM || user;
-
-  if (!host || !user || !pass) {
-    throw new Error('Email not configured. Add SMTP_HOST, SMTP_USER, SMTP_PASS to .env');
-  }
 
   const transporter = nodemailer.createTransport({
     host, port, secure: port === 465,
@@ -38,6 +77,20 @@ async function sendEmail(to, subject, html, text) {
   });
 
   return { providerRef: info.messageId };
+}
+
+// ── Unified sendEmail: prefers SendGrid, falls back to SMTP ───────────────────
+async function sendEmail(to, subject, html, text) {
+  if (process.env.SENDGRID_API_KEY) {
+    return sendEmailSendGrid(to, subject, html, text);
+  }
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  if (!host || !user || !pass) {
+    throw new Error('Email not configured. Set SENDGRID_API_KEY or SMTP_HOST/SMTP_USER/SMTP_PASS in .env');
+  }
+  return sendEmailSMTP(to, subject, html, text);
 }
 
 // ── Template engine ────────────────────────────────────────────────────────────

@@ -16,6 +16,8 @@ const Store = sequelize.define('Store', {
   loyaltyEnabled:      { type: DataTypes.BOOLEAN, defaultValue: true },
   loyaltyPointsPerDollar: { type: DataTypes.INTEGER, defaultValue: 1 },
   loyaltyPointValue:   { type: DataTypes.DECIMAL(5, 4), defaultValue: 0.01 },
+  logoUrl:             { type: DataTypes.TEXT },
+  receiptPolicy:       { type: DataTypes.TEXT },
 });
 
 // ── User ──────────────────────────────────────────────────────────────────────
@@ -515,6 +517,122 @@ const StoreNote = sequelize.define('StoreNote', {
   createdBy: { type: DataTypes.UUID },
 });
 
+// ── RecurringInvoice ──────────────────────────────────────────────────────────
+const RecurringInvoice = sequelize.define('RecurringInvoice', {
+  id:              { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  storeId:         { type: DataTypes.UUID, allowNull: false },
+  customerId:      { type: DataTypes.UUID, allowNull: true },
+  userId:          { type: DataTypes.UUID },
+  name:            { type: DataTypes.STRING, allowNull: false },
+  lineItemsJson:   { type: DataTypes.TEXT, defaultValue: '[]' },
+  subtotal:        { type: DataTypes.DECIMAL(10,2), defaultValue: 0 },
+  taxRate:         { type: DataTypes.DECIMAL(5,4), defaultValue: 0 },
+  taxAmount:       { type: DataTypes.DECIMAL(10,2), defaultValue: 0 },
+  total:           { type: DataTypes.DECIMAL(10,2), defaultValue: 0 },
+  frequency:       { type: DataTypes.ENUM('weekly','monthly','quarterly','yearly'), defaultValue: 'monthly' },
+  startDate:       { type: DataTypes.DATEONLY },
+  nextBillingDate: { type: DataTypes.DATEONLY },
+  lastBilledDate:  { type: DataTypes.DATEONLY },
+  status:          { type: DataTypes.ENUM('active','paused','cancelled'), defaultValue: 'active' },
+  billingCount:    { type: DataTypes.INTEGER, defaultValue: 0 },
+  notes:           { type: DataTypes.TEXT },
+  dueDays:         { type: DataTypes.INTEGER, defaultValue: 30 },
+});
+
+// ── Invoice ───────────────────────────────────────────────────────────────────
+const Invoice = sequelize.define('Invoice', {
+  id:              { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  storeId:         { type: DataTypes.UUID, allowNull: false },
+  customerId:      { type: DataTypes.UUID, allowNull: true },
+  userId:          { type: DataTypes.UUID },
+  recurringId:     { type: DataTypes.UUID, allowNull: true },
+  repairId:        { type: DataTypes.UUID, allowNull: true },
+  invoiceNumber:   { type: DataTypes.STRING },
+  status:          { type: DataTypes.ENUM('draft','sent','paid','overdue','void'), defaultValue: 'draft' },
+  lineItemsJson:   { type: DataTypes.TEXT, defaultValue: '[]' },
+  subtotal:        { type: DataTypes.DECIMAL(10,2), defaultValue: 0 },
+  taxRate:         { type: DataTypes.DECIMAL(5,4), defaultValue: 0 },
+  taxAmount:       { type: DataTypes.DECIMAL(10,2), defaultValue: 0 },
+  total:           { type: DataTypes.DECIMAL(10,2), defaultValue: 0 },
+  paidAmount:      { type: DataTypes.DECIMAL(10,2), defaultValue: 0 },
+  dueDate:         { type: DataTypes.DATEONLY },
+  paidAt:          { type: DataTypes.DATE },
+  sentAt:          { type: DataTypes.DATE },
+  paymentMethod:   { type: DataTypes.STRING },
+  notes:           { type: DataTypes.TEXT },
+});
+
+// ── Estimate ──────────────────────────────────────────────────────────────────
+const Estimate = sequelize.define('Estimate', {
+  id:             { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  storeId:        { type: DataTypes.UUID, allowNull: false },
+  customerId:     { type: DataTypes.UUID, allowNull: true },
+  userId:         { type: DataTypes.UUID },
+  repairId:       { type: DataTypes.UUID, allowNull: true },
+  estimateNumber: { type: DataTypes.STRING },
+  status:         { type: DataTypes.ENUM('draft','sent','viewed','approved','declined','expired'), defaultValue: 'draft' },
+  lineItemsJson:  { type: DataTypes.TEXT, defaultValue: '[]' },
+  subtotal:       { type: DataTypes.DECIMAL(10,2), defaultValue: 0 },
+  taxRate:        { type: DataTypes.DECIMAL(5,4), defaultValue: 0 },
+  taxAmount:      { type: DataTypes.DECIMAL(10,2), defaultValue: 0 },
+  total:          { type: DataTypes.DECIMAL(10,2), defaultValue: 0 },
+  notes:          { type: DataTypes.TEXT },
+  validDays:      { type: DataTypes.INTEGER, defaultValue: 30 },
+  validUntil:     { type: DataTypes.DATE },
+  sentAt:         { type: DataTypes.DATE },
+  approvedAt:     { type: DataTypes.DATE },
+  declinedAt:     { type: DataTypes.DATE },
+  approvalToken:  { type: DataTypes.STRING },
+  customerNotes:  { type: DataTypes.TEXT },
+});
+
+// ── RepairAttachment ──────────────────────────────────────────────────────────
+const RepairAttachment = sequelize.define('RepairAttachment', {
+  id:           { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  repairId:     { type: DataTypes.UUID, allowNull: false },
+  storeId:      { type: DataTypes.UUID },
+  userId:       { type: DataTypes.UUID },
+  filename:     { type: DataTypes.STRING },
+  originalName: { type: DataTypes.STRING },
+  mimeType:     { type: DataTypes.STRING },
+  size:         { type: DataTypes.INTEGER },
+  url:          { type: DataTypes.STRING },
+});
+
+// ── RepairTimeLog ─────────────────────────────────────────────────────────────
+const RepairTimeLog = sequelize.define('RepairTimeLog', {
+  id:        { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  repairId:  { type: DataTypes.UUID, allowNull: false },
+  userId:    { type: DataTypes.UUID },
+  storeId:   { type: DataTypes.UUID },
+  startedAt: { type: DataTypes.DATE },
+  endedAt:   { type: DataTypes.DATE },
+  minutes:   { type: DataTypes.INTEGER, defaultValue: 0 },
+  notes:     { type: DataTypes.STRING },
+});
+
+// ── Buyback ───────────────────────────────────────────────────────────────────
+const Buyback = sequelize.define('Buyback', {
+  id:           { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  storeId:      { type: DataTypes.UUID, allowNull: false },
+  customerId:   { type: DataTypes.UUID },
+  userId:       { type: DataTypes.UUID },
+  ticketNumber: { type: DataTypes.STRING },
+  deviceBrand:  { type: DataTypes.STRING },
+  deviceModel:  { type: DataTypes.STRING },
+  deviceColor:  { type: DataTypes.STRING },
+  imei:         { type: DataTypes.STRING },
+  storage:      { type: DataTypes.STRING },
+  condition:    { type: DataTypes.ENUM('excellent','good','fair','poor'), defaultValue: 'good' },
+  quotedPrice:  { type: DataTypes.DECIMAL(10,2), defaultValue: 0 },
+  finalPrice:   { type: DataTypes.DECIMAL(10,2), defaultValue: 0 },
+  paymentMethod:{ type: DataTypes.STRING, defaultValue: 'cash' },
+  status:       { type: DataTypes.ENUM('pending','completed','declined'), defaultValue: 'completed' },
+  addToInventory: { type: DataTypes.BOOLEAN, defaultValue: false },
+  inventoryItemId:{ type: DataTypes.UUID },
+  notes:        { type: DataTypes.TEXT },
+});
+
 // ── Associations ──────────────────────────────────────────────────────────────
 Store.hasMany(User,          { foreignKey: 'storeId' });
 User.belongsTo(Store,        { foreignKey: 'storeId' });
@@ -654,6 +772,54 @@ InventoryCountItem.belongsTo(InventoryCount, { foreignKey: 'countId' });
 InventoryItem.hasMany(InventoryCountItem, { foreignKey: 'itemId' });
 InventoryCountItem.belongsTo(InventoryItem, { foreignKey: 'itemId', as: 'item' });
 
+// Buyback associations
+Store.hasMany(Buyback,    { foreignKey: 'storeId' });
+Buyback.belongsTo(Store,  { foreignKey: 'storeId' });
+Customer.hasMany(Buyback, { foreignKey: 'customerId' });
+Buyback.belongsTo(Customer, { foreignKey: 'customerId' });
+User.hasMany(Buyback,     { foreignKey: 'userId' });
+Buyback.belongsTo(User,   { foreignKey: 'userId' });
+
+// RecurringInvoice associations
+Store.hasMany(RecurringInvoice,    { foreignKey: 'storeId' });
+RecurringInvoice.belongsTo(Store,  { foreignKey: 'storeId' });
+Customer.hasMany(RecurringInvoice, { foreignKey: 'customerId' });
+RecurringInvoice.belongsTo(Customer, { foreignKey: 'customerId' });
+User.hasMany(RecurringInvoice,     { foreignKey: 'userId' });
+RecurringInvoice.belongsTo(User,   { foreignKey: 'userId' });
+RecurringInvoice.hasMany(Invoice,  { foreignKey: 'recurringId', as: 'invoices' });
+Invoice.belongsTo(RecurringInvoice, { foreignKey: 'recurringId', as: 'recurring' });
+
+// Invoice associations
+Store.hasMany(Invoice,    { foreignKey: 'storeId' });
+Invoice.belongsTo(Store,  { foreignKey: 'storeId' });
+Customer.hasMany(Invoice, { foreignKey: 'customerId' });
+Invoice.belongsTo(Customer, { foreignKey: 'customerId' });
+User.hasMany(Invoice,     { foreignKey: 'userId' });
+Invoice.belongsTo(User,   { foreignKey: 'userId' });
+
+// Estimate associations
+Store.hasMany(Estimate,    { foreignKey: 'storeId' });
+Estimate.belongsTo(Store,  { foreignKey: 'storeId' });
+Customer.hasMany(Estimate, { foreignKey: 'customerId' });
+Estimate.belongsTo(Customer, { foreignKey: 'customerId' });
+User.hasMany(Estimate,     { foreignKey: 'userId' });
+Estimate.belongsTo(User,   { foreignKey: 'userId' });
+RepairTicket.hasMany(Estimate, { foreignKey: 'repairId' });
+Estimate.belongsTo(RepairTicket, { foreignKey: 'repairId', as: 'repair' });
+
+// RepairAttachment associations
+RepairTicket.hasMany(RepairAttachment, { foreignKey: 'repairId', as: 'attachments' });
+RepairAttachment.belongsTo(RepairTicket, { foreignKey: 'repairId' });
+User.hasMany(RepairAttachment, { foreignKey: 'userId' });
+RepairAttachment.belongsTo(User, { foreignKey: 'userId' });
+
+// RepairTimeLog associations
+RepairTicket.hasMany(RepairTimeLog, { foreignKey: 'repairId', as: 'timeLogs' });
+RepairTimeLog.belongsTo(RepairTicket, { foreignKey: 'repairId' });
+User.hasMany(RepairTimeLog, { foreignKey: 'userId' });
+RepairTimeLog.belongsTo(User, { foreignKey: 'userId' });
+
 module.exports = {
   Store, User, Customer, InventoryItem, License, StripePlan, Message,
   RepairTicket, RepairPart,
@@ -670,4 +836,10 @@ module.exports = {
   InventoryCount, InventoryCountItem,
   SubscriptionPlan, Subscription,
   Setting, Announcement, StoreNote,
+  Buyback,
+  Estimate,
+  RepairAttachment,
+  RepairTimeLog,
+  RecurringInvoice,
+  Invoice,
 };

@@ -1,57 +1,67 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { BanknotesIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { BanknotesIcon, PlusIcon, XMarkIcon, Cog6ToothIcon, CheckIcon } from '@heroicons/react/24/outline';
 import api from '../../api/client';
+import { CARRIER_BRANDS, DEFAULT_BP_PLANS } from '../../data/carrierPlans';
+
+const PLANS_KEY = 'ctp_bp_plans';
 
 const TYPES = ['prepaid_pin', 'bill_payment', 'mobile_topup', 'money_order'];
 const PAYMENT_METHODS = ['cash', 'card', 'check', 'other'];
 
 const CARRIERS = {
   boost: 'Boost Mobile', tmobile: 'T-Mobile', att: 'AT&T Prepaid',
-  cricket: 'Cricket', metro: 'Metro by T-Mobile', verizon: 'Verizon Prepaid',
-  h2o: 'H2O Wireless', tracfone: 'Tracfone', visible: 'Visible', other: 'Other',
+  cricket: 'Cricket Wireless', metro: 'Metro by T-Mobile', verizon: 'Verizon Prepaid',
+  visible: 'Visible', h2o: 'H2O Wireless', tracfone: 'Tracfone',
+  simple: 'Simple Mobile', ultra: 'Ultra Mobile', straighttalk: 'Straight Talk',
+  mint: 'Mint Mobile', other: 'Other',
 };
 
-const CARRIER_BRAND = {
-  boost:    { bg: '#FF6B00', text: '#fff', abbr: 'BST' },
-  tmobile:  { bg: '#E20074', text: '#fff', abbr: 'TMO' },
-  att:      { bg: '#00A8E0', text: '#fff', abbr: 'AT&T' },
-  cricket:  { bg: '#007D40', text: '#fff', abbr: 'CKT' },
-  metro:    { bg: '#9B1FE8', text: '#fff', abbr: 'MTR' },
-  verizon:  { bg: '#CD040B', text: '#fff', abbr: 'VZW' },
-  h2o:      { bg: '#0057B8', text: '#fff', abbr: 'H2O' },
-  tracfone: { bg: '#1DA462', text: '#fff', abbr: 'TRF' },
-  visible:  { bg: '#6B21A8', text: '#fff', abbr: 'VSB' },
-  other:    { bg: '#6b7280', text: '#fff', abbr: 'OTH' },
-};
+const CARRIER_BRAND = Object.fromEntries(
+  Object.entries(CARRIER_BRANDS).map(([k, v]) => [k, { bg: v.bg, text: v.text, abbr: v.abbr }])
+);
 
-function CarrierLogo({ carrier, size = 'sm' }) {
-  const b = CARRIER_BRAND[carrier] || CARRIER_BRAND.other;
-  const dim = size === 'lg' ? 44 : size === 'md' ? 32 : 24;
-  const fs  = size === 'lg' ? 11 : size === 'md' ? 9 : 8;
+function makeAbbr(name) {
+  if (!name) return 'OTH';
+  const words = name.trim().split(/\s+/);
+  if (words.length === 1) return name.slice(0, 4).toUpperCase();
+  return words.map(w => w[0]).join('').slice(0, 4).toUpperCase();
+}
+
+function CarrierLogo({ carrier, size = 'sm', customName, customColor }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const b = (carrier === 'other' && (customName || customColor))
+    ? { bg: customColor || '#6b7280', text: '#fff', abbr: makeAbbr(customName) }
+    : (CARRIER_BRAND[carrier] || { bg: '#6b7280', text: '#fff', abbr: makeAbbr(carrier) });
+  const h = size === 'lg' ? 44 : size === 'md' ? 32 : 22;
+  const hasLogo = carrier && carrier !== 'other' && !imgFailed;
+  if (hasLogo) {
+    return (
+      <img src={`/carriers/${carrier}.svg`} alt={b.abbr}
+        style={{ height: h, width: 'auto', borderRadius: 4, flexShrink: 0, display: 'block' }}
+        onError={() => setImgFailed(true)} />
+    );
+  }
+  const fs = size === 'lg' ? 11 : size === 'md' ? 9 : 8;
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      width: dim, height: dim, borderRadius: 4, background: b.bg, color: b.text,
+      width: h, height: h, borderRadius: 4, background: b.bg, color: b.text,
       fontSize: fs, fontWeight: 700, letterSpacing: '0.02em', flexShrink: 0 }}>
       {b.abbr}
     </span>
   );
 }
 
-const AMOUNTS_BY_CARRIER = {
-  boost: ['25', '35', '50', '60', '80', '100'],
-  tmobile: ['25', '40', '50', '70', '90'],
-  att: ['25', '30', '45', '65', '75'],
-  cricket: ['25', '30', '40', '55', '60'],
-  metro: ['25', '40', '50', '60'],
-  verizon: ['30', '40', '50', '65', '80'],
-  h2o: ['10', '20', '30', '40', '60'],
-  tracfone: ['10', '20', '25', '35', '50'],
-  visible: ['25', '45'],
-  other: [],
-};
+const LOGO_COLORS = ['#6b7280','#ef4444','#f97316','#eab308','#22c55e','#0ea5e9','#6366f1','#ec4899','#14b8a6','#8b5cf6'];
+const empty = { type: 'prepaid_pin', carrier: 'boost', amount: '', fee: '0', phoneNumber: '', pinCode: '', accountNumber: '', paymentMethod: 'cash', notes: '', otherName: '', otherColor: '#6b7280' };
 
-const empty = { type: 'prepaid_pin', carrier: 'boost', amount: '', fee: '0', phoneNumber: '', pinCode: '', accountNumber: '', paymentMethod: 'cash', notes: '' };
+function mergeDefaultPlans(stored) {
+  const merged = { ...stored };
+  for (const [key, plans] of Object.entries(DEFAULT_BP_PLANS)) {
+    if (!merged[key]) merged[key] = plans;
+  }
+  return merged;
+}
 
 function fmt$(n) { return '$' + parseFloat(n || 0).toFixed(2); }
 function fmtDate(d) { return d ? new Date(d).toLocaleDateString() : '—'; }
@@ -65,6 +75,38 @@ export default function BillPayments() {
   const [saving, setSaving] = useState(false);
   const [filterType, setFilterType] = useState('');
   const [filterCarrier, setFilterCarrier] = useState('');
+  const [plans, setPlans] = useState(() => { try { return mergeDefaultPlans(JSON.parse(localStorage.getItem(PLANS_KEY) || '{}')); } catch { return mergeDefaultPlans({}); } });
+  const [addingPlan, setAddingPlan] = useState(false);
+  const [newPlan, setNewPlan] = useState({ name: '', amount: '', fee: '0' });
+  const [showPlansManager, setShowPlansManager] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState(null);
+
+  useEffect(() => { localStorage.setItem(PLANS_KEY, JSON.stringify(plans)); }, [plans]);
+
+  function carrierKey() {
+    return form.carrier === 'other' ? (form.otherName.trim() || 'other') : form.carrier;
+  }
+
+  function addPlan() {
+    if (!newPlan.name.trim()) return toast.error('Plan name required');
+    if (!newPlan.amount || parseFloat(newPlan.amount) <= 0) return toast.error('Amount required');
+    const key = carrierKey();
+    const entry = { id: Date.now().toString(), name: newPlan.name.trim(), amount: newPlan.amount, fee: newPlan.fee || '0' };
+    setPlans(prev => ({ ...prev, [key]: [...(prev[key] || []), entry] }));
+    setNewPlan({ name: '', amount: '', fee: '0' });
+    setAddingPlan(false);
+    toast.success('Plan saved');
+  }
+
+  function removePlan(key, id) {
+    setPlans(prev => ({ ...prev, [key]: (prev[key] || []).filter(p => p.id !== id) }));
+    if (selectedPlanId === id) setSelectedPlanId(null);
+  }
+
+  function selectPlan(plan) {
+    setSelectedPlanId(plan.id);
+    setForm(f => ({ ...f, amount: plan.amount, fee: plan.fee || '0', notes: plan.name }));
+  }
 
   async function load() {
     setLoading(true);
@@ -81,14 +123,18 @@ export default function BillPayments() {
 
   useEffect(() => { load(); }, [filterType, filterCarrier]);
 
-  const suggestedAmounts = AMOUNTS_BY_CARRIER[form.carrier] || [];
   const totalAmt = (parseFloat(form.amount) || 0) + (parseFloat(form.fee) || 0);
 
   async function save() {
     if (!form.amount || parseFloat(form.amount) <= 0) return toast.error('Amount required');
+    if (form.carrier === 'other' && !form.otherName.trim()) return toast.error('Enter a carrier name');
     setSaving(true);
     try {
-      await api.post('/bill-payments', form);
+      const payload = { ...form };
+      if (form.carrier === 'other' && form.otherName.trim()) {
+        payload.carrier = form.otherName.trim();
+      }
+      await api.post('/bill-payments', payload);
       toast.success('Payment recorded');
       setModal(false);
       setForm(empty);
@@ -108,7 +154,10 @@ export default function BillPayments() {
           <h1 className="page-title">Bill Payments & Prepaid</h1>
           <p className="page-sub">Prepaid PIN sales, bill payments, mobile top-ups</p>
         </div>
-        <button className="btn-primary" onClick={() => { setForm(empty); setModal(true); }}><PlusIcon className="w-4 h-4" />New Payment</button>
+        <div className="flex gap-2">
+          <button className="btn-secondary" onClick={() => setShowPlansManager(true)}><Cog6ToothIcon className="w-4 h-4" />Manage Plans</button>
+          <button className="btn-primary" onClick={() => { setForm(empty); setSelectedPlanId(null); setModal(true); }}><PlusIcon className="w-4 h-4" />New Payment</button>
+        </div>
       </div>
 
       {/* Quick stats */}
@@ -218,25 +267,122 @@ export default function BillPayments() {
                 <div>
                   <label className="label">Carrier</label>
                   <div className="flex items-center gap-2">
-                    <CarrierLogo carrier={form.carrier} size="md" />
-                    <select className="input flex-1" value={form.carrier} onChange={e => setForm(f => ({ ...f, carrier: e.target.value, amount: '' }))}>
+                    <CarrierLogo carrier={form.carrier} size="md" customName={form.otherName} customColor={form.otherColor} />
+                    <select className="input flex-1" value={form.carrier} onChange={e => { setForm(f => ({ ...f, carrier: e.target.value, amount: '', otherName: '', otherColor: '#6b7280' })); setSelectedPlanId(null); setAddingPlan(false); }}>
                       {Object.entries(CARRIERS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
                   </div>
                 </div>
-                {suggestedAmounts.length > 0 && (
-                  <div className="col-span-2">
-                    <label className="label">Quick Amount</label>
-                    <div className="flex flex-wrap gap-2">
-                      {suggestedAmounts.map(a => (
-                        <button key={a} onClick={() => setForm(f => ({ ...f, amount: a }))}
-                          className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${form.amount === a ? 'bg-brand-600 text-white border-brand-600' : 'border-slate-200 text-slate-700 hover:border-brand-400'}`}>
-                          ${a}
-                        </button>
-                      ))}
+
+                {/* Custom carrier fields — only when "Other" is selected */}
+                {form.carrier === 'other' && (
+                  <div className="col-span-2 space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <div>
+                      <label className="label">Carrier Name <span className="text-red-500">*</span></label>
+                      <div className="flex items-center gap-2">
+                        <CarrierLogo carrier="other" size="md" customName={form.otherName} customColor={form.otherColor} />
+                        <input
+                          className="input flex-1"
+                          placeholder="e.g. Simple Mobile, Ultra Mobile…"
+                          value={form.otherName}
+                          onChange={e => setForm(f => ({ ...f, otherName: e.target.value }))}
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="label">Logo Color</label>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {LOGO_COLORS.map(c => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => setForm(f => ({ ...f, otherColor: c }))}
+                            style={{
+                              width: 28, height: 28, borderRadius: 6, background: c,
+                              border: form.otherColor === c ? '3px solid white' : '2px solid transparent',
+                              boxShadow: form.otherColor === c ? `0 0 0 2px ${c}` : 'none',
+                              flexShrink: 0,
+                            }}
+                          />
+                        ))}
+                        <input
+                          type="color"
+                          value={form.otherColor}
+                          onChange={e => setForm(f => ({ ...f, otherColor: e.target.value }))}
+                          title="Custom color"
+                          style={{ width: 28, height: 28, borderRadius: 6, padding: 2, border: '1px solid #e5e7eb', cursor: 'pointer', flexShrink: 0 }}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
+
+                {/* ── Saved Plans ── */}
+                {(() => {
+                  const key = form.carrier === 'other' ? (form.otherName.trim() || null) : form.carrier;
+                  const carrierPlans = key ? (plans[key] || []) : [];
+                  return (
+                    <div className="col-span-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="label mb-0">Saved Plans</label>
+                        <button type="button" onClick={() => { setAddingPlan(true); setNewPlan({ name: '', amount: '', fee: '0' }); }}
+                          className="text-xs font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1">
+                          <PlusIcon className="w-3.5 h-3.5" /> Add Plan
+                        </button>
+                      </div>
+                      {carrierPlans.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {carrierPlans.map(plan => (
+                            <div key={plan.id} className="flex items-center gap-0.5">
+                              <button type="button" onClick={() => selectPlan(plan)}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-l-lg border text-sm font-medium transition-colors ${
+                                  selectedPlanId === plan.id
+                                    ? 'bg-brand-600 text-white border-brand-600'
+                                    : 'border-slate-200 text-slate-700 hover:border-brand-400 hover:bg-brand-50'
+                                }`}>
+                                {selectedPlanId === plan.id && <CheckIcon className="w-3.5 h-3.5" />}
+                                {plan.name}
+                                <span className="opacity-75">— {fmt$(plan.amount)}</span>
+                                {parseFloat(plan.fee) > 0 && <span className="opacity-50 text-xs">+{fmt$(plan.fee)}</span>}
+                              </button>
+                              <button type="button" onClick={() => removePlan(key, plan.id)}
+                                className="px-1.5 py-1.5 border border-l-0 border-slate-200 rounded-r-lg text-slate-300 hover:text-red-400 hover:border-red-200 transition-colors">
+                                <XMarkIcon className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {carrierPlans.length === 0 && !addingPlan && (
+                        <p className="text-xs text-slate-400 mb-2">No plans saved for this carrier yet.</p>
+                      )}
+                      {addingPlan && (
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2 mb-2">
+                          <input className="input text-sm" placeholder="Plan name (e.g. Unlimited $35, Family Plan)"
+                            value={newPlan.name} onChange={e => setNewPlan(p => ({ ...p, name: e.target.value }))} autoFocus />
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <label className="label text-xs">Amount ($)</label>
+                              <input type="number" className="input text-sm" placeholder="0.00" min="0" step="0.01"
+                                value={newPlan.amount} onChange={e => setNewPlan(p => ({ ...p, amount: e.target.value }))} />
+                            </div>
+                            <div className="flex-1">
+                              <label className="label text-xs">Fee ($)</label>
+                              <input type="number" className="input text-sm" placeholder="0.00" min="0" step="0.25"
+                                value={newPlan.fee} onChange={e => setNewPlan(p => ({ ...p, fee: e.target.value }))} />
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button className="btn-primary text-sm py-1.5 flex-1" onClick={addPlan}>Save Plan</button>
+                            <button className="btn-secondary text-sm py-1.5" onClick={() => setAddingPlan(false)}>Cancel</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 <div>
                   <label className="label">Amount ($)</label>
                   <input type="number" className="input" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} min="0" step="0.01" />
@@ -276,6 +422,48 @@ export default function BillPayments() {
             <div className="modal-footer">
               <button className="btn-secondary" onClick={() => setModal(false)}>Cancel</button>
               <button className="btn-primary" onClick={save} disabled={saving}>{saving ? 'Processing…' : `Charge ${fmt$(totalAmt)}`}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Manage Plans Modal ── */}
+      {showPlansManager && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowPlansManager(false)}>
+          <div className="modal-box" style={{ maxWidth: 560 }}>
+            <div className="modal-header">
+              <h2 className="font-semibold">Manage Plans</h2>
+              <button onClick={() => setShowPlansManager(false)}><XMarkIcon className="w-5 h-5 text-slate-400" /></button>
+            </div>
+            <div className="modal-body space-y-4">
+              {Object.keys(plans).length === 0 && (
+                <p className="text-sm text-slate-400 text-center py-4">No plans saved yet. Open a payment and use "Add Plan" to create reusable plans per carrier.</p>
+              )}
+              {Object.entries(plans).map(([key, carrierPlans]) => carrierPlans.length === 0 ? null : (
+                <div key={key}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <CarrierLogo carrier={CARRIER_BRAND[key] ? key : 'other'} size="sm" customName={CARRIER_BRAND[key] ? undefined : key} />
+                    <span className="font-semibold text-sm text-slate-700">{CARRIERS[key] || key}</span>
+                    <span className="text-xs text-slate-400">({carrierPlans.length} plan{carrierPlans.length !== 1 ? 's' : ''})</span>
+                  </div>
+                  <div className="space-y-1 pl-8">
+                    {carrierPlans.map(plan => (
+                      <div key={plan.id} className="flex items-center justify-between py-1.5 px-3 bg-slate-50 rounded-lg text-sm">
+                        <span className="font-medium text-slate-700">{plan.name}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-slate-500">{fmt$(plan.amount)}{parseFloat(plan.fee) > 0 ? ` + ${fmt$(plan.fee)} fee` : ''}</span>
+                          <button onClick={() => removePlan(key, plan.id)} className="text-slate-300 hover:text-red-400 transition-colors">
+                            <XMarkIcon className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setShowPlansManager(false)}>Close</button>
             </div>
           </div>
         </div>

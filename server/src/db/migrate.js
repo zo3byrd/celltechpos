@@ -21,6 +21,8 @@ async function runMigrations() {
   await addColumn('Stores', 'loyaltyEnabled', 'TINYINT(1) DEFAULT 1');
   await addColumn('Stores', 'loyaltyPointsPerDollar', 'INTEGER DEFAULT 1');
   await addColumn('Stores', 'loyaltyPointValue', 'DECIMAL(5,4) DEFAULT 0.01');
+  await addColumn('Stores', 'logoUrl', 'TEXT');
+  await addColumn('Stores', 'receiptPolicy', 'TEXT');
   // User
   await addColumn('Users', 'hourlyRate', 'DECIMAL(10,2) DEFAULT 0');
   await addColumn('Users', 'commissionRate', 'DECIMAL(5,4) DEFAULT 0');

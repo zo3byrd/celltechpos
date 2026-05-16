@@ -12,6 +12,7 @@ router.get('/', async (req, res) => {
     if (active !== undefined) where.active = active === 'true';
     if (search) where.name = { [Op.like]: `%${search}%` };
     const suppliers = await Supplier.findAll({ where, order: [['name', 'ASC']] });
+    res.setHeader('Cache-Control', 'no-store');
     res.json(suppliers);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

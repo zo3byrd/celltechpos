@@ -14,10 +14,10 @@ router.get('/', auth, async (req, res) => {
   if (status) where.status = status;
   if (search) {
     where[Op.or] = [
-      { ticketNumber: { [Op.iLike]: `%${search}%` } },
-      { deviceBrand: { [Op.iLike]: `%${search}%` } },
-      { deviceModel: { [Op.iLike]: `%${search}%` } },
-      { imei: { [Op.iLike]: `%${search}%` } },
+      { ticketNumber: { [Op.like]: `%${search}%` } },
+      { deviceBrand: { [Op.like]: `%${search}%` } },
+      { deviceModel: { [Op.like]: `%${search}%` } },
+      { imei: { [Op.like]: `%${search}%` } },
     ];
   }
   const { rows, count } = await RepairTicket.findAndCountAll({

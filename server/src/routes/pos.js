@@ -126,4 +126,98 @@ router.get('/transactions/:id', auth, async (req, res) => {
   res.json(tx);
 });
 
+// Public store info for receipt printing (any authenticated user)
+router.get('/store-info', auth, async (req, res) => {
+  const store = await Store.findByPk(req.user.storeId, {
+    attributes: ['name', 'address', 'city', 'state', 'zip', 'phone', 'email', 'logoUrl', 'receiptPolicy'],
+  });
+  res.json(store || {});
+});
+
+// Send receipt via SMS or email
+router.post('/send-receipt', auth, async (req, res) => {
+  const { sendSMS, sendEmail, emailHtml } = require('../integrations/messaging');
+  const { method, to, transactionNumber, storeName, storeAddress, storePhone, logoUrl, receiptPolicy,
+          items, subtotal, taxAmount, discountAmount, total, paymentMethod } = req.body;
+
+  if (!method || !to) return res.status(400).json({ error: 'method and to are required' });
+
+  const fmtMoney = n => '$' + parseFloat(n || 0).toFixed(2);
+  const name = storeName || 'Cell 4 Less Repair';
+  const date = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+  try {
+    if (method === 'sms') {
+      const itemLines = (items || []).map(i => `${i.name} x${i.qty}  ${fmtMoney(i.unitPrice * i.qty)}`).join('\n');
+      const lines = [
+        name,
+        storeAddress || null,
+        storePhone || null,
+        `Receipt: ${transactionNumber}`,
+        date, '',
+        itemLines, '',
+        `Subtotal: ${fmtMoney(subtotal)}`,
+        discountAmount > 0 ? `Discount: -${fmtMoney(discountAmount)}` : null,
+        `Tax: ${fmtMoney(taxAmount)}`,
+        `TOTAL: ${fmtMoney(total)}`,
+        `Payment: ${paymentMethod}`,
+        '',
+        receiptPolicy || 'Thank you for your business!',
+      ].filter(l => l !== null).join('\n');
+      await sendSMS(to, lines);
+
+    } else if (method === 'email') {
+      const logoHtml = logoUrl
+        ? `<div style="text-align:center;margin-bottom:16px"><img src="${logoUrl}" alt="${name}" style="max-height:80px;max-width:200px;object-fit:contain"/></div>`
+        : '';
+      const addrLine = [storeAddress, storePhone].filter(Boolean).join(' · ');
+      const rows = (items || []).map(i => `
+        <tr>
+          <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6">${i.name}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;text-align:center">${i.qty}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;text-align:right">${fmtMoney(i.unitPrice * i.qty)}</td>
+        </tr>`).join('');
+      const discRow = discountAmount > 0
+        ? `<tr><td style="padding:4px 8px;color:#16a34a">Discount</td><td></td><td style="padding:4px 8px;text-align:right;color:#16a34a">-${fmtMoney(discountAmount)}</td></tr>` : '';
+      const policyHtml = receiptPolicy
+        ? `<div style="margin-top:20px;padding:12px;background:#f9fafb;border-radius:6px;font-size:12px;color:#6b7280;white-space:pre-wrap">${receiptPolicy}</div>`
+        : '';
+      const body = `
+        ${logoHtml}
+        ${addrLine ? `<p style="margin:0 0 4px;color:#6b7280;font-size:12px;text-align:center">${addrLine}</p>` : ''}
+        <p style="margin:8px 0;color:#6b7280;font-size:13px">${date}</p>
+        <p style="margin:0 0 16px;font-size:13px">Transaction: <strong>${transactionNumber}</strong></p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+          <thead>
+            <tr style="background:#f9fafb">
+              <th style="padding:8px;text-align:left;border-bottom:2px solid #e5e7eb">Item</th>
+              <th style="padding:8px;text-align:center;border-bottom:2px solid #e5e7eb">Qty</th>
+              <th style="padding:8px;text-align:right;border-bottom:2px solid #e5e7eb">Amount</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <table style="width:100%;margin-top:12px;font-size:14px">
+          <tr><td style="padding:4px 8px;color:#6b7280">Subtotal</td><td></td><td style="padding:4px 8px;text-align:right">${fmtMoney(subtotal)}</td></tr>
+          ${discRow}
+          <tr><td style="padding:4px 8px;color:#6b7280">Tax</td><td></td><td style="padding:4px 8px;text-align:right">${fmtMoney(taxAmount)}</td></tr>
+          <tr style="font-weight:bold;font-size:16px;border-top:2px solid #e5e7eb">
+            <td style="padding:8px">Total</td><td></td>
+            <td style="padding:8px;text-align:right;color:#15803d">${fmtMoney(total)}</td>
+          </tr>
+          <tr><td style="padding:4px 8px;color:#6b7280">Payment</td><td></td><td style="padding:4px 8px;text-align:right;text-transform:capitalize">${paymentMethod}</td></tr>
+        </table>
+        ${policyHtml}`;
+      await sendEmail(to, `Receipt from ${name} — ${transactionNumber}`, emailHtml(body, name, storePhone));
+
+    } else {
+      return res.status(400).json({ error: 'method must be sms or email' });
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 module.exports = router;

@@ -1,10 +1,18 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import CellTechLogo from '../components/Logo';
+import { useAuthStore } from '../store/authStore';
 import {
   WrenchScrewdriverIcon, ShoppingCartIcon, CubeIcon,
   UsersIcon, SignalIcon, ChartBarIcon, ClockIcon,
   StarIcon, CalendarDaysIcon, CheckIcon,
   DevicePhoneMobileIcon, BanknotesIcon, ArchiveBoxIcon,
   ArrowRightIcon, BoltIcon, ShieldCheckIcon,
+  Bars3Icon, XMarkIcon, CurrencyDollarIcon,
+  DocumentTextIcon, ArrowPathIcon, ArrowUturnLeftIcon,
+  TruckIcon, MegaphoneIcon, ChatBubbleLeftRightIcon,
+  ComputerDesktopIcon, PrinterIcon, PaperClipIcon,
+  KeyIcon, BuildingStorefrontIcon, ReceiptPercentIcon,
 } from '@heroicons/react/24/outline';
 
 const TEAL  = '#0d9488';
@@ -21,6 +29,22 @@ const globalStyle = `
   .float-anim { animation: float 4s ease-in-out infinite; }
   .card-hover { transition: transform 0.2s, box-shadow 0.2s; }
   .card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.12) !important; }
+  .nav-desktop-links { display: flex; align-items: center; gap: 28px; flex: 1; }
+  .nav-desktop-actions { display: flex; align-items: center; gap: 12px; }
+  .nav-hamburger { display: none; }
+  .nav-mobile-menu { display: none; }
+  .nav-logo-desktop { display: flex; }
+  .nav-logo-mobile { display: none; }
+  @media (max-width: 767px) {
+    .nav-desktop-links { display: none; }
+    .nav-desktop-actions { display: none; }
+    .nav-hamburger { display: flex; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; padding: 8px; color: #94a3b8; }
+    .nav-mobile-menu { display: block; background: rgba(15,23,42,0.99); border-top: 1px solid rgba(255,255,255,0.08); padding: 12px 20px 20px; }
+    .nav-mobile-link { display: block; padding: 13px 0; font-size: 16px; font-weight: 500; color: #94a3b8; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .nav-mobile-link:last-child { border-bottom: none; }
+    .nav-logo-desktop { display: none; }
+    .nav-logo-mobile { display: flex; }
+  }
 `;
 
 /* ─── Mock POS Screen content (inside phone mockup) ───────────── */
@@ -211,21 +235,34 @@ function LaptopMockup() {
 }
 
 const features = [
-  { icon: ShoppingCartIcon,      title: 'Point of Sale',       desc: 'Fast checkout, split payments, digital receipts and daily cash drawer reports.',   color: '#0d9488' },
-  { icon: WrenchScrewdriverIcon, title: 'Repair Tickets',      desc: 'Intake to pickup — parts, labor, customer signature and warranty tracking.',         color: '#6366f1' },
-  { icon: CubeIcon,              title: 'Inventory',           desc: 'Real-time stock, reorder alerts, suppliers, purchase orders and cycle counts.',       color: '#f59e0b' },
-  { icon: SignalIcon,            title: 'Activations',         desc: 'Log carrier activations, track commissions and spiffs automatically.',               color: '#0ea5e9' },
-  { icon: UsersIcon,             title: 'Customer CRM',        desc: 'Full customer history, repair records, loyalty points and ID verification.',          color: '#ec4899' },
-  { icon: CalendarDaysIcon,      title: 'Appointments',        desc: 'Schedule drop-offs and walk-ins with automated reminders.',                          color: '#8b5cf6' },
-  { icon: ChartBarIcon,          title: 'Reports',             desc: 'Daily sales, tech performance, revenue charts and inventory value summaries.',         color: '#10b981' },
-  { icon: ClockIcon,             title: 'Time Clock',          desc: 'PIN-based clock in/out, hour tracking and payroll-ready exports.',                   color: '#f97316' },
-  { icon: StarIcon,              title: 'Loyalty Program',     desc: 'Reward repeat customers with points that convert to real discounts.',                color: '#eab308' },
+  { icon: ShoppingCartIcon,        title: 'Point of Sale',         desc: 'Fast checkout with split payments, cash drawer, digital receipts and daily close reports.',         color: '#0d9488' },
+  { icon: WrenchScrewdriverIcon,   title: 'Repair Tickets',        desc: 'Full intake-to-pickup workflow with parts, labor, customer signature and 90-day warranty tracking.', color: '#6366f1' },
+  { icon: CubeIcon,                title: 'Inventory',             desc: 'Real-time stock levels, low-stock alerts, barcode label printing and multi-supplier support.',        color: '#f59e0b' },
+  { icon: SignalIcon,              title: 'Carrier Activations',   desc: 'Log new lines, upgrades and ports for Boost, T-Mobile, AT&T, Metro and more with auto commissions.',  color: '#0ea5e9' },
+  { icon: UsersIcon,               title: 'Customer CRM',          desc: 'Complete customer profiles with repair history, purchase records, loyalty points and ID verification.',color: '#ec4899' },
+  { icon: CalendarDaysIcon,        title: 'Appointments',          desc: 'Schedule drop-offs and walk-ins, assign techs and send automated SMS/email reminders.',              color: '#8b5cf6' },
+  { icon: DocumentTextIcon,        title: 'Estimates',             desc: 'Create professional estimates with line items, send approval links and convert to repair tickets.',   color: '#14b8a6' },
+  { icon: ArrowPathIcon,           title: 'Recurring Invoices',    desc: 'Set up weekly, monthly or yearly billing contracts that auto-generate invoices on schedule.',         color: '#a855f7' },
+  { icon: ArrowUturnLeftIcon,      title: 'Buyback / Trade-In',    desc: 'Quote, purchase and optionally add used devices to inventory with automatic 30% markup pricing.',    color: '#f43f5e' },
+  { icon: BanknotesIcon,           title: 'Bill Payments',         desc: 'Process prepaid PINs, mobile top-ups, bill payments and money orders with ePay & VidaPay support.',  color: '#22c55e' },
+  { icon: TruckIcon,               title: 'Purchase Orders',       desc: 'Create POs, track supplier orders and auto-update stock when shipments are received.',                color: '#f97316' },
+  { icon: ArchiveBoxIcon,          title: 'Layaway',               desc: 'Flexible layaway plans with deposit tracking, payment schedules and automatic completion.',           color: '#06b6d4' },
+  { icon: StarIcon,                title: 'Loyalty Program',       desc: 'Reward repeat customers with points per dollar that convert to real discounts at checkout.',          color: '#eab308' },
+  { icon: MegaphoneIcon,           title: 'Marketing Campaigns',   desc: 'Send targeted SMS and email campaigns to all customers, loyalty members or inactive clients.',        color: '#f97316' },
+  { icon: ChatBubbleLeftRightIcon, title: 'Messages',              desc: 'Two-way SMS and email with customers linked directly to repair tickets and customer records.',        color: '#3b82f6' },
+  { icon: CurrencyDollarIcon,      title: 'Commissions',           desc: 'Auto-calculate staff commissions on sales, repairs and activations with monthly payout reports.',    color: '#10b981' },
+  { icon: ClockIcon,               title: 'Time Clock',            desc: 'PIN-based clock in/out, break tracking, hourly earnings and payroll-ready export by employee.',       color: '#f97316' },
+  { icon: ChartBarIcon,            title: 'Reports & Analytics',   desc: 'Daily sales, tech performance, revenue trends, inventory value and commission summaries.',            color: '#6366f1' },
+  { icon: ComputerDesktopIcon,     title: 'Shop Display Board',    desc: 'Live TV display showing repair ticket statuses — customers can see where their device stands.',      color: '#0ea5e9' },
+  { icon: PrinterIcon,             title: 'Barcode Label Printing', desc: 'Generate and print 2.25" × 1.25" barcode labels for any inventory item in one click.',             color: '#64748b' },
+  { icon: PaperClipIcon,           title: 'Repair Attachments',    desc: 'Upload photos, PDFs and documents directly to repair tickets for before/after documentation.',       color: '#ec4899' },
+  { icon: ShieldCheckIcon,         title: 'Inventory Counts',      desc: 'Conduct full or partial cycle counts, track variances and reconcile stock discrepancies.',           color: '#84cc16' },
 ];
 
 const plans = [
-  { name: 'Starter', price: '$49', color: '#0ea5e9', features: ['1 Location', 'POS & Repairs', 'Inventory', 'Customer CRM', 'Basic Reports', 'Email Support'] },
-  { name: 'Pro',     price: '$99', color: TEAL, badge: 'Most Popular', features: ['1 Location', 'Everything in Starter', 'Activations & Commissions', 'Loyalty Program', 'Marketing Campaigns', 'Priority Support'] },
-  { name: 'Multi',   price: '$149', color: '#6366f1', features: ['Up to 3 Locations', 'Everything in Pro', 'Multi-store Reports', 'Staff Time Clock', 'Layaway Module', 'Dedicated Support'] },
+  { name: 'Starter', price: '$49.99', color: '#0ea5e9', features: ['1 Location', 'POS & Repairs', 'Inventory', 'Customer CRM', 'Basic Reports', 'Email Support'] },
+  { name: 'Pro',     price: '$59.99', color: TEAL, badge: 'Most Popular', features: ['1 Location', 'Everything in Starter', 'Activations & Commissions', 'Loyalty Program', 'Marketing Campaigns', 'Priority Support'] },
+  { name: 'Multi',   price: '$79.99', color: '#6366f1', features: ['Up to 3 Locations', 'Everything in Pro', 'Multi-store Reports', 'Staff Time Clock', 'Layaway Module', 'Dedicated Support'] },
 ];
 
 const testimonials = [
@@ -237,6 +274,10 @@ const testimonials = [
 const carriers = ['Boost Mobile', 'T-Mobile', 'AT&T', 'Verizon', 'Metro PCS', 'Cricket Wireless', 'Visible', 'Straight Talk'];
 
 export default function LandingPage() {
+  const { token, user } = useAuthStore();
+  const appPath = user?.role === 'superadmin' ? '/superadmin' : '/app';
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <div style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif", color: NAVY, overflowX: 'hidden' }}>
       <style>{globalStyle}</style>
@@ -246,27 +287,76 @@ export default function LandingPage() {
         position: 'sticky', top: 0, zIndex: 100,
         background: 'rgba(15,23,42,0.97)', backdropFilter: 'blur(12px)',
         borderBottom: '1px solid rgba(255,255,255,0.06)',
-        padding: '0 24px',
       }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', height: 66, gap: 36 }}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 9, background: `linear-gradient(135deg, ${TEAL}, #0f766e)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <DevicePhoneMobileIcon style={{ width: 20, height: 20, color: '#fff' }} />
-            </div>
-            <span style={{ fontWeight: 800, fontSize: 18, color: '#fff', letterSpacing: '-0.3px' }}>CellTechPOS</span>
+        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 62, padding: '0 20px' }}>
+          {/* Logo — full SVG on desktop, text on mobile */}
+          <a href="/" className="nav-logo-desktop" style={{ alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
+            <CellTechLogo height={52} />
           </a>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 28, flex: 1 }}>
+          <a href="/" className="nav-logo-mobile" style={{ alignItems: 'center', textDecoration: 'none', flexShrink: 0, gap: 0 }}>
+            <span style={{ fontSize: 19, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px', lineHeight: 1 }}>CELL</span>
+            <span style={{ fontSize: 19, fontWeight: 900, color: '#2dd4bf', letterSpacing: '-0.5px', lineHeight: 1 }}>TECH</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: '#38bdf8', marginLeft: 4, letterSpacing: '2px', lineHeight: 1 }}>POS</span>
+          </a>
+
+          {/* Desktop nav links */}
+          <div className="nav-desktop-links">
             {[['#solutions','Solutions'],['#features','Features'],['#pricing','Pricing'],['#contact','Contact']].map(([href, label]) => (
               <a key={href} href={href} style={{ fontSize: 14, fontWeight: 500, color: '#94a3b8', textDecoration: 'none' }}
                 onMouseEnter={e => e.target.style.color='#fff'} onMouseLeave={e => e.target.style.color='#94a3b8'}>{label}</a>
             ))}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Link to="/login" style={{ fontSize: 13, fontWeight: 600, color: '#64748b', textDecoration: 'none' }}
-              onMouseEnter={e => e.target.style.color='#fff'} onMouseLeave={e => e.target.style.color='#64748b'}>Sign In</Link>
-            <a href="#contact" style={{ padding: '9px 22px', borderRadius: 8, fontSize: 13, fontWeight: 700, background: TEAL, color: '#fff', textDecoration: 'none' }}>Book a Demo</a>
+
+          {/* Desktop auth buttons */}
+          <div className="nav-desktop-actions">
+            {token ? (
+              <Link to={appPath} style={{ padding: '9px 22px', borderRadius: 8, fontSize: 13, fontWeight: 700, background: TEAL, color: '#fff', textDecoration: 'none' }}>
+                Open App →
+              </Link>
+            ) : (
+              <>
+                <Link to="/login" style={{ fontSize: 13, fontWeight: 600, color: '#64748b', textDecoration: 'none' }}
+                  onMouseEnter={e => e.target.style.color='#fff'} onMouseLeave={e => e.target.style.color='#64748b'}>Sign In</Link>
+                <Link to="/signup" style={{ padding: '9px 22px', borderRadius: 8, fontSize: 13, fontWeight: 700, background: TEAL, color: '#fff', textDecoration: 'none' }}>Start Free Trial</Link>
+              </>
+            )}
           </div>
+
+          {/* Mobile hamburger */}
+          <button className="nav-hamburger" onClick={() => setMobileMenuOpen(o => !o)} aria-label="Toggle menu">
+            {mobileMenuOpen
+              ? <XMarkIcon style={{ width: 26, height: 26 }} />
+              : <Bars3Icon style={{ width: 26, height: 26 }} />}
+          </button>
         </div>
+
+        {/* Mobile dropdown menu */}
+        {mobileMenuOpen && (
+          <div className="nav-mobile-menu">
+            {[['#solutions','Solutions'],['#features','Features'],['#pricing','Pricing'],['#contact','Contact']].map(([href, label]) => (
+              <a key={href} href={href} className="nav-mobile-link" onClick={() => setMobileMenuOpen(false)}>{label}</a>
+            ))}
+            <div style={{ paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {token ? (
+                <Link to={appPath} onClick={() => setMobileMenuOpen(false)}
+                  style={{ display: 'block', textAlign: 'center', padding: '13px', borderRadius: 10, fontSize: 15, fontWeight: 700, background: TEAL, color: '#fff', textDecoration: 'none' }}>
+                  Open App →
+                </Link>
+              ) : (
+                <>
+                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}
+                    style={{ display: 'block', textAlign: 'center', padding: '13px', borderRadius: 10, fontSize: 15, fontWeight: 600, color: '#94a3b8', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    Sign In
+                  </Link>
+                  <a href="#contact" onClick={() => setMobileMenuOpen(false)}
+                    style={{ display: 'block', textAlign: 'center', padding: '13px', borderRadius: 10, fontSize: 15, fontWeight: 700, background: TEAL, color: '#fff', textDecoration: 'none' }}>
+                    Book a Demo
+                  </a>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* ── Hero ────────────────────────────────────────────────── */}
@@ -298,9 +388,9 @@ export default function LandingPage() {
               The all-in-one platform for cell phone stores and repair shops. Manage POS, repairs, activations, inventory and your whole team from one powerful system.
             </p>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 48 }}>
-              <a href="#contact" style={{ padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 700, background: `linear-gradient(135deg, ${TEAL}, #0f766e)`, color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8, boxShadow: `0 8px 24px rgba(13,148,136,0.35)` }}>
+              <Link to="/signup" style={{ padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 700, background: `linear-gradient(135deg, ${TEAL}, #0f766e)`, color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8, boxShadow: `0 8px 24px rgba(13,148,136,0.35)` }}>
                 Get Started Free <ArrowRightIcon style={{ width: 16, height: 16 }} />
-              </a>
+              </Link>
               <a href="#features" style={{ padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 700, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0', textDecoration: 'none' }}>
                 See Features
               </a>
@@ -336,7 +426,7 @@ export default function LandingPage() {
               { value: '8+ Carriers', sub: 'Boost, T-Mobile & more' },
               { value: 'Cloud-based', sub: 'Access from anywhere' },
               { value: '24/7 Support', sub: 'Always here for you' },
-              { value: 'From $49/mo', sub: 'No hidden fees' },
+              { value: 'From $49.99/mo', sub: 'No hidden fees' },
             ].map((s, i, arr) => (
               <div key={s.value} style={{ textAlign: 'center', padding: '28px 16px', borderRight: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
                 <div style={{ fontSize: 20, fontWeight: 900, color: NAVY, letterSpacing: '-0.5px' }}>{s.value}</div>
@@ -396,25 +486,28 @@ export default function LandingPage() {
               <span style={{ fontSize: 12, fontWeight: 700, color: '#2dd4bf', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Solutions</span>
             </div>
             <h2 style={{ fontSize: 36, fontWeight: 800, color: '#fff', margin: '0 0 12px', letterSpacing: '-0.5px' }}>One platform, every workflow</h2>
-            <p style={{ fontSize: 16, color: '#64748b', maxWidth: 480, margin: '0 auto' }}>Purpose-built for the wireless retail industry from day one.</p>
+            <p style={{ fontSize: 16, color: '#64748b', maxWidth: 520, margin: '0 auto' }}>Purpose-built for wireless retail and repair shops from day one.</p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
             {[
-              { icon: WrenchScrewdriverIcon, color: TEAL, title: 'Repair Management', desc: 'Full repair workflow from intake to pickup.', items: ['Ticket tracking & status updates', 'Parts & labor cost tracking', 'Customer signature capture', 'Warranty management', 'Mail-in repair support'] },
-              { icon: SignalIcon, color: '#6366f1', title: 'Carrier Activations', desc: 'All major carriers, commissions auto-calculated.', items: ['Boost, T-Mobile, AT&T, Verizon', 'ePay & VidaPay integration', 'Commission & spiff tracking', 'Activation history per customer', 'Monthly payout reports'] },
-              { icon: CubeIcon, color: '#f59e0b', title: 'Inventory & Purchasing', desc: 'Never run out of stock again.', items: ['Real-time stock levels', 'Automatic reorder alerts', 'Supplier & PO management', 'Barcode & SKU scanning', 'Cycle count audits'] },
+              { icon: WrenchScrewdriverIcon, color: TEAL,      title: 'Repair Management',      desc: 'Full repair workflow from intake to pickup.',           items: ['Ticket tracking & status updates', 'Parts & labor cost tracking', 'Photo & file attachments', 'Customer signature capture', 'Job timer per technician', 'Warranty management', 'Mail-in repair support'] },
+              { icon: SignalIcon,            color: '#6366f1', title: 'Carrier Activations',    desc: 'All major carriers, commissions auto-calculated.',       items: ['Boost, T-Mobile, AT&T, Verizon', 'Metro, Cricket, Visible & more', 'ePay & VidaPay integration', 'Commission & spiff tracking', 'New lines, upgrades & ports', 'Monthly payout reports'] },
+              { icon: CubeIcon,             color: '#f59e0b', title: 'Inventory & Purchasing', desc: 'Never run out of stock again.',                          items: ['Real-time stock levels', 'Low-stock & reorder alerts', 'Barcode label printing', 'Supplier & PO management', 'Serial number tracking', 'Cycle count audits'] },
+              { icon: UsersIcon,            color: '#ec4899', title: 'Customer & Growth',      desc: 'Build lasting relationships and grow revenue.',          items: ['Full CRM with repair history', 'Loyalty points & rewards', 'SMS & email marketing campaigns', 'Two-way messaging', 'Automated appointment reminders', 'Customer portal for ticket lookup'] },
+              { icon: ShoppingCartIcon,     color: '#0ea5e9', title: 'Sales & Billing',        desc: 'Every revenue stream under one roof.',                   items: ['POS with split payments', 'Estimates with approval links', 'Recurring invoice contracts', 'Layaway & payment plans', 'Bill payments & prepaid PINs', 'Buyback / trade-in purchasing'] },
+              { icon: ChartBarIcon,         color: '#10b981', title: 'Staff & Reporting',      desc: 'Run your team and your numbers with confidence.',        items: ['Sales & revenue reports', 'Tech performance tracking', 'Commission auto-calculation', 'PIN-based time clock', 'Payroll-ready hour exports', 'Live shop display board (TV)'] },
             ].map(s => (
-              <div key={s.title} className="card-hover" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '32px 28px', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }}>
-                <div style={{ width: 48, height: 48, borderRadius: 12, background: s.color + '25', border: `1px solid ${s.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
-                  <s.icon style={{ width: 24, height: 24, color: s.color }} />
+              <div key={s.title} className="card-hover" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '28px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }}>
+                <div style={{ width: 46, height: 46, borderRadius: 12, background: s.color + '25', border: `1px solid ${s.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                  <s.icon style={{ width: 22, height: 22, color: s.color }} />
                 </div>
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: '0 0 8px' }}>{s.title}</h3>
-                <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6, margin: '0 0 20px' }}>{s.desc}</p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 6px' }}>{s.title}</h3>
+                <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6, margin: '0 0 16px' }}>{s.desc}</p>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 7 }}>
                   {s.items.map(item => (
-                    <li key={item} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#94a3b8' }}>
-                      <div style={{ width: 16, height: 16, borderRadius: '50%', background: s.color + '25', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <CheckIcon style={{ width: 9, height: 9, color: s.color }} />
+                    <li key={item} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#94a3b8' }}>
+                      <div style={{ width: 15, height: 15, borderRadius: '50%', background: s.color + '25', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <CheckIcon style={{ width: 8, height: 8, color: s.color }} />
                       </div>
                       {item}
                     </li>
@@ -501,9 +594,9 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <a href="#contact" style={{ display: 'block', textAlign: 'center', padding: '13px 0', borderRadius: 10, fontSize: 14, fontWeight: 700, background: p.badge ? p.color : LGRAY, color: p.badge ? '#fff' : NAVY, textDecoration: 'none' }}>
+                <Link to="/signup" style={{ display: 'block', textAlign: 'center', padding: '13px 0', borderRadius: 10, fontSize: 14, fontWeight: 700, background: p.badge ? p.color : LGRAY, color: p.badge ? '#fff' : NAVY, textDecoration: 'none' }}>
                   Get Started
-                </a>
+                </Link>
               </div>
             ))}
           </div>
@@ -513,23 +606,82 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── CTA ──────────────────────────────────────────────────── */}
+      {/* ── Integrations ─────────────────────────────────────────── */}
+      <section style={{ background: '#020617', padding: '80px 24px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 52 }}>
+            <div style={{ display: 'inline-block', background: 'rgba(13,148,136,0.12)', border: '1px solid rgba(13,148,136,0.25)', borderRadius: 999, padding: '5px 16px', marginBottom: 18 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#2dd4bf', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Integrations</span>
+            </div>
+            <h2 style={{ fontSize: 36, fontWeight: 900, color: '#fff', margin: '0 0 14px', letterSpacing: '-0.5px' }}>Works with tools you already use</h2>
+            <p style={{ fontSize: 16, color: '#64748b', margin: 0, maxWidth: 520, marginLeft: 'auto', marginRight: 'auto' }}>CellTechPOS connects with leading payment, accounting, and communication platforms out of the box.</p>
+          </div>
+
+          {/* Integration cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 14 }}>
+            {[
+              { name: 'Stripe', desc: 'Card payments', color: '#635bff', emoji: '💳' },
+              { name: 'Twilio', desc: 'SMS notifications', color: '#f22f46', emoji: '📱' },
+              { name: 'PayPal', desc: 'Online payments', color: '#003087', emoji: '🅿️' },
+              { name: 'QuickBooks', desc: 'Accounting export', color: '#2ca01c', emoji: '📊' },
+              { name: 'Square', desc: 'Card reader', color: '#0071ce', emoji: '◾' },
+              { name: 'Mailchimp', desc: 'Email marketing', color: '#ffe01b', emoji: '📧' },
+              { name: 'MobileSentrix', desc: 'Parts ordering', color: '#0ea5e9', emoji: '🔩' },
+              { name: 'Shopify', desc: 'Online store', color: '#96bf48', emoji: '🛒' },
+              { name: 'Zapier', desc: 'Automation', color: '#ff4a00', emoji: '⚡' },
+              { name: 'WooCommerce', desc: 'E-commerce', color: '#9b5c8f', emoji: '🏪' },
+              { name: 'Google Maps', desc: 'Store locator', color: '#4285f4', emoji: '📍' },
+              { name: 'Xero', desc: 'Cloud accounting', color: '#13b5ea', emoji: '📒' },
+            ].map(intg => (
+              <div key={intg.name} className="card-hover" style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, padding: '18px 14px', textAlign: 'center', cursor: 'default' }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: `${intg.color}22`, border: `1px solid ${intg.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, margin: '0 auto 10px' }}>{intg.emoji}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#e2e8f0', marginBottom: 4 }}>{intg.name}</div>
+                <div style={{ fontSize: 11, color: '#475569' }}>{intg.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          <p style={{ textAlign: 'center', marginTop: 36, fontSize: 13, color: '#334155' }}>
+            More integrations added regularly · <a href="/contact" style={{ color: '#2dd4bf', textDecoration: 'none' }}>Request a connection →</a>
+          </p>
+        </div>
+      </section>
+
+      {/* ── CTA / Contact ────────────────────────────────────────── */}
       <section id="contact" style={{ background: `linear-gradient(135deg, ${NAVY} 0%, #0d2030 100%)`, padding: '80px 24px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '28px 28px', pointerEvents: 'none' }} />
-        <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+        <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'inline-block', background: 'rgba(13,148,136,0.15)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 999, padding: '5px 14px', marginBottom: 24 }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: '#2dd4bf', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Get Started Today</span>
           </div>
           <h2 style={{ fontSize: 40, fontWeight: 900, color: '#fff', margin: '0 0 16px', letterSpacing: '-1px' }}>Ready to modernize your store?</h2>
-          <p style={{ fontSize: 17, color: '#64748b', margin: '0 0 40px', lineHeight: 1.7 }}>We'll set up your account and have your team live within 24 hours. Reach out and let's get started.</p>
-          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 36 }}>
-            <a href="mailto:support@celltechpos.com" style={{ padding: '15px 36px', borderRadius: 10, fontSize: 15, fontWeight: 700, background: `linear-gradient(135deg, ${TEAL}, #0f766e)`, color: '#fff', textDecoration: 'none', boxShadow: `0 8px 24px rgba(13,148,136,0.35)` }}>
-              Email Us
+          <p style={{ fontSize: 17, color: '#94a3b8', margin: '0 0 40px', lineHeight: 1.7 }}>We'll set up your account and have your team live within 24 hours. Reach out and let's get started.</p>
+
+          {/* Contact cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 36 }}>
+            <Link to="/contact" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '24px 20px', borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', transition: 'border-color 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor='rgba(45,212,191,0.4)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor='rgba(255,255,255,0.1)'}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(13,148,136,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>✉️</div>
+              <div style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>Send a Message</div>
+              <div style={{ fontSize: 13, color: '#2dd4bf', fontWeight: 600 }}>Contact form →</div>
+            </Link>
+            <a href="tel:+13213825582" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '24px 20px', borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', transition: 'border-color 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor='rgba(45,212,191,0.4)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor='rgba(255,255,255,0.1)'}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(13,148,136,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📞</div>
+              <div style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>Call Us</div>
+              <div style={{ fontSize: 13, color: '#2dd4bf', fontWeight: 600 }}>(321) 382-5582</div>
             </a>
-            <Link to="/login" style={{ padding: '15px 36px', borderRadius: 10, fontSize: 15, fontWeight: 700, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0', textDecoration: 'none' }}>
-              Sign In to Your Account
+            <Link to="/signup" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '24px 20px', borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', transition: 'border-color 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor='rgba(45,212,191,0.4)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor='rgba(255,255,255,0.1)'}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(13,148,136,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🚀</div>
+              <div style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>Start Free Trial</div>
+              <div style={{ fontSize: 13, color: '#2dd4bf', fontWeight: 600 }}>30 days free →</div>
             </Link>
           </div>
+
           <div style={{ display: 'flex', gap: 36, justifyContent: 'center', flexWrap: 'wrap' }}>
             {['⚡ Same-day setup', '🔒 Secure & encrypted', '📞 Ongoing support'].map(item => (
               <span key={item} style={{ fontSize: 13, color: '#475569' }}>{item}</span>
@@ -558,25 +710,24 @@ export default function LandingPage() {
               <div key={col.title}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>{col.title}</div>
                 {col.links.map(l => (
-                  <a key={l} href="#" style={{ display: 'block', fontSize: 13, color: '#374151', textDecoration: 'none', marginBottom: 10 }}
-                    onMouseEnter={e => e.target.style.color='#94a3b8'} onMouseLeave={e => e.target.style.color='#374151'}>{l}</a>
+                  <a key={l} href="#" style={{ display: 'block', fontSize: 13, color: '#64748b', textDecoration: 'none', marginBottom: 10 }}
+                    onMouseEnter={e => e.target.style.color='#94a3b8'} onMouseLeave={e => e.target.style.color='#64748b'}>{l}</a>
                 ))}
               </div>
             ))}
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>Contact</div>
-              <a href="mailto:support@celltechpos.com" style={{ display: 'block', fontSize: 13, color: '#374151', textDecoration: 'none', marginBottom: 10 }}>support@celltechpos.com</a>
+              <a href="mailto:support@celltechpos.com" style={{ display: 'block', fontSize: 13, color: '#64748b', textDecoration: 'none', marginBottom: 10 }}>support@celltechpos.com</a>
               <Link to="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: TEAL, textDecoration: 'none', fontWeight: 600 }}>
                 Customer Login <ArrowRightIcon style={{ width: 13, height: 13 }} />
               </Link>
             </div>
           </div>
           <div style={{ borderTop: '1px solid #1e293b', paddingTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-            <span style={{ fontSize: 12, color: '#1e293b' }}>© {new Date().getFullYear()} CellTechPOS. All rights reserved.</span>
+            <span style={{ fontSize: 12, color: '#475569' }}>© {new Date().getFullYear()} PC World Exchange LLC. All rights reserved.</span>
             <div style={{ display: 'flex', gap: 20 }}>
-              {['Privacy Policy', 'Terms of Service'].map(l => (
-                <a key={l} href="#" style={{ fontSize: 12, color: '#1e293b', textDecoration: 'none' }}>{l}</a>
-              ))}
+              <Link to="/privacy" style={{ fontSize: 12, color: '#475569', textDecoration: 'none' }}>Privacy Policy</Link>
+              <Link to="/terms" style={{ fontSize: 12, color: '#475569', textDecoration: 'none' }}>Terms of Service</Link>
             </div>
           </div>
         </div>

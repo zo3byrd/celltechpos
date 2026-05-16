@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import Sidebar from './Sidebar';
 import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
 import api from '../api/client';
 
 const BANNER_BG = {
@@ -12,11 +13,19 @@ const BANNER_BG = {
   error:   '#7f1d1d',
 };
 
+function daysLeft(isoStr) {
+  if (!isoStr) return null;
+  return Math.ceil((new Date(isoStr) - new Date()) / 86400000);
+}
+
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user } = useAuthStore();
+  const { isDark } = useThemeStore();
   const [banner, setBanner] = useState(null);
   const [dismissed, setDismissed] = useState(false);
+  const [license, setLicense] = useState(null);
+  const [verifyDismissed, setVerifyDismissed] = useState(() => !!sessionStorage.getItem('verify_banner_dismissed'));
 
   useEffect(() => {
     api.get('/announcements').then(({ data }) => {
@@ -25,23 +34,32 @@ export default function Layout() {
       if (active.length > 0) {
         const first = active[0];
         const key = `sa_ann_dismissed_${first.id}`;
-        if (sessionStorage.getItem(key)) {
-          setDismissed(true);
-        }
+        if (sessionStorage.getItem(key)) setDismissed(true);
         setBanner(first);
       }
     }).catch(() => {});
-  }, []);
+
+    if (user?.role !== 'superadmin') {
+      api.get('/licenses/my').then(r => setLicense(r.data)).catch(() => {});
+    }
+  }, [user?.role]);
 
   function dismiss() {
-    if (banner) {
-      sessionStorage.setItem(`sa_ann_dismissed_${banner.id}`, '1');
-    }
+    if (banner) sessionStorage.setItem(`sa_ann_dismissed_${banner.id}`, '1');
     setDismissed(true);
   }
 
+  function dismissVerify() {
+    sessionStorage.setItem('verify_banner_dismissed', '1');
+    setVerifyDismissed(true);
+  }
+
+  const trialDays = license?.plan === 'trial' ? daysLeft(license?.expiresAt) : null;
+  const showTrialBanner = trialDays !== null && trialDays <= 7 && trialDays > 0;
+  const showExpiredBanner = license?.status === 'expired' || (trialDays !== null && trialDays <= 0);
+
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: '#f3f4f6' }}>
+    <div className="flex h-screen overflow-hidden" style={{ background: isDark ? '#111827' : '#f3f4f6' }}>
 
       {/* Mobile backdrop */}
       {sidebarOpen && (
@@ -56,24 +74,41 @@ export default function Layout() {
 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Mobile top bar */}
-        <div className="md:hidden flex items-center gap-3 px-3 py-2.5"
-          style={{ background: '#161b27', borderBottom: '1px solid #1f2937', flexShrink: 0 }}>
+        <div className="md:hidden flex items-center justify-between px-3 py-2"
+          style={{ background: '#161b27', borderBottom: '1px solid #1f2937', flexShrink: 0, minHeight: 52 }}>
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-1.5 rounded text-gray-400 hover:text-white transition-colors"
+            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700/60 transition-colors flex-shrink-0"
+            aria-label="Open menu"
           >
-            <Bars3Icon className="w-5 h-5" />
+            <Bars3Icon className="w-6 h-6" />
           </button>
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-5 h-5 rounded flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-              style={{ background: '#14532d' }}>C</div>
-            <span className="text-white font-bold text-sm truncate">
-              {user?.store?.name || 'CellTechPOS'}
-            </span>
-          </div>
+          <a href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 0 }}>
+            <span style={{ fontSize: 17, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px', lineHeight: 1 }}>CELL</span>
+            <span style={{ fontSize: 17, fontWeight: 900, color: '#2dd4bf', letterSpacing: '-0.5px', lineHeight: 1 }}>TECH</span>
+            <span style={{ fontSize: 10, fontWeight: 800, color: '#38bdf8', marginLeft: 4, letterSpacing: '2px', lineHeight: 1 }}>POS</span>
+          </a>
+          <div className="w-10 flex-shrink-0" />
         </div>
 
-        {banner && !dismissed && (
+        {/* Trial expiry warning */}
+        {showTrialBanner && (
+          <div className="flex items-center gap-3 px-4 py-2 text-sm font-medium" style={{ background: '#92400e', color: 'white', flexShrink: 0 }}>
+            <span>⏰ Your free trial expires in <strong>{trialDays} day{trialDays !== 1 ? 's' : ''}</strong>.</span>
+            <Link to="/app/billing" className="ml-auto underline font-bold text-amber-200 hover:text-white flex-shrink-0">Upgrade now →</Link>
+          </div>
+        )}
+
+        {/* Trial expired */}
+        {showExpiredBanner && (
+          <div className="flex items-center gap-3 px-4 py-2 text-sm font-medium" style={{ background: '#7f1d1d', color: 'white', flexShrink: 0 }}>
+            <span>🔒 Your trial has ended.</span>
+            <Link to="/app/billing" className="ml-2 underline font-bold text-red-200 hover:text-white flex-shrink-0">Choose a plan →</Link>
+          </div>
+        )}
+
+        {/* Announcement banner */}
+        {banner && !dismissed && !showExpiredBanner && (
           <div className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium"
             style={{ background: BANNER_BG[banner.type] || BANNER_BG.info, color: 'white', flexShrink: 0 }}>
             <span className="font-bold">{banner.title}:</span>

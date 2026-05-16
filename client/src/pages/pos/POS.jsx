@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import {
   MagnifyingGlassIcon, XMarkIcon, UserIcon, TrashIcon,
   PrinterIcon, BanknotesIcon, CreditCardIcon, ShoppingCartIcon,
+  DevicePhoneMobileIcon, EnvelopeIcon, CheckCircleIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 
@@ -39,12 +40,23 @@ export default function POS() {
   const [splitCard, setSplitCard]       = useState('');
   const [discount, setDiscount] = useState('');
   const [taxRate] = useState(0.0825);
+  const [storeInfo, setStoreInfo] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [receipt, setReceipt] = useState(null);
+  const [receiptItems, setReceiptItems] = useState([]);
+  const [receiptCustomer, setReceiptCustomer] = useState(null);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [receiptAction, setReceiptAction] = useState(null); // 'sms' | 'email'
+  const [receiptTo, setReceiptTo] = useState('');
+  const [sendingReceipt, setSendingReceipt] = useState(false);
   const [mobileView, setMobileView] = useState('browse');
   const searchRef = useRef(null);
 
   // Load items when search or category changes
+  useEffect(() => {
+    api.get('/pos/store-info').then(r => setStoreInfo(r.data)).catch(() => {});
+  }, []);
+
   useEffect(() => {
     const params = new URLSearchParams({ limit: 40 });
     if (search) params.set('search', search);
@@ -131,7 +143,12 @@ export default function POS() {
         notes: notes || undefined,
         items: cart.map(i => ({ itemId: i.id, quantity: i.qty, unitPrice: i.unitPrice })),
       });
+      setReceiptItems(cart.map(i => ({ name: i.name, qty: i.qty, unitPrice: i.unitPrice })));
+      setReceiptCustomer(selectedCust);
       setReceipt(data);
+      setReceiptAction(null);
+      setReceiptTo('');
+      setShowReceiptModal(true);
       setCart([]);
       setCustomerId('');
       setSelectedCust(null);
@@ -144,6 +161,105 @@ export default function POS() {
     } finally {
       setProcessing(false);
     }
+  }
+
+  async function sendReceiptDelivery() {
+    if (!receipt || !receiptTo.trim()) return;
+    setSendingReceipt(true);
+    try {
+      await api.post('/pos/send-receipt', {
+        method: receiptAction,
+        to: receiptTo.trim(),
+        transactionNumber: receipt.transaction.transactionNumber,
+        storeName: storeInfo?.name,
+        storeAddress: [storeInfo?.address, storeInfo?.city, storeInfo?.state, storeInfo?.zip].filter(Boolean).join(', '),
+        storePhone: storeInfo?.phone,
+        logoUrl: storeInfo?.logoUrl,
+        receiptPolicy: storeInfo?.receiptPolicy,
+        items: receiptItems,
+        subtotal: receipt.subtotal,
+        taxAmount: receipt.taxAmount,
+        discountAmount: receipt.transaction.discountAmount,
+        total: receipt.total,
+        paymentMethod: receipt.transaction.paymentMethod,
+      });
+      toast.success(`Receipt sent via ${receiptAction === 'sms' ? 'text message' : 'email'}!`);
+      setReceiptAction(null);
+      setReceiptTo('');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to send receipt');
+    } finally {
+      setSendingReceipt(false);
+    }
+  }
+
+  function printReceipt() {
+    if (!receipt) return;
+    const tx = receipt.transaction;
+    const storeName = storeInfo?.name || 'Receipt';
+    const storeAddr = [storeInfo?.address, storeInfo?.city, storeInfo?.state, storeInfo?.zip].filter(Boolean).join(', ');
+    const storePhone = storeInfo?.phone || '';
+    const logoUrl = storeInfo?.logoUrl || '';
+    const policy = storeInfo?.receiptPolicy || 'Thank you for your business!';
+
+    const rows = receiptItems.map(i =>
+      `<tr><td>${i.name}</td><td style="text-align:center">${i.qty}</td><td style="text-align:right">${fmt$(i.unitPrice * i.qty)}</td></tr>`
+    ).join('');
+    const cashBack = tx.paymentMethod === 'cash' && parseFloat(cashReceived)
+      ? `<tr><td colspan="2">Cash received</td><td style="text-align:right">${fmt$(cashReceived)}</td></tr>
+         <tr><td colspan="2"><b>Change due</b></td><td style="text-align:right"><b>${fmt$(parseFloat(cashReceived) - receipt.total)}</b></td></tr>`
+      : '';
+
+    const logoHtml = logoUrl
+      ? `<div style="text-align:center;margin-bottom:8px"><img src="${logoUrl}" alt="${storeName}" style="max-height:72px;max-width:180px;object-fit:contain"/></div>`
+      : '';
+    const policyHtml = `<p style="text-align:center;font-size:11px;margin-top:8px;white-space:pre-wrap">${policy}</p>`;
+
+    const existing = document.getElementById('__receipt_frame__');
+    if (existing) existing.remove();
+
+    const iframe = document.createElement('iframe');
+    iframe.id = '__receipt_frame__';
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:320px;height:600px;border:none;';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open();
+    doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Receipt</title>
+<style>
+  body{font-family:monospace;font-size:13px;width:300px;margin:0 auto;padding:16px}
+  h2{text-align:center;margin:0 0 4px}
+  p{text-align:center;margin:2px 0}
+  table{width:100%;border-collapse:collapse;margin:8px 0}
+  td{padding:2px 0}
+  hr{border:none;border-top:1px dashed #000;margin:6px 0}
+</style></head><body>
+${logoHtml}
+<h2>${storeName}</h2>
+${storeAddr ? `<p>${storeAddr}</p>` : ''}
+${storePhone ? `<p>${storePhone}</p>` : ''}
+<p>Receipt #${tx.transactionNumber}</p>
+<p>${new Date().toLocaleString()}</p>
+<hr/>
+<table>
+  <thead><tr><th style="text-align:left">Item</th><th>Qty</th><th style="text-align:right">Price</th></tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+<hr/>
+<table>
+  <tr><td colspan="2">Subtotal</td><td style="text-align:right">${fmt$(receipt.subtotal)}</td></tr>
+  ${tx.discountAmount > 0 ? `<tr><td colspan="2">Discount</td><td style="text-align:right">-${fmt$(tx.discountAmount)}</td></tr>` : ''}
+  <tr><td colspan="2">Tax</td><td style="text-align:right">${fmt$(receipt.taxAmount)}</td></tr>
+  <tr><td colspan="2"><b>Total</b></td><td style="text-align:right"><b>${fmt$(receipt.total)}</b></td></tr>
+  <tr><td colspan="2">Payment</td><td style="text-align:right">${tx.paymentMethod}</td></tr>
+  ${cashBack}
+</table>
+<hr/>
+${policyHtml}
+</body></html>`);
+    doc.close();
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
   }
 
   return (
@@ -183,7 +299,12 @@ export default function POS() {
               )}
             </div>
           )}
-          <span className="text-xs text-gray-400 ml-auto">{cart.length} item{cart.length !== 1 ? 's' : ''} in cart</span>
+          <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
+            <span className="text-xs text-gray-400 hidden sm:inline">Cart</span>
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cart.length > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+              {cart.length}
+            </span>
+          </div>
         </div>
 
         {/* Search + Category tabs */}
@@ -204,13 +325,13 @@ export default function POS() {
               </button>
             )}
           </div>
-          <div className="flex gap-0 overflow-x-auto">
+          <div className="flex gap-1.5 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
             {CATEGORIES.map(cat => (
               <button key={cat} onClick={() => setCategory(cat)}
-                className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors whitespace-nowrap ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-full transition-all whitespace-nowrap flex-shrink-0 ${
                   category === cat
-                    ? 'border-green-700 text-green-700 bg-white'
-                    : 'border-transparent text-gray-500 hover:text-gray-800'
+                    ? 'bg-green-700 text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}>
                 {catLabel(cat)}
               </button>
@@ -227,63 +348,64 @@ export default function POS() {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 xl:grid-cols-4">
-              {browseItems.map(item => (
-                <button key={item.id} onClick={() => addToCart(item)}
-                  className="bg-white border border-gray-200 rounded overflow-hidden text-left hover:border-green-600 hover:shadow-md transition-all active:scale-95 group flex flex-col">
-                  {/* Image / placeholder */}
-                  <div className="w-full h-28 bg-gray-100 flex-shrink-0 overflow-hidden relative">
-                    {item.imageUrl ? (
-                      <img src={item.imageUrl} alt={item.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy" />
-                    ) : (
-                      <div className={`w-full h-full flex items-center justify-center text-3xl ${
-                        item.category === 'service'   ? 'bg-purple-50' :
-                        item.category === 'device'    ? 'bg-blue-50' :
-                        item.category === 'part'      ? 'bg-amber-50' :
-                        item.category === 'plan'      ? 'bg-teal-50' :
-                        'bg-gray-50'
-                      }`}>
-                        {item.category === 'service'  ? '🔧' :
-                         item.category === 'device'   ? '📱' :
-                         item.category === 'part'     ? '⚙️' :
-                         item.category === 'plan'     ? '📶' :
-                         '📦'}
+              {browseItems.map(item => {
+                const catColors = {
+                  service:   { bg: 'from-purple-500 to-indigo-600', icon: '🔧', badge: 'bg-purple-100 text-purple-700' },
+                  device:    { bg: 'from-blue-500 to-cyan-600',     icon: '📱', badge: 'bg-blue-100 text-blue-700' },
+                  part:      { bg: 'from-amber-400 to-orange-500',  icon: '⚙️', badge: 'bg-amber-100 text-amber-700' },
+                  plan:      { bg: 'from-teal-400 to-green-500',    icon: '📶', badge: 'bg-teal-100 text-teal-700' },
+                  accessory: { bg: 'from-pink-400 to-rose-500',     icon: '🎧', badge: 'bg-pink-100 text-pink-700' },
+                  other:     { bg: 'from-gray-400 to-slate-500',    icon: '📦', badge: 'bg-gray-100 text-gray-600' },
+                };
+                const cc = catColors[item.category] || catColors.other;
+                return (
+                  <button key={item.id} onClick={() => addToCart(item)}
+                    className="bg-white border-2 border-gray-100 rounded-xl overflow-hidden text-left hover:border-green-500 hover:shadow-lg transition-all active:scale-95 group flex flex-col">
+                    {/* Image / gradient placeholder */}
+                    <div className="w-full h-24 flex-shrink-0 overflow-hidden relative">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }}
+                          loading="lazy" />
+                      ) : null}
+                      <div className={`w-full h-full bg-gradient-to-br ${cc.bg} flex items-center justify-center text-3xl ${item.imageUrl ? 'hidden' : 'flex'}`}>
+                        <span style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>{cc.icon}</span>
                       </div>
-                    )}
-                    {/* Stock badge overlay */}
-                    {item.category !== 'service' && item.category !== 'plan' && (
-                      <span className={`absolute top-1.5 right-1.5 text-xs font-bold px-1.5 py-0.5 rounded-full shadow ${
-                        item.quantity <= item.minQuantity ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-600'
-                      }`}>
-                        {item.quantity}
-                      </span>
-                    )}
-                  </div>
-                  {/* Info */}
-                  <div className="p-2.5 flex flex-col flex-1">
-                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded self-start mb-1.5 ${
-                      item.category === 'service' ? 'bg-purple-100 text-purple-700' :
-                      item.category === 'device'  ? 'bg-blue-100 text-blue-700' :
-                      item.category === 'part'    ? 'bg-amber-100 text-amber-700' :
-                      item.category === 'plan'    ? 'bg-teal-100 text-teal-700' :
-                      'bg-gray-100 text-gray-600'
-                    }`}>{item.category}</span>
-                    <div className="text-xs font-bold text-gray-800 leading-tight mb-1 line-clamp-2 group-hover:text-green-800 flex-1">
-                      {item.name}
+                      {/* Stock badge */}
+                      {item.category !== 'service' && item.category !== 'plan' && (
+                        <span className={`absolute top-1.5 right-1.5 text-xs font-bold px-1.5 py-0.5 rounded-full shadow-sm ${
+                          item.quantity <= (item.minQuantity || 1) ? 'bg-red-500 text-white' : 'bg-white/95 text-gray-700'
+                        }`}>
+                          {item.quantity}
+                        </span>
+                      )}
                     </div>
-                    {item.sku && <div className="text-xs text-gray-400 mb-1 truncate">{item.sku}</div>}
-                    <div className="text-sm font-bold text-green-700">{fmt$(item.price)}</div>
-                  </div>
-                </button>
-              ))}
+                    {/* Info */}
+                    <div className="p-2 flex flex-col flex-1">
+                      <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full self-start mb-1 ${cc.badge}`}>
+                        {item.category}
+                      </span>
+                      <div className="text-xs font-bold text-gray-800 leading-tight line-clamp-2 group-hover:text-green-800 flex-1 mb-1">
+                        {item.name}
+                      </div>
+                      <div className="flex items-center justify-between mt-auto">
+                        <div className="text-sm font-extrabold text-green-700">{fmt$(item.price)}</div>
+                        <div className="w-6 h-6 rounded-full bg-green-700 group-hover:bg-green-600 flex items-center justify-center transition-colors">
+                          <span className="text-white text-sm font-bold leading-none">+</span>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
       </div>
 
       {/* ── RIGHT: Cart + Checkout ── */}
-      <div className={`${mobileView === 'cart' ? 'flex w-full' : 'hidden'} md:flex md:w-80 md:flex-shrink-0 bg-white border-l border-gray-200 flex-col overflow-hidden`}>
+      <div className={`${mobileView === 'cart' ? 'flex w-full' : 'hidden'} md:flex md:w-96 md:flex-shrink-0 bg-white border-l border-gray-200 flex-col overflow-hidden`}>
 
         {/* Cart header */}
         <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
@@ -296,7 +418,7 @@ export default function POS() {
         </div>
 
         {/* Cart items */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-32 text-gray-300 text-sm">
               <span className="text-3xl mb-1">🛒</span>
@@ -335,7 +457,7 @@ export default function POS() {
         </div>
 
         {/* Totals + Payment */}
-        <div className="border-t border-gray-200 px-4 py-3 pb-20 md:pb-3 space-y-3 overflow-y-auto">
+        <div className="flex-shrink-0 border-t border-gray-200 px-4 py-3 pb-20 md:pb-3 space-y-3 overflow-y-auto" style={{ maxHeight: '62vh' }}>
           {/* Discount */}
           <div className="flex items-center gap-2">
             <label className="text-xs font-bold text-gray-500 w-20">Discount $</label>
@@ -492,21 +614,124 @@ export default function POS() {
             {processing ? 'Processing…' : `Charge ${fmt$(total)}`}
           </button>
 
-          {/* Last receipt */}
+          {/* Last receipt — compact reprint link */}
           {receipt && (
-            <div className="bg-green-50 border border-green-200 rounded p-3">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-bold text-green-800">Sale Complete</span>
-                <button className="text-green-600 hover:text-green-800 text-xs flex items-center gap-1">
-                  <PrinterIcon className="w-3.5 h-3.5" />Print
-                </button>
-              </div>
-              <div className="text-xs text-green-700">{receipt.transaction?.transactionNumber}</div>
-              <div className="text-sm font-bold text-green-800">{fmt$(receipt.total)}</div>
-            </div>
+            <button onClick={() => setShowReceiptModal(true)}
+              className="w-full text-xs text-green-700 hover:text-green-900 flex items-center justify-center gap-1.5 py-1 rounded hover:bg-green-50 transition-colors">
+              <PrinterIcon className="w-3.5 h-3.5" />
+              {receipt.transaction?.transactionNumber} — reprint / resend
+            </button>
           )}
         </div>
       </div>
+
+      {/* ── Receipt Modal ── */}
+      {showReceiptModal && receipt && (
+        <div className="modal-overlay" onClick={() => { setShowReceiptModal(false); setReceiptAction(null); }}>
+          <div className="modal-box max-w-sm w-full" onClick={e => e.stopPropagation()}>
+
+            {/* Header */}
+            <div className="modal-header">
+              <div className="flex items-center gap-2">
+                <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                <div>
+                  <div className="text-sm font-bold text-gray-900">Sale Complete</div>
+                  <div className="text-xs text-gray-500">{receipt.transaction?.transactionNumber}</div>
+                </div>
+              </div>
+              <button onClick={() => { setShowReceiptModal(false); setReceiptAction(null); }}
+                className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="modal-body space-y-4">
+              {/* Item list */}
+              <div className="text-sm space-y-1.5">
+                {receiptItems.map((item, i) => (
+                  <div key={i} className="flex justify-between">
+                    <span className="text-gray-700">{item.name} <span className="text-gray-400">×{item.qty}</span></span>
+                    <span className="font-semibold text-gray-800">{fmt$(item.unitPrice * item.qty)}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Totals */}
+              <div className="border-t border-gray-100 pt-3 space-y-1 text-sm">
+                <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>{fmt$(receipt.subtotal)}</span></div>
+                {receipt.transaction.discountAmount > 0 && (
+                  <div className="flex justify-between text-green-600"><span>Discount</span><span>−{fmt$(receipt.transaction.discountAmount)}</span></div>
+                )}
+                <div className="flex justify-between text-gray-500"><span>Tax (8.25%)</span><span>{fmt$(receipt.taxAmount)}</span></div>
+                <div className="flex justify-between font-bold text-base border-t border-gray-200 pt-1.5 mt-1">
+                  <span>Total</span><span className="text-green-700">{fmt$(receipt.total)}</span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-400">
+                  <span>Payment</span><span className="capitalize">{receipt.transaction.paymentMethod}</span>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => { printReceipt(); }}
+                  className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all font-semibold text-sm text-gray-700">
+                  <PrinterIcon className="w-6 h-6" />
+                  Print
+                </button>
+                <button
+                  onClick={() => { setReceiptAction('sms'); setReceiptTo(receiptCustomer?.phone || ''); }}
+                  className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition-all font-semibold text-sm ${
+                    receiptAction === 'sms' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-700'
+                  }`}>
+                  <DevicePhoneMobileIcon className="w-6 h-6" />
+                  Text
+                </button>
+                <button
+                  onClick={() => { setReceiptAction('email'); setReceiptTo(receiptCustomer?.email || ''); }}
+                  className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition-all font-semibold text-sm ${
+                    receiptAction === 'email' ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 hover:border-purple-400 hover:bg-purple-50 text-gray-700'
+                  }`}>
+                  <EnvelopeIcon className="w-6 h-6" />
+                  Email
+                </button>
+              </div>
+
+              {/* SMS / Email input */}
+              {receiptAction && (
+                <div className="space-y-2">
+                  <label className="label">
+                    {receiptAction === 'sms' ? 'Phone number' : 'Email address'}
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type={receiptAction === 'sms' ? 'tel' : 'email'}
+                      className="input flex-1"
+                      placeholder={receiptAction === 'sms' ? '+1 (555) 000-0000' : 'customer@email.com'}
+                      value={receiptTo}
+                      onChange={e => setReceiptTo(e.target.value)}
+                      autoFocus
+                      onKeyDown={e => e.key === 'Enter' && sendReceiptDelivery()}
+                    />
+                    <button
+                      onClick={sendReceiptDelivery}
+                      disabled={sendingReceipt || !receiptTo.trim()}
+                      className="btn-primary flex-shrink-0">
+                      {sendingReceipt ? 'Sending…' : 'Send'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button onClick={() => { setShowReceiptModal(false); setReceiptAction(null); }} className="btn-secondary w-full justify-center">
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Mobile Bottom Tab Bar ── */}
       <div className="fixed bottom-0 left-0 right-0 md:hidden flex border-t border-gray-200 bg-white z-20">

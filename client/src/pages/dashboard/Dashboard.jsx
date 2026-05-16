@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
 
 const fmt$ = n => '$' + parseFloat(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtTime = d => d ? new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
 
 export default function Dashboard() {
   const { user } = useAuthStore();
+  const { isDark } = useThemeStore();
   const [stats, setStats] = useState(null);
   const [sales, setSales] = useState([]);
   const [appts, setAppts] = useState([]);
@@ -30,34 +32,46 @@ export default function Dashboard() {
     <div className="flex flex-col h-full">
 
       {/* ── Top stat bar ── */}
-      <div className="flex items-center gap-0 border-b border-gray-200 bg-white px-4" style={{ height: 50 }}>
-        <div className="text-sm font-bold text-gray-800 mr-4 pr-4 border-r border-gray-200">
-          {user?.store?.name || 'CellTechPOS'}
+      <div className="border-b border-gray-200 bg-white" style={{ flexShrink: 0 }}>
+        {/* Store name + action buttons row (desktop only) */}
+        <div className="hidden md:flex items-center gap-2 px-4 py-1.5 border-b border-gray-100">
+          <span className="text-sm font-bold text-gray-800 mr-2">{user?.store?.name || 'CellTechPOS'}</span>
+          <div className="ml-auto flex items-center gap-2">
+            <Link to="/app/repairs/new" className="btn-primary">+ Repair</Link>
+            <Link to="/app/pos" className="btn-secondary">POS</Link>
+            <Link to="/app/bill-payments" className="btn-secondary">Bill Pay</Link>
+          </div>
         </div>
-        {stats ? (
-          <>
-            <StatBar label="Today" value={fmt$(stats.sales.today)} accent="green" href="/app/pos" />
-            <StatBar label="Month" value={fmt$(stats.sales.month)} href="/app/reports" />
-            <StatBar label="Open Repairs" value={stats.repairs.open} sub={`${stats.repairs.ready} ready`} accent="amber" href="/app/repairs" />
-            <StatBar label="Activations" value={stats.activations.monthApproved} sub={`${stats.activations.pending} pending`} href="/app/activations" />
-            <StatBar label="Low Stock" value={stats.inventory.lowStock} accent={stats.inventory.lowStock > 0 ? 'red' : 'gray'} href="/app/inventory?lowStock=true" />
-            <StatBar label="Today Appts" value={appts.length} href="/app/appointments" />
-          </>
-        ) : (
-          <div className="text-xs text-gray-400 animate-pulse">Loading…</div>
-        )}
-        <div className="ml-auto flex items-center gap-2">
-          <Link to="/app/repairs/new" className="btn-primary">+ Repair</Link>
-          <Link to="/app/pos" className="btn-secondary">POS</Link>
-          <Link to="/app/bill-payments" className="btn-secondary">Bill Pay</Link>
+
+        {/* Stats row — scrollable on mobile */}
+        <div className="flex overflow-x-auto" style={{ height: 52, scrollbarWidth: 'none' }}>
+          {stats ? (
+            <>
+              <StatBar label="Today" value={fmt$(stats.sales.today)} accent="green" href="/app/pos" />
+              <StatBar label="Month" value={fmt$(stats.sales.month)} href="/app/reports" />
+              <StatBar label="Open Repairs" value={stats.repairs.open} sub={`${stats.repairs.ready} ready`} accent="amber" href="/app/repairs" />
+              <StatBar label="Activations" value={stats.activations.monthApproved} sub={`${stats.activations.pending} pending`} href="/app/activations" />
+              <StatBar label="Low Stock" value={stats.inventory.lowStock} accent={stats.inventory.lowStock > 0 ? 'red' : 'gray'} href="/app/inventory?lowStock=true" />
+              <StatBar label="Appts Today" value={appts.length} href="/app/appointments" />
+            </>
+          ) : (
+            <div className="flex items-center px-4 text-xs text-gray-400 animate-pulse">Loading…</div>
+          )}
+        </div>
+
+        {/* Mobile action buttons */}
+        <div className="md:hidden flex gap-2 px-3 pb-2">
+          <Link to="/app/repairs/new" className="btn-primary flex-1 text-center text-xs py-1.5">+ Repair</Link>
+          <Link to="/app/pos" className="btn-secondary flex-1 text-center text-xs py-1.5">POS</Link>
+          <Link to="/app/bill-payments" className="btn-secondary flex-1 text-center text-xs py-1.5">Bill Pay</Link>
         </div>
       </div>
 
       {/* ── Main content ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden flex-col lg:flex-row">
 
         {/* Left column */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-3 space-y-3">
 
           {/* Revenue chart */}
           <div className="card p-3">
@@ -69,23 +83,23 @@ export default function Dashboard() {
               <AreaChart data={sales} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#15803d" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#15803d" stopOpacity={0} />
+                    <stop offset="5%"  stopColor={isDark ? '#10b981' : '#15803d'} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={isDark ? '#10b981' : '#15803d'} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="2 3" stroke="#f0f0f0" />
+                <CartesianGrid strokeDasharray="2 3" stroke={isDark ? '#374151' : '#f0f0f0'} />
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#9ca3af' }} tickLine={false} />
                 <YAxis tick={{ fontSize: 9, fill: '#9ca3af' }} tickLine={false} axisLine={false} tickFormatter={v => `$${v >= 1000 ? (v/1000).toFixed(1)+'k' : v}`} />
                 <Tooltip
-                  contentStyle={{ fontSize: 11, borderRadius: 4, border: '1px solid #e5e7eb', padding: '4px 8px' }}
+                  contentStyle={{ fontSize: 11, borderRadius: 6, border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, padding: '4px 8px', background: isDark ? '#1f2937' : '#fff', color: isDark ? '#e5e7eb' : '#111827' }}
                   formatter={v => [fmt$(v), 'Revenue']}
                 />
-                <Area type="monotone" dataKey="rev" stroke="#15803d" fill="url(#g)" strokeWidth={1.5} dot={false} />
+                <Area type="monotone" dataKey="rev" stroke={isDark ? '#10b981' : '#15803d'} fill="url(#g)" strokeWidth={1.5} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Ready for pickup table */}
+          {/* Ready for pickup */}
           <div className="card p-0 overflow-hidden">
             <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-50">
               <span className="text-sm font-bold text-gray-700">Ready for Pickup</span>
@@ -94,38 +108,40 @@ export default function Dashboard() {
             {repairs.length === 0 ? (
               <div className="px-3 py-4 text-xs text-gray-400">No repairs ready for pickup</div>
             ) : (
-              <table className="w-full">
-                <thead>
-                  <tr>
-                    <th className="table-th">Ticket</th>
-                    <th className="table-th">Customer</th>
-                    <th className="table-th">Device</th>
-                    <th className="table-th">Est. Cost</th>
-                    <th className="table-th">Priority</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {repairs.map(r => (
-                    <tr key={r.id} className="table-row">
-                      <td className="table-td font-mono text-xs">
-                        <Link to={`/app/repairs/${r.id}`} className="text-green-700 hover:underline">{r.ticketNumber}</Link>
-                      </td>
-                      <td className="table-td">{r.Customer ? `${r.Customer.firstName} ${r.Customer.lastName}` : '—'}</td>
-                      <td className="table-td text-gray-500">{r.deviceBrand} {r.deviceModel}</td>
-                      <td className="table-td">{r.finalCost ? fmt$(r.finalCost) : r.estimatedCost ? fmt$(r.estimatedCost) : '—'}</td>
-                      <td className="table-td">
-                        <span className={r.priority === 'urgent' ? 'badge-red' : r.priority === 'high' ? 'badge-orange' : 'badge-gray'}>{r.priority}</span>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr>
+                      <th className="table-th">Ticket</th>
+                      <th className="table-th">Customer</th>
+                      <th className="table-th hidden sm:table-cell">Device</th>
+                      <th className="table-th hidden sm:table-cell">Est. Cost</th>
+                      <th className="table-th">Priority</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {repairs.map(r => (
+                      <tr key={r.id} className="table-row">
+                        <td className="table-td font-mono text-xs">
+                          <Link to={`/app/repairs/${r.id}`} className="text-green-700 hover:underline">{r.ticketNumber}</Link>
+                        </td>
+                        <td className="table-td">{r.Customer ? `${r.Customer.firstName} ${r.Customer.lastName}` : '—'}</td>
+                        <td className="table-td text-gray-500 hidden sm:table-cell">{r.deviceBrand} {r.deviceModel}</td>
+                        <td className="table-td hidden sm:table-cell">{r.finalCost ? fmt$(r.finalCost) : r.estimatedCost ? fmt$(r.estimatedCost) : '—'}</td>
+                        <td className="table-td">
+                          <span className={r.priority === 'urgent' ? 'badge-red' : r.priority === 'high' ? 'badge-orange' : 'badge-gray'}>{r.priority}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Right column */}
-        <div className="w-64 flex-shrink-0 border-l border-gray-200 overflow-y-auto bg-white">
+        {/* Right column — stacks below on mobile */}
+        <div className="lg:w-64 lg:flex-shrink-0 lg:border-l border-t lg:border-t-0 border-gray-200 overflow-y-auto bg-white">
 
           {/* Today's appointments */}
           <div className="border-b border-gray-200">
@@ -182,13 +198,13 @@ export default function Dashboard() {
 function StatBar({ label, value, sub, accent, href }) {
   const accentClass = accent === 'green' ? 'text-green-700' : accent === 'amber' ? 'text-amber-600' : accent === 'red' ? 'text-red-600' : 'text-gray-800';
   const content = (
-    <div className="flex items-center gap-2 px-4 h-full border-r border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer">
+    <div className="flex items-center gap-2 px-3 h-full border-r border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer flex-shrink-0">
       <div>
-        <div className="text-xs font-bold text-gray-400 leading-none mb-1 uppercase tracking-wide">{label}</div>
-        <div className={`text-base font-bold leading-none ${accentClass}`}>{value}</div>
-        {sub && <div className="text-xs font-semibold text-gray-400 leading-none mt-1">{sub}</div>}
+        <div className="text-xs font-bold text-gray-400 leading-none mb-1 uppercase tracking-wide whitespace-nowrap">{label}</div>
+        <div className={`text-base font-bold leading-none ${accentClass} whitespace-nowrap`}>{value}</div>
+        {sub && <div className="text-xs font-semibold text-gray-400 leading-none mt-1 whitespace-nowrap">{sub}</div>}
       </div>
     </div>
   );
-  return href ? <Link to={href} className="h-full flex">{content}</Link> : content;
+  return href ? <Link to={href} className="h-full flex flex-shrink-0">{content}</Link> : content;
 }
