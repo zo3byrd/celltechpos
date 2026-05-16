@@ -711,12 +711,14 @@ ${ticket.imei ? `<div class="row"><span class="lbl">IMEI / Serial</span><span cl
           {saving ? 'Saving…' : (isEdit ? 'Save Changes' : 'Create Ticket')}
         </button>
         {isEdit && ticket && (
-          <button className="btn-secondary flex items-center gap-1.5" onClick={printRepairTicket}>
-            <PrinterIcon className="w-4 h-4" /> Print Ticket
-          </button>
-          <button className="btn-secondary flex items-center gap-1.5" onClick={printRepairLabel}>
-            <PrinterIcon className="w-4 h-4" /> Print Label
-          </button>
+          <>
+            <button className="btn-secondary flex items-center gap-1.5" onClick={printRepairTicket}>
+              <PrinterIcon className="w-4 h-4" /> Print Ticket
+            </button>
+            <button className="btn-secondary flex items-center gap-1.5" onClick={printRepairLabel}>
+              <PrinterIcon className="w-4 h-4" /> Print Label
+            </button>
+          </>
         )}
         {isEdit && ticket && (
           <button
