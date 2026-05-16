@@ -26,11 +26,11 @@ router.get('/', auth, async (req, res) => {
       ),
       // Appointments today
       sequelize.query(
-        `SELECT id, title, startTime, customerName
+        `SELECT id, title, scheduledAt
          FROM Appointments
          WHERE storeId=? AND status NOT IN ('cancelled','completed')
-           AND date(startTime)=date('now')
-         ORDER BY startTime ASC LIMIT 10`,
+           AND date(scheduledAt)=date('now')
+         ORDER BY scheduledAt ASC LIMIT 10`,
         { replacements: [sid] }
       ),
       // Low stock items (qty <= 2, active)
@@ -63,10 +63,10 @@ router.get('/', auth, async (req, res) => {
       ...todayAppts.map(a => ({
         type: 'appointment_today',
         severity: 'success',
-        title: `Appointment today${a.customerName ? ` — ${a.customerName}` : ''}`,
-        body: a.title + (a.startTime ? ` at ${new Date(a.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}` : ''),
+        title: `Appointment today`,
+        body: a.title + (a.scheduledAt ? ` at ${new Date(a.scheduledAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}` : ''),
         link: `/app/appointments`,
-        ts: a.startTime,
+        ts: a.scheduledAt,
       })),
       ...lowStock.map(i => ({
         type: 'low_stock',
