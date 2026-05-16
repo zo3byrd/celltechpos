@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import {
   ArrowUturnLeftIcon, PlusIcon, XMarkIcon,
   MagnifyingGlassIcon, DevicePhoneMobileIcon,
-  CheckCircleIcon, ClockIcon, XCircleIcon,
+  CheckCircleIcon, ClockIcon, XCircleIcon, PrinterIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 
@@ -29,6 +29,54 @@ const emptyForm = {
 
 function fmt$(n) { return '$' + parseFloat(n || 0).toFixed(2); }
 function fmtDate(d) { return d ? new Date(d).toLocaleDateString() : '—'; }
+
+function printBuybackLabel(b) {
+  const custName = b.Customer ? `${b.Customer.firstName} ${b.Customer.lastName}` : '—';
+  const custPhone = b.Customer?.phone || '';
+  const device = [b.deviceBrand, b.deviceModel, b.deviceColor, b.storage].filter(Boolean).join(' ');
+  const date = b.createdAt ? new Date(b.createdAt).toLocaleDateString('en-US', { month:'2-digit', day:'2-digit', year:'2-digit' }) : '—';
+  const existing = document.getElementById('__label_frame__');
+  if (existing) existing.remove();
+  const iframe = document.createElement('iframe');
+  iframe.id = '__label_frame__';
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:400px;height:200px;border:none;';
+  document.body.appendChild(iframe);
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  doc.open();
+  doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Buyback Label</title>
+<style>
+  @page{size:2.25in 4in;margin:0.12in}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,sans-serif;font-size:9pt;width:2.01in;overflow:hidden;background:#fff;color:#000}
+  .store{font-size:7.5pt;font-weight:bold;text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px}
+  .divider{border:none;border-top:1.5px solid #000;margin:4px 0}
+  .type-badge{font-size:7pt;font-weight:bold;text-transform:uppercase;letter-spacing:.06em;color:#555;margin-bottom:3px}
+  .tnum{font-family:'Courier New',monospace;font-size:16pt;font-weight:900;letter-spacing:1px;text-align:center;margin:4px 0}
+  .barcode{font-family:'Courier New',monospace;font-size:9pt;font-weight:bold;letter-spacing:2px;text-align:center;background:#000;color:#fff;padding:3px 2px;margin:4px 0;word-break:break-all}
+  .price-big{font-size:18pt;font-weight:900;text-align:center;margin:3px 0}
+  .row{font-size:8pt;margin-bottom:3px;line-height:1.3}
+  .lbl{font-size:6.5pt;font-weight:bold;text-transform:uppercase;color:#666;display:block}
+  .val{font-weight:600;display:block}
+  @media print{@page{size:2.25in 4in;margin:0.12in}body{margin:0}}
+</style></head><body>
+<div class="store">Device Buyback</div>
+<hr class="divider">
+<div class="type-badge">Bought In</div>
+<div class="tnum">${b.ticketNumber || '—'}</div>
+<div class="price-big">${fmt$(b.finalPrice)}</div>
+<div class="barcode">${b.ticketNumber || '—'}</div>
+<hr class="divider">
+<div class="row"><span class="lbl">Customer</span><span class="val">${custName}</span></div>
+${custPhone ? `<div class="row"><span class="lbl">Phone</span><span class="val">${custPhone}</span></div>` : ''}
+<div class="row"><span class="lbl">Device</span><span class="val">${device || '—'}</span></div>
+${b.imei ? `<div class="row"><span class="lbl">IMEI / Serial</span><span class="val">${b.imei}</span></div>` : ''}
+<div class="row"><span class="lbl">Condition</span><span class="val" style="text-transform:capitalize">${b.condition || '—'}</span></div>
+<div class="row"><span class="lbl">Date</span><span class="val">${date}</span></div>
+</body></html>`);
+  doc.close();
+  iframe.contentWindow.focus();
+  iframe.contentWindow.print();
+}
 
 function StatusBadge({ status }) {
   const map = {
@@ -207,17 +255,17 @@ export default function Buyback() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: '#0f172a' }}>
-              {['Ticket', 'Device', 'Customer', 'IMEI', 'Condition', 'Paid', 'Payment', 'Status', 'Date'].map(h => (
+              {['Ticket', 'Device', 'Customer', 'IMEI', 'Condition', 'Paid', 'Payment', 'Status', 'Date', ''].map(h => (
                 <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} style={{ padding: 40, textAlign: 'center', color: '#475569', fontSize: 14 }}>Loading…</td></tr>
+              <tr><td colSpan={10} style={{ padding: 40, textAlign: 'center', color: '#475569', fontSize: 14 }}>Loading…</td></tr>
             ) : displayed.length === 0 ? (
               <tr>
-                <td colSpan={9} style={{ padding: 48, textAlign: 'center' }}>
+                <td colSpan={10} style={{ padding: 48, textAlign: 'center' }}>
                   <DevicePhoneMobileIcon style={{ width: 36, height: 36, color: '#334155', margin: '0 auto 12px', display: 'block' }} />
                   <div style={{ color: '#475569', fontSize: 14 }}>No buybacks yet. Click <strong style={{ color: '#2dd4bf' }}>New Buyback</strong> to get started.</div>
                 </td>
@@ -238,6 +286,14 @@ export default function Buyback() {
                 <td style={{ padding: '10px 14px', fontSize: 12, color: '#94a3b8', textTransform: 'capitalize' }}>{b.paymentMethod || '—'}</td>
                 <td style={{ padding: '10px 14px' }}><StatusBadge status={b.status} /></td>
                 <td style={{ padding: '10px 14px', fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>{fmtDate(b.createdAt)}</td>
+                <td style={{ padding: '10px 14px' }}>
+                  <button onClick={() => printBuybackLabel(b)} title="Print Label"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#475569', padding: 4, borderRadius: 4, display: 'flex', alignItems: 'center' }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#e2e8f0'}
+                    onMouseLeave={e => e.currentTarget.style.color = '#475569'}>
+                    <PrinterIcon style={{ width: 15, height: 15 }} />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
