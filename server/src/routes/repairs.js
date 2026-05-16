@@ -1,7 +1,49 @@
 const router = require('express').Router();
 const { Op } = require('sequelize');
-const { RepairTicket, RepairPart, Customer, User, InventoryItem } = require('../db/models');
+const { RepairTicket, RepairPart, Customer, User, InventoryItem, Store } = require('../db/models');
 const { auth, requireRole } = require('../middleware/auth');
+const { sendEmail, sendSMS } = require('../integrations/messaging');
+
+const STATUS_MESSAGES = {
+  diagnosed: (ticket, store, customer) => ({
+    subject: `Repair Update — ${ticket.ticketNumber}`,
+    sms: `Hi ${customer.firstName}, your ${ticket.deviceBrand} ${ticket.deviceModel} at ${store.name} has been diagnosed. We'll be in touch soon. Ticket: ${ticket.ticketNumber}`,
+    email: `<p>Hi ${customer.firstName},</p><p>Your <strong>${ticket.deviceBrand} ${ticket.deviceModel}</strong> has been diagnosed at <strong>${store.name}</strong>.</p><p>Ticket #: <strong>${ticket.ticketNumber}</strong></p><p>We will contact you shortly with a quote and estimated completion time.</p>`,
+  }),
+  ready: (ticket, store, customer) => ({
+    subject: `Your repair is ready! — ${ticket.ticketNumber}`,
+    sms: `Great news, ${customer.firstName}! Your ${ticket.deviceBrand} ${ticket.deviceModel} repair at ${store.name} is ready for pickup. Ticket: ${ticket.ticketNumber}`,
+    email: `<p>Hi ${customer.firstName},</p><p>Your <strong>${ticket.deviceBrand} ${ticket.deviceModel}</strong> repair at <strong>${store.name}</strong> is <strong>ready for pickup</strong>! 🎉</p><p>Ticket #: <strong>${ticket.ticketNumber}</strong></p><p>Please come in at your earliest convenience. Our team looks forward to seeing you!</p>`,
+  }),
+  cancelled: (ticket, store, customer) => ({
+    subject: `Repair Cancelled — ${ticket.ticketNumber}`,
+    sms: `Hi ${customer.firstName}, your repair ticket ${ticket.ticketNumber} at ${store.name} has been cancelled. Please contact us if you have questions.`,
+    email: `<p>Hi ${customer.firstName},</p><p>Your repair ticket <strong>${ticket.ticketNumber}</strong> at <strong>${store.name}</strong> has been <strong>cancelled</strong>.</p><p>If you have any questions or would like to reschedule, please don't hesitate to contact us.</p>`,
+  }),
+};
+
+async function notifyCustomer(ticket, newStatus) {
+  const msgs = STATUS_MESSAGES[newStatus];
+  if (!msgs || !ticket.customerId) return;
+
+  try {
+    const [customer, store] = await Promise.all([
+      Customer.findByPk(ticket.customerId),
+      Store.findByPk(ticket.storeId),
+    ]);
+    if (!customer || !store) return;
+
+    const { subject, sms, email } = msgs(ticket, store, customer);
+    const wrap = body => `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px;color:#1f2937"><h2 style="color:#15803d">${store.name}</h2>${body}<hr style="margin:24px 0;border:none;border-top:1px solid #e5e7eb"><p style="font-size:12px;color:#9ca3af">Powered by CellTechPOS</p></div>`;
+
+    if (customer.email) {
+      sendEmail(customer.email, subject, wrap(email), sms).catch(() => {});
+    }
+    if (customer.phone) {
+      sendSMS(customer.phone, sms).catch(() => {});
+    }
+  } catch { /* non-fatal */ }
+}
 
 function ticketNumber() {
   return 'RPR-' + Date.now().toString().slice(-8);
@@ -61,10 +103,14 @@ router.post('/', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   const ticket = await RepairTicket.findOne({ where: { id: req.params.id, storeId: req.user.storeId } });
   if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+  const prevStatus = ticket.status;
   if (req.body.status === 'ready' || req.body.status === 'picked_up') {
     req.body.completedAt = new Date();
   }
   await ticket.update(req.body);
+  if (req.body.status && req.body.status !== prevStatus) {
+    notifyCustomer(ticket, req.body.status);
+  }
   res.json(ticket);
 });
 

@@ -11,7 +11,7 @@ import {
   ShieldCheckIcon, KeyIcon, ChatBubbleLeftRightIcon,
   XMarkIcon, SunIcon, MoonIcon, ArrowUturnLeftIcon,
   DocumentTextIcon, ComputerDesktopIcon, ArrowPathIcon,
-  CreditCardIcon,
+  CreditCardIcon, TicketIcon,
 } from '@heroicons/react/24/outline';
 
 // plan: 'trial' | 'starter' | 'pro' | 'multi'
@@ -43,9 +43,10 @@ const staffNav = [
   { to: '/app/timeclock',   label: 'Time Clock',  icon: ClockIcon,          minPlan: 'multi' },
 ];
 const growthNav = [
-  { to: '/app/loyalty',   label: 'Loyalty',   icon: StarIcon,                minPlan: 'pro' },
-  { to: '/app/marketing', label: 'Marketing', icon: MegaphoneIcon,           minPlan: 'pro' },
-  { to: '/app/messages',  label: 'Messages',  icon: ChatBubbleLeftRightIcon, minPlan: 'pro' },
+  { to: '/app/loyalty',        label: 'Loyalty',       icon: StarIcon,                minPlan: 'pro' },
+  { to: '/app/subscriptions',  label: 'Subscriptions', icon: TicketIcon,              minPlan: 'pro' },
+  { to: '/app/marketing',      label: 'Marketing',     icon: MegaphoneIcon,           minPlan: 'pro' },
+  { to: '/app/messages',       label: 'Messages',      icon: ChatBubbleLeftRightIcon, minPlan: 'pro' },
 ];
 const adminNav = [
   { to: '/app/reports',    label: 'Reports',      icon: ChartBarIcon,        minPlan: 'starter' },
