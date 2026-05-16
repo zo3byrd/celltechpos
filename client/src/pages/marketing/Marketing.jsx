@@ -422,7 +422,10 @@ export default function Marketing() {
     if (!confirm('Send this campaign to all recipients?')) return;
     try {
       const { data } = await api.post(`/campaigns/${id}/send`);
-      toast.success(`Sent to ${data.recipientCount} recipients`);
+      const msg = data.failed > 0
+        ? `Sent ${data.sent}, ${data.failed} failed`
+        : `Sent to ${data.sent ?? data.recipientCount} recipients`;
+      toast.success(msg);
       load();
     } catch (err) { toast.error(err.response?.data?.error || 'Failed'); }
   }
