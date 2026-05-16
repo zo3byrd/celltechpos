@@ -44,6 +44,11 @@ const globalStyle = `
     .nav-mobile-link:last-child { border-bottom: none; }
     .nav-logo-desktop { display: none; }
     .nav-logo-mobile { display: flex; }
+    .hero-grid { grid-template-columns: 1fr !important; }
+    .hero-phone { display: none !important; }
+  }
+  @media (min-width: 768px) {
+    .step-connector { display: block !important; }
   }
 `;
 
@@ -273,6 +278,30 @@ const testimonials = [
 
 const carriers = ['Boost Mobile', 'T-Mobile', 'AT&T', 'Verizon', 'Metro PCS', 'Cricket Wireless', 'Visible', 'Straight Talk'];
 
+const faqs = [
+  { q: 'Do I need special hardware?', a: 'No. CellTechPOS runs in any modern browser — on a tablet, laptop, or desktop. You can connect a USB receipt printer and barcode scanner, but they\'re optional.' },
+  { q: 'How long does setup take?', a: 'Most shops are fully live within 24 hours. We help you import your inventory and customer list, and our team is available to walk you through the setup.' },
+  { q: 'Can I import my existing data?', a: 'Yes. You can upload your customers and inventory items via CSV files. We also support bulk barcode imports, parts catalog uploads, and manual data entry.' },
+  { q: 'How many staff users can I add?', a: 'Unlimited staff accounts on all plans. Each employee gets their own login with role-based access and their own PIN for the time clock.' },
+  { q: 'Is there a long-term contract?', a: 'No. All plans are month-to-month. Upgrade, downgrade, or cancel at any time — no cancellation fees, no questions asked.' },
+  { q: 'What payment methods work at checkout?', a: 'Cash, card (manual entry or Stripe terminal), check, split payments, gift cards, and layaway. Stripe is built-in for card-not-present payments.' },
+  { q: 'Do you support multiple locations?', a: 'Yes. The Multi plan supports up to 3 locations with inter-store inventory transfers, shared customer records, and consolidated reporting.' },
+  { q: 'Is my data secure and backed up?', a: 'Yes. All data is encrypted in transit and at rest, backed up automatically every night, and hosted on secure cloud infrastructure. We never share your data.' },
+];
+
+function FAQItem({ q, a }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ borderBottom: '1px solid #e2e8f0' }}>
+      <button onClick={() => setOpen(o => !o)} style={{ width: '100%', textAlign: 'left', padding: '18px 0', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+        <span style={{ fontSize: 15, fontWeight: 600, color: NAVY }}>{q}</span>
+        <span style={{ fontSize: 22, color: TEAL, flexShrink: 0, display: 'inline-block', transform: open ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s', lineHeight: 1 }}>+</span>
+      </button>
+      {open && <p style={{ fontSize: 14, color: SLATE, lineHeight: 1.75, margin: '0 0 18px', maxWidth: 680 }}>{a}</p>}
+    </div>
+  );
+}
+
 export default function LandingPage() {
   const { token, user } = useAuthStore();
   const appPath = user?.role === 'superadmin' ? '/superadmin' : '/app';
@@ -348,10 +377,10 @@ export default function LandingPage() {
                     style={{ display: 'block', textAlign: 'center', padding: '13px', borderRadius: 10, fontSize: 15, fontWeight: 600, color: '#94a3b8', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.1)' }}>
                     Sign In
                   </Link>
-                  <a href="#contact" onClick={() => setMobileMenuOpen(false)}
+                  <Link to="/signup" onClick={() => setMobileMenuOpen(false)}
                     style={{ display: 'block', textAlign: 'center', padding: '13px', borderRadius: 10, fontSize: 15, fontWeight: 700, background: TEAL, color: '#fff', textDecoration: 'none' }}>
-                    Book a Demo
-                  </a>
+                    Start Free Trial →
+                  </Link>
                 </>
               )}
             </div>
@@ -370,7 +399,7 @@ export default function LandingPage() {
         {/* Dot grid */}
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '32px 32px', pointerEvents: 'none' }} />
 
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr auto', gap: 60, alignItems: 'center', position: 'relative', zIndex: 1 }}>
+        <div className="hero-grid" style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr auto', gap: 60, alignItems: 'center', position: 'relative', zIndex: 1 }}>
           {/* Left: Text */}
           <div className="fade-up">
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(13,148,136,0.15)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 999, padding: '6px 16px', marginBottom: 28 }}>
@@ -410,7 +439,7 @@ export default function LandingPage() {
           </div>
 
           {/* Right: Phone mockup */}
-          <div style={{ display: 'flex', justifyContent: 'center', paddingRight: 20 }}>
+          <div className="hero-phone" style={{ display: 'flex', justifyContent: 'center', paddingRight: 20 }}>
             <PhoneMockup />
           </div>
         </div>
@@ -421,18 +450,53 @@ export default function LandingPage() {
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
             {[
-              { value: 'All-in-One', sub: 'No extra apps needed' },
-              { value: 'Real-time',  sub: 'Live inventory & sales' },
-              { value: '8+ Carriers', sub: 'Boost, T-Mobile & more' },
-              { value: 'Cloud-based', sub: 'Access from anywhere' },
-              { value: '24/7 Support', sub: 'Always here for you' },
-              { value: 'From $49.99/mo', sub: 'No hidden fees' },
+              { value: '22+ Modules',    sub: 'One platform, no add-ons' },
+              { value: '8+ Carriers',    sub: 'Boost, T-Mobile & more' },
+              { value: '30-Day Trial',   sub: 'No credit card required' },
+              { value: 'Unlimited Staff', sub: 'Every plan, no extra cost' },
+              { value: 'No Contracts',   sub: 'Cancel anytime' },
+              { value: 'From $49.99/mo', sub: 'All features included' },
             ].map((s, i, arr) => (
               <div key={s.value} style={{ textAlign: 'center', padding: '28px 16px', borderRight: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
                 <div style={{ fontSize: 20, fontWeight: 900, color: NAVY, letterSpacing: '-0.5px' }}>{s.value}</div>
                 <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>{s.sub}</div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── How It Works ────────────────────────────────────────── */}
+      <section style={{ background: '#fff', padding: '80px 24px', borderTop: '1px solid #f1f5f9' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 52 }}>
+            <div style={{ display: 'inline-block', background: '#dcfce7', borderRadius: 999, padding: '5px 14px', marginBottom: 14 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#166534', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Getting Started</span>
+            </div>
+            <h2 style={{ fontSize: 36, fontWeight: 800, color: NAVY, margin: '0 0 12px', letterSpacing: '-0.5px' }}>Up and running in minutes</h2>
+            <p style={{ fontSize: 16, color: SLATE, maxWidth: 480, margin: '0 auto' }}>No IT team required. Most shops are fully live within 24 hours of signing up.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 40 }}>
+            {[
+              { step: '01', title: 'Create your account', desc: 'Sign up in 2 minutes. Your 30-day free trial starts immediately — no credit card required.', icon: '🚀', color: TEAL },
+              { step: '02', title: 'Set up your store', desc: 'Add your inventory, staff, and tax rate. Import existing customers and items from a CSV file.', icon: '⚙️', color: '#6366f1' },
+              { step: '03', title: 'Go live today', desc: 'Start ringing up sales, logging repairs, and tracking inventory right away. Most teams learn it in under an hour.', icon: '✅', color: '#10b981' },
+            ].map(s => (
+              <div key={s.step} style={{ textAlign: 'center' }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: `linear-gradient(135deg, ${s.color}22, ${s.color}10)`, border: `2px solid ${s.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, margin: '0 auto 16px' }}>
+                  {s.icon}
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: s.color, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Step {s.step}</div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: NAVY, margin: '0 0 10px' }}>{s.title}</h3>
+                <p style={{ fontSize: 14, color: SLATE, lineHeight: 1.75, margin: 0 }}>{s.desc}</p>
+              </div>
+            ))}
+          </div>
+          <div style={{ textAlign: 'center', marginTop: 44 }}>
+            <Link to="/signup" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 700, background: `linear-gradient(135deg, ${TEAL}, #0f766e)`, color: '#fff', textDecoration: 'none', boxShadow: `0 8px 24px rgba(13,148,136,0.3)` }}>
+              Start your free trial <ArrowRightIcon style={{ width: 16, height: 16 }} />
+            </Link>
+            <p style={{ marginTop: 12, fontSize: 13, color: '#94a3b8' }}>30 days free · No credit card · Cancel anytime</p>
           </div>
         </div>
       </section>
@@ -595,13 +659,13 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link to="/signup" style={{ display: 'block', textAlign: 'center', padding: '13px 0', borderRadius: 10, fontSize: 14, fontWeight: 700, background: p.badge ? p.color : LGRAY, color: p.badge ? '#fff' : NAVY, textDecoration: 'none' }}>
-                  Get Started
+                  Try Free for 30 Days
                 </Link>
               </div>
             ))}
           </div>
           <p style={{ textAlign: 'center', marginTop: 28, fontSize: 13, color: '#94a3b8' }}>
-            Annual billing saves up to 2 months · Multi-location discounts available
+            All plans include a <strong style={{ color: '#64748b' }}>30-day free trial</strong> · No credit card required · Cancel anytime
           </p>
         </div>
       </section>
@@ -622,16 +686,12 @@ export default function LandingPage() {
             {[
               { name: 'Stripe', desc: 'Card payments', color: '#635bff', emoji: '💳' },
               { name: 'Twilio', desc: 'SMS notifications', color: '#f22f46', emoji: '📱' },
+              { name: 'SendGrid', desc: 'Email delivery', color: '#1a82e2', emoji: '✉️' },
               { name: 'PayPal', desc: 'Online payments', color: '#003087', emoji: '🅿️' },
               { name: 'QuickBooks', desc: 'Accounting export', color: '#2ca01c', emoji: '📊' },
-              { name: 'Square', desc: 'Card reader', color: '#0071ce', emoji: '◾' },
-              { name: 'Mailchimp', desc: 'Email marketing', color: '#ffe01b', emoji: '📧' },
-              { name: 'MobileSentrix', desc: 'Parts ordering', color: '#0ea5e9', emoji: '🔩' },
-              { name: 'Shopify', desc: 'Online store', color: '#96bf48', emoji: '🛒' },
-              { name: 'Zapier', desc: 'Automation', color: '#ff4a00', emoji: '⚡' },
-              { name: 'WooCommerce', desc: 'E-commerce', color: '#9b5c8f', emoji: '🏪' },
-              { name: 'Google Maps', desc: 'Store locator', color: '#4285f4', emoji: '📍' },
-              { name: 'Xero', desc: 'Cloud accounting', color: '#13b5ea', emoji: '📒' },
+              { name: 'ePay', desc: 'Carrier top-ups', color: '#0ea5e9', emoji: '📶' },
+              { name: 'VidaPay', desc: 'Bill payments', color: '#7c3aed', emoji: '💵' },
+              { name: 'Google', desc: 'Reviews & maps', color: '#4285f4', emoji: '📍' },
             ].map(intg => (
               <div key={intg.name} className="card-hover" style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, padding: '18px 14px', textAlign: 'center', cursor: 'default' }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: `${intg.color}22`, border: `1px solid ${intg.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, margin: '0 auto 10px' }}>{intg.emoji}</div>
@@ -642,8 +702,24 @@ export default function LandingPage() {
           </div>
 
           <p style={{ textAlign: 'center', marginTop: 36, fontSize: 13, color: '#334155' }}>
-            More integrations added regularly · <a href="/contact" style={{ color: '#2dd4bf', textDecoration: 'none' }}>Request a connection →</a>
+            More integrations shipping regularly · <a href="/contact" style={{ color: '#2dd4bf', textDecoration: 'none' }}>Request a connection →</a>
           </p>
+        </div>
+      </section>
+
+      {/* ── FAQ ─────────────────────────────────────────────────────── */}
+      <section style={{ background: LGRAY, padding: '80px 24px' }}>
+        <div style={{ maxWidth: 780, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <div style={{ display: 'inline-block', background: '#e0f2fe', borderRadius: 999, padding: '5px 14px', marginBottom: 14 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#0369a1', letterSpacing: '0.06em', textTransform: 'uppercase' }}>FAQ</span>
+            </div>
+            <h2 style={{ fontSize: 36, fontWeight: 800, color: NAVY, margin: '0 0 12px', letterSpacing: '-0.5px' }}>Common questions</h2>
+            <p style={{ fontSize: 16, color: SLATE }}>Everything you need to know before getting started.</p>
+          </div>
+          <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', padding: '4px 28px 8px' }}>
+            {faqs.map(f => <FAQItem key={f.q} q={f.q} a={f.a} />)}
+          </div>
         </div>
       </section>
 
@@ -658,7 +734,7 @@ export default function LandingPage() {
           <p style={{ fontSize: 17, color: '#94a3b8', margin: '0 0 40px', lineHeight: 1.7 }}>We'll set up your account and have your team live within 24 hours. Reach out and let's get started.</p>
 
           {/* Contact cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 36 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 36 }}>
             <Link to="/contact" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '24px 20px', borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', transition: 'border-color 0.2s' }}
               onMouseEnter={e => e.currentTarget.style.borderColor='rgba(45,212,191,0.4)'}
               onMouseLeave={e => e.currentTarget.style.borderColor='rgba(255,255,255,0.1)'}>
@@ -666,24 +742,17 @@ export default function LandingPage() {
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>Send a Message</div>
               <div style={{ fontSize: 13, color: '#2dd4bf', fontWeight: 600 }}>Contact form →</div>
             </Link>
-            <a href="tel:+13213825582" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '24px 20px', borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', transition: 'border-color 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.borderColor='rgba(45,212,191,0.4)'}
-              onMouseLeave={e => e.currentTarget.style.borderColor='rgba(255,255,255,0.1)'}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(13,148,136,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📞</div>
-              <div style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>Call Us</div>
-              <div style={{ fontSize: 13, color: '#2dd4bf', fontWeight: 600 }}>(321) 382-5582</div>
-            </a>
             <Link to="/signup" style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '24px 20px', borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', transition: 'border-color 0.2s' }}
               onMouseEnter={e => e.currentTarget.style.borderColor='rgba(45,212,191,0.4)'}
               onMouseLeave={e => e.currentTarget.style.borderColor='rgba(255,255,255,0.1)'}>
               <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(13,148,136,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🚀</div>
               <div style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>Start Free Trial</div>
-              <div style={{ fontSize: 13, color: '#2dd4bf', fontWeight: 600 }}>30 days free →</div>
+              <div style={{ fontSize: 13, color: '#2dd4bf', fontWeight: 600 }}>30 days free, no card →</div>
             </Link>
           </div>
 
           <div style={{ display: 'flex', gap: 36, justifyContent: 'center', flexWrap: 'wrap' }}>
-            {['⚡ Same-day setup', '🔒 Secure & encrypted', '📞 Ongoing support'].map(item => (
+            {['⚡ Same-day setup', '🔒 Secure & encrypted', '💬 Ongoing support'].map(item => (
               <span key={item} style={{ fontSize: 13, color: '#475569' }}>{item}</span>
             ))}
           </div>
@@ -704,14 +773,14 @@ export default function LandingPage() {
               <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, margin: 0 }}>The complete POS platform for wireless & repair retailers.</p>
             </div>
             {[
-              { title: 'Solutions', links: ['Point of Sale', 'Repair Management', 'Activations', 'Inventory', 'Customer CRM'] },
-              { title: 'Company', links: ['Pricing', 'Carriers', 'Contact Us'] },
+              { title: 'Solutions', links: [['Point of Sale', '#features'], ['Repair Management', '#solutions'], ['Activations', '#solutions'], ['Inventory', '#solutions'], ['Customer CRM', '#solutions']] },
+              { title: 'Company', links: [['Pricing', '#pricing'], ['Features', '#features'], ['Contact Us', '/contact'], ['Privacy Policy', '/privacy'], ['Terms', '/terms']] },
             ].map(col => (
               <div key={col.title}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>{col.title}</div>
-                {col.links.map(l => (
-                  <a key={l} href="#" style={{ display: 'block', fontSize: 13, color: '#64748b', textDecoration: 'none', marginBottom: 10 }}
-                    onMouseEnter={e => e.target.style.color='#94a3b8'} onMouseLeave={e => e.target.style.color='#64748b'}>{l}</a>
+                {col.links.map(([label, href]) => (
+                  <a key={label} href={href} style={{ display: 'block', fontSize: 13, color: '#64748b', textDecoration: 'none', marginBottom: 10 }}
+                    onMouseEnter={e => e.target.style.color='#94a3b8'} onMouseLeave={e => e.target.style.color='#64748b'}>{label}</a>
                 ))}
               </div>
             ))}
