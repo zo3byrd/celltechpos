@@ -1,13 +1,16 @@
 require('dotenv').config();
 
-// ── Sentry (must init before everything else) ────────────────────────────────
-const Sentry = require('@sentry/node');
+// ── Sentry (optional — only loads if @sentry/node is installed and SENTRY_DSN is set) ──
+let Sentry = null;
 if (process.env.SENTRY_DSN) {
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.NODE_ENV || 'production',
-    tracesSampleRate: 0.2,
-  });
+  try {
+    Sentry = require('@sentry/node');
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV || 'production',
+      tracesSampleRate: 0.2,
+    });
+  } catch { /* @sentry/node not installed — skip */ }
 }
 
 // ── Startup safety checks ────────────────────────────────────────────────────
@@ -301,7 +304,7 @@ if (process.env.NODE_ENV === 'production') {
   }
 }
 
-if (process.env.SENTRY_DSN) Sentry.setupExpressErrorHandler(app);
+if (Sentry) Sentry.setupExpressErrorHandler(app);
 
 app.use((err, req, res, next) => {
   console.error(err);
