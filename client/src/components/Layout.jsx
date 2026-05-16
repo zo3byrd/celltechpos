@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import Sidebar from './Sidebar';
+import NotificationBell from './NotificationBell';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import api from '../api/client';
@@ -88,7 +89,9 @@ export default function Layout() {
             <span style={{ fontSize: 17, fontWeight: 900, color: '#2dd4bf', letterSpacing: '-0.5px', lineHeight: 1 }}>TECH</span>
             <span style={{ fontSize: 10, fontWeight: 800, color: '#38bdf8', marginLeft: 4, letterSpacing: '2px', lineHeight: 1 }}>POS</span>
           </a>
-          <div className="w-10 flex-shrink-0" />
+          <div className="flex items-center justify-center w-10 flex-shrink-0">
+            <NotificationBell />
+          </div>
         </div>
 
         {/* Trial expiry warning */}

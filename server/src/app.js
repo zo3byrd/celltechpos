@@ -278,6 +278,7 @@ app.use('/api/messages',       require('./routes/messages'));
 app.use('/api/admin-campaigns', require('./routes/admin-campaigns'));
 app.use('/api/settings',       require('./routes/settings'));
 app.use('/api/announcements',  require('./routes/announcements'));
+app.use('/api/notifications',  require('./routes/notifications'));
 app.use('/api/contact',        require('./routes/contact'));
 app.use('/api/buyback',        require('./routes/buyback'));
 app.use('/api/estimates',      require('./routes/estimates'));

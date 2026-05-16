@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
+import NotificationBell from './NotificationBell';
 import CellTechLogo from './Logo';
 import {
   HomeIcon, WrenchScrewdriverIcon, ShoppingCartIcon,
@@ -178,6 +179,7 @@ export default function Sidebar({ isOpen, onClose }) {
             <div className="text-gray-300 text-xs truncate font-medium">{user?.name}</div>
             <div className="text-gray-600 text-xs capitalize">{user?.role?.replace('_', ' ')}</div>
           </div>
+          <NotificationBell />
           <button onClick={toggleTheme} title={isDark ? 'Light mode' : 'Dark mode'} className="text-gray-600 hover:text-yellow-400 transition-colors">
             {isDark ? <SunIcon className="w-3.5 h-3.5" /> : <MoonIcon className="w-3.5 h-3.5" />}
           </button>
