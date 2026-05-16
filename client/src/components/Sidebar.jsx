@@ -44,7 +44,7 @@ const staffNav = [
 ];
 const growthNav = [
   { to: '/app/loyalty',        label: 'Loyalty',       icon: StarIcon,                minPlan: 'pro' },
-  { to: '/app/subscriptions',  label: 'Subscriptions', icon: TicketIcon,              minPlan: 'pro' },
+  { to: '/app/subscriptions',  label: 'Subscriptions', icon: TicketIcon,              minPlan: 'starter' },
   { to: '/app/marketing',      label: 'Marketing',     icon: MegaphoneIcon,           minPlan: 'pro' },
   { to: '/app/messages',       label: 'Messages',      icon: ChatBubbleLeftRightIcon, minPlan: 'pro' },
 ];
