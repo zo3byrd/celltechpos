@@ -248,6 +248,9 @@ app.get('/api', (req, res) => {
 <p style="margin-top:24px;font-size:12px;color:#334155;text-align:center">CellTechPOS · All routes require Authorization: Bearer &lt;token&gt; except /api/auth and /api/health</p>
 </body></html>`);
 });
+// SEO — public, no auth
+app.use(require('./routes/seo'));
+
 app.use('/api/auth',           require('./routes/auth'));
 app.use('/api/contact',        require('./routes/contact'));
 app.post('/api/licenses/paypal-webhook', require('./routes/paypalWebhook'));
