@@ -57,6 +57,7 @@ const InventoryCount   = lazy(() => import('./pages/inventory/InventoryCount'));
 const Billing          = lazy(() => import('./pages/billing/Billing'));
 const Subscriptions    = lazy(() => import('./pages/subscriptions/Subscriptions'));
 const Serials          = lazy(() => import('./pages/serials/Serials'));
+const Returns          = lazy(() => import('./pages/returns/Returns'));
 
 function Spin() {
   return (
@@ -136,6 +137,7 @@ export default function App() {
           <Route path="subscriptions" element={<Subscriptions />} />
           <Route path="layaway" element={<Layaway />} />
           <Route path="messages" element={<Messages />} />
+          <Route path="returns" element={<Returns />} />
           <Route path="buyback" element={<Buyback />} />
           <Route path="estimates" element={<Estimates />} />
           <Route path="recurring" element={<RecurringInvoices />} />

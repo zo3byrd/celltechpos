@@ -140,6 +140,8 @@ const Transaction = sequelize.define('Transaction', {
   notes:             { type: DataTypes.TEXT },
   loyaltyPointsEarned:   { type: DataTypes.INTEGER, defaultValue: 0 },
   loyaltyPointsRedeemed: { type: DataTypes.INTEGER, defaultValue: 0 },
+  originalTransactionId: { type: DataTypes.UUID, allowNull: true },
+  reason:                { type: DataTypes.STRING, allowNull: true },
 });
 
 // ── TransactionItem ───────────────────────────────────────────────────────────

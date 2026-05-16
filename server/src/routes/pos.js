@@ -101,9 +101,21 @@ router.post('/repair-payment', auth, async (req, res) => {
 
 // List transactions
 router.get('/transactions', auth, async (req, res) => {
-  const { page = 1, limit = 20, type } = req.query;
+  const { Op } = require('sequelize');
+  const { page = 1, limit = 20, type, search } = req.query;
   const where = { storeId: req.user.storeId };
   if (type) where.type = type;
+  if (search) {
+    // Find customer IDs matching the search term
+    const [custRows] = await sequelize.query(
+      `SELECT id FROM Customers WHERE storeId=? AND (firstName LIKE ? OR lastName LIKE ? OR (firstName || ' ' || lastName) LIKE ?)`,
+      { replacements: [req.user.storeId, `%${search}%`, `%${search}%`, `%${search}%`] }
+    );
+    const custIds = custRows.map(r => r.id);
+    const orClauses = [{ transactionNumber: { [Op.like]: `%${search}%` } }];
+    if (custIds.length) orClauses.push({ customerId: { [Op.in]: custIds } });
+    where[Op.or] = orClauses;
+  }
   const { rows, count } = await Transaction.findAndCountAll({
     where,
     include: [{ model: Customer }],
@@ -124,6 +136,108 @@ router.get('/transactions/:id', auth, async (req, res) => {
   });
   if (!tx) return res.status(404).json({ error: 'Transaction not found' });
   res.json(tx);
+});
+
+// Process a refund / return
+router.post('/refund', auth, async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const { originalTransactionId, items, reason, refundMethod, notes } = req.body;
+    if (!originalTransactionId || !items?.length) {
+      return res.status(400).json({ error: 'originalTransactionId and items are required' });
+    }
+
+    // Load original transaction + its items
+    const original = await Transaction.findOne({
+      where: { id: originalTransactionId, storeId: req.user.storeId },
+      include: [{ model: TransactionItem }],
+    });
+    if (!original) return res.status(404).json({ error: 'Original transaction not found' });
+    if (original.type === 'refund') return res.status(400).json({ error: 'Cannot refund a refund' });
+
+    // Sum quantities already refunded per item
+    const existingRefunds = await TransactionItem.findAll({
+      include: [{
+        model: Transaction,
+        where: { originalTransactionId, storeId: req.user.storeId, type: 'refund' },
+        attributes: [],
+      }],
+    });
+    const alreadyRefunded = {};
+    for (const ri of existingRefunds) {
+      alreadyRefunded[ri.itemId] = (alreadyRefunded[ri.itemId] || 0) + ri.quantity;
+    }
+
+    // Validate each item to refund
+    let refundSubtotal = 0;
+    const resolvedItems = [];
+    for (const li of items) {
+      const orig = original.TransactionItems.find(ti => ti.itemId === li.itemId);
+      if (!orig) return res.status(400).json({ error: `Item ${li.itemId} not in original transaction` });
+      const maxRefundable = orig.quantity - (alreadyRefunded[li.itemId] || 0);
+      if (li.quantity > maxRefundable) {
+        return res.status(400).json({ error: `Cannot refund ${li.quantity} of "${orig.name}" — only ${maxRefundable} refundable` });
+      }
+      const lineTotal = parseFloat(orig.unitPrice) * li.quantity;
+      refundSubtotal += lineTotal;
+      resolvedItems.push({ orig, quantity: li.quantity, lineTotal });
+    }
+
+    const refundTotal = refundSubtotal;
+
+    const refundTx = await Transaction.create({
+      transactionNumber: 'REF-' + Date.now().toString().slice(-8),
+      storeId: req.user.storeId,
+      customerId: original.customerId || null,
+      userId: req.user.id,
+      type: 'refund',
+      subtotal: -refundSubtotal,
+      taxAmount: 0,
+      discountAmount: 0,
+      total: -refundTotal,
+      paymentMethod: refundMethod || original.paymentMethod,
+      paymentStatus: 'completed',
+      originalTransactionId,
+      reason: reason || null,
+      notes: notes || `Refund for ${original.transactionNumber}`,
+    }, { transaction: t });
+
+    for (const { orig, quantity, lineTotal } of resolvedItems) {
+      await TransactionItem.create({
+        transactionId: refundTx.id,
+        itemId: orig.itemId,
+        name: orig.name,
+        quantity,
+        unitPrice: orig.unitPrice,
+        discount: 0,
+        total: -lineTotal,
+      }, { transaction: t });
+
+      // Restock non-service items
+      if (orig.itemId) {
+        const inv = await InventoryItem.findOne({ where: { id: orig.itemId, storeId: req.user.storeId }, transaction: t });
+        if (inv && inv.category !== 'service') {
+          await inv.increment('quantity', { by: quantity, transaction: t });
+        }
+      }
+    }
+
+    await t.commit();
+    res.status(201).json({ refund: refundTx, total: -refundTotal });
+  } catch (err) {
+    await t.rollback();
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Get refunds for a transaction
+router.get('/transactions/:id/refunds', auth, async (req, res) => {
+  const refunds = await Transaction.findAll({
+    where: { originalTransactionId: req.params.id, storeId: req.user.storeId, type: 'refund' },
+    include: [{ model: TransactionItem }],
+    order: [['createdAt', 'DESC']],
+  });
+  res.json(refunds);
 });
 
 // Public store info for receipt printing (any authenticated user)

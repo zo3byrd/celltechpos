@@ -45,6 +45,9 @@ async function runMigrations() {
   // Transaction loyalty fields
   await addColumn('Transactions', 'loyaltyPointsEarned', 'INTEGER DEFAULT 0');
   await addColumn('Transactions', 'loyaltyPointsRedeemed', 'INTEGER DEFAULT 0');
+  // Refund tracking
+  await addColumn('Transactions', 'originalTransactionId', 'CHAR(36)');
+  await addColumn('Transactions', 'reason', 'VARCHAR(255)');
 
   // Stripe fields on License
   await addColumn('Licenses', 'stripeCustomerId',     'VARCHAR(255)');
