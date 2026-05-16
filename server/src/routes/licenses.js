@@ -355,15 +355,97 @@ router.post('/:storeId/paypal-link', superadminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ── Stripe Plan Management ────────────────────────────────────────────────────
+// ── Self-service billing ──────────────────────────────────────────────────────
 
-// GET all Stripe plans
-router.get('/stripe-plans', superadminOnly, async (req, res) => {
+// GET all active Stripe plans (any authenticated user — for billing page)
+router.get('/stripe-plans', async (req, res) => {
   try {
-    const plans = await StripePlan.findAll({ order: [['interval', 'ASC'], ['amount', 'ASC']] });
+    const plans = await StripePlan.findAll({
+      attributes: ['id', 'key', 'label', 'amount', 'interval'],
+      order: [['interval', 'ASC'], ['amount', 'ASC']],
+    });
     res.json(plans);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// GET billing portal session for active subscriber
+router.get('/portal', async (req, res) => {
+  const stripe = getStripe();
+  if (!stripe) return res.status(503).json({ error: 'Stripe not configured' });
+  try {
+    const lic = await rawLicense(req.user.storeId);
+    if (!lic?.stripeCustomerId) return res.status(400).json({ error: 'No Stripe customer found' });
+    const appUrl = process.env.APP_URL || 'https://celltechpos.com';
+    const session = await stripe.billingPortal.sessions.create({
+      customer: lic.stripeCustomerId,
+      return_url: `${appUrl}/app/billing`,
+    });
+    res.json({ url: session.url });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /self-checkout — store owner initiates their own Stripe checkout session
+router.post('/self-checkout', async (req, res) => {
+  const stripe = getStripe();
+  if (!stripe) return res.status(503).json({ error: 'Stripe not configured' });
+
+  const { planKey } = req.body;
+  if (!planKey) return res.status(400).json({ error: 'planKey is required' });
+
+  try {
+    const planRow = await StripePlan.findOne({ where: { key: planKey } });
+    if (!planRow) return res.status(404).json({ error: `Plan "${planKey}" not found` });
+    if (!planRow.stripePriceId) {
+      return res.status(400).json({ error: `Plan "${planKey}" has no Stripe price configured. Contact support.` });
+    }
+
+    const store = await Store.findByPk(req.user.storeId);
+    const lic = await rawLicense(req.user.storeId);
+    const appUrl = process.env.APP_URL || 'https://celltechpos.com';
+
+    // Best email: user's login email > store email
+    const bestEmail = req.user.email || store?.email || null;
+    const customerName = store?.name || req.user.name || null;
+
+    // Reuse or create Stripe customer so name/email are pre-filled
+    let customerId = lic?.stripeCustomerId || null;
+    if (customerId) {
+      try { await stripe.customers.retrieve(customerId); }
+      catch { customerId = null; }
+    }
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        name: customerName,
+        email: bestEmail,
+        metadata: { storeId: req.user.storeId },
+      });
+      customerId = customer.id;
+      await sequelize.query(
+        'UPDATE `Licenses` SET stripeCustomerId=?, updatedAt=? WHERE storeId=?',
+        { replacements: [customerId, new Date().toISOString(), req.user.storeId] }
+      );
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      mode: 'subscription',
+      line_items: [{ price: planRow.stripePriceId, quantity: 1 }],
+      billing_address_collection: 'required',
+      phone_number_collection: { enabled: true },
+      allow_promotion_codes: true,
+      success_url: `${appUrl}/app/billing?success=true`,
+      cancel_url: `${appUrl}/app/billing`,
+      metadata: { storeId: req.user.storeId },
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('Self-checkout error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Stripe Plan Management (superadmin) ───────────────────────────────────────
 
 // PUT update plan price (creates new Stripe price, keeps product)
 router.put('/stripe-plans/:key', superadminOnly, async (req, res) => {
