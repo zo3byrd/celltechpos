@@ -3,6 +3,7 @@ const { sequelize } = require('../db');
 const { License, Store, User, StripePlan } = require('../db/models');
 const { auth, requireRole } = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { getStripe } = require('../stripe');
 const { isConfigured: paypalConfigured, createSubscription: createPayPalSubscription } = require('../paypal');
@@ -30,6 +31,14 @@ async function rawAllLicenses() {
 function daysUntil(isoStr) {
   if (!isoStr) return null;
   return Math.ceil((new Date(isoStr) - new Date()) / 86400000);
+}
+
+function getPlanTier(license) {
+  if (!license || license.plan === 'trial') return 'trial';
+  const key = (license.stripePlanKey || '').toLowerCase();
+  if (key.includes('multi')) return 'multi';
+  if (key.includes('pro')) return 'pro';
+  return 'starter';
 }
 
 // GET my store's license
@@ -242,6 +251,39 @@ router.get('/:storeId/details', superadminOnly, async (req, res) => {
     );
     lic.daysLeft = daysUntil(lic.expiresAt);
     res.json({ license: lic, users, stats: counts[0] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST impersonate a store — superadmin logs in as that store's admin (superadmin only)
+router.post('/:storeId/impersonate', superadminOnly, async (req, res) => {
+  try {
+    const [userRows] = await sequelize.query(
+      `SELECT u.*, s.name as storeName, s.email as storeEmail FROM \`Users\` u
+       LEFT JOIN \`Stores\` s ON u.storeId = s.id
+       WHERE u.storeId=? AND u.role='admin' AND u.active=1
+       ORDER BY u.createdAt ASC LIMIT 1`,
+      { replacements: [req.params.storeId] }
+    );
+    const userRow = userRows[0];
+    if (!userRow) return res.status(404).json({ error: 'No admin user found for this store' });
+
+    const lic = await rawLicense(req.params.storeId);
+    const plan = getPlanTier(lic);
+
+    const payload = { id: userRow.id, role: userRow.role, storeId: userRow.storeId, name: userRow.name };
+    const accessToken  = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '4h' });
+    const refreshToken = jwt.sign({ id: userRow.id, type: 'refresh' }, process.env.JWT_SECRET, { expiresIn: '1d' });
+
+    res.json({
+      token: accessToken,
+      refreshToken,
+      user: {
+        id: userRow.id, name: userRow.name, email: userRow.email,
+        role: userRow.role, storeId: userRow.storeId,
+        store: { id: userRow.storeId, name: userRow.storeName, email: userRow.storeEmail },
+      },
+      plan,
+    });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -573,17 +615,61 @@ router.get('/stats/revenue', superadminOnly, async (req, res) => {
     const yearly  = active.filter(l => l.plan === 'yearly');
     const mrr = monthly.reduce((s, l) => s + parseFloat(l.price || 0), 0)
               + yearly.reduce((s, l) => s + parseFloat(l.price || 0) / 12, 0);
+
+    const paidActive = active.filter(l => l.plan !== 'trial').length;
+    const arpu = active.length > 0 ? parseFloat((mrr / active.length).toFixed(2)) : 0;
+    const trialConversion = all.length > 0 ? Math.round((paidActive / all.length) * 100) : 0;
+
+    const [churnRows] = await sequelize.query(
+      "SELECT COUNT(*) as cnt FROM `Licenses` WHERE (status='expired' OR status='cancelled') AND updatedAt >= datetime('now', '-30 days')"
+    );
+    const churned = churnRows[0]?.cnt || 0;
+    const churnRate = all.length > 0 ? parseFloat((churned / all.length * 100).toFixed(1)) : 0;
+
+    const [newMonthRows] = await sequelize.query(
+      "SELECT COUNT(*) as cnt FROM `Licenses` WHERE strftime('%Y-%m', createdAt) = strftime('%Y-%m', 'now')"
+    );
+    const newThisMonth = newMonthRows[0]?.cnt || 0;
+
+    const [atRiskRows] = await sequelize.query(
+      "SELECT COUNT(*) as cnt FROM `Licenses` WHERE stripeStatus='past_due' OR status='suspended' OR (status='active' AND expiresAt IS NOT NULL AND expiresAt <= datetime('now', '+7 days') AND expiresAt > datetime('now'))"
+    );
+    const atRisk = atRiskRows[0]?.cnt || 0;
+
     res.json({
-      totalStores:   all.length,
-      activeStores:  active.length,
-      monthly:       monthly.length,
-      yearly:        yearly.length,
-      trial:         active.filter(l => l.plan === 'trial').length,
-      expired:       all.filter(l => l.status === 'expired').length,
-      suspended:     all.filter(l => l.status === 'suspended').length,
-      mrr:           parseFloat(mrr.toFixed(2)),
-      arr:           parseFloat((mrr * 12).toFixed(2)),
+      totalStores:      all.length,
+      activeStores:     active.length,
+      monthly:          monthly.length,
+      yearly:           yearly.length,
+      trial:            active.filter(l => l.plan === 'trial').length,
+      expired:          all.filter(l => l.status === 'expired').length,
+      suspended:        all.filter(l => l.status === 'suspended').length,
+      mrr:              parseFloat(mrr.toFixed(2)),
+      arr:              parseFloat((mrr * 12).toFixed(2)),
+      arpu,
+      churnRate,
+      trialConversion,
+      newThisMonth,
+      atRisk,
     });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET at-risk stores (superadmin only)
+router.get('/at-risk', superadminOnly, async (req, res) => {
+  try {
+    const [rows] = await sequelize.query(
+      `SELECT l.*, s.name as storeName, s.email as storeEmail, s.phone as storePhone
+       FROM \`Licenses\` l LEFT JOIN \`Stores\` s ON l.storeId = s.id
+       WHERE l.stripeStatus='past_due'
+          OR l.status='suspended'
+          OR (l.status='active' AND l.expiresAt IS NOT NULL
+              AND l.expiresAt <= datetime('now', '+7 days')
+              AND l.expiresAt > datetime('now'))
+       ORDER BY l.expiresAt ASC LIMIT 25`
+    );
+    rows.forEach(r => { r.daysLeft = daysUntil(r.expiresAt); });
+    res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

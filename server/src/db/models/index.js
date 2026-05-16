@@ -706,6 +706,20 @@ const StoreTransfer = sequelize.define('StoreTransfer', {
   receivedAt:   { type: DataTypes.DATE },
 });
 
+// ── Coupon ────────────────────────────────────────────────────────────────────
+const Coupon = sequelize.define('Coupon', {
+  id:             { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  code:           { type: DataTypes.STRING(32), allowNull: false, unique: true },
+  type:           { type: DataTypes.ENUM('percent', 'fixed'), defaultValue: 'percent' },
+  value:          { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+  maxUses:        { type: DataTypes.INTEGER, allowNull: true },
+  usedCount:      { type: DataTypes.INTEGER, defaultValue: 0 },
+  expiresAt:      { type: DataTypes.DATE, allowNull: true },
+  active:         { type: DataTypes.BOOLEAN, defaultValue: true },
+  description:    { type: DataTypes.STRING },
+  stripeCouponId: { type: DataTypes.STRING, allowNull: true },
+});
+
 // ── PartsCatalogItem ──────────────────────────────────────────────────────────
 const PartsCatalogItem = sequelize.define('PartsCatalogItem', {
   id:               { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
@@ -947,7 +961,7 @@ PartsCatalogItem.belongsTo(Store, { foreignKey: 'storeId' });
 PartsCatalogItem.belongsTo(Supplier, { foreignKey: 'supplierId', as: 'supplier' });
 
 module.exports = {
-  Store, User, Customer, InventoryItem, License, StripePlan, Message,
+  Store, User, Customer, InventoryItem, License, StripePlan, Message, Coupon,
   RepairTicket, RepairPart,
   Transaction, TransactionItem,
   Activation, Commission,

@@ -210,6 +210,65 @@ async function sendReviewRequests() {
   }
 }
 
+async function sendTrialExpiringReminders() {
+  try {
+    const { sequelize } = require('../db');
+    const appUrl = process.env.APP_URL || 'https://celltechpos.com';
+    // Trials expiring in 3 days (not yet notified — use notes field as marker)
+    const [rows] = await sequelize.query(
+      `SELECT l.*, s.name as storeName, s.email as storeEmail FROM \`Licenses\` l
+       LEFT JOIN \`Stores\` s ON l.storeId = s.id
+       WHERE l.status='active' AND l.stripeStatus IS NULL
+         AND l.expiresAt IS NOT NULL
+         AND l.expiresAt <= datetime('now', '+3 days')
+         AND l.expiresAt > datetime('now')
+         AND (l.notes IS NULL OR l.notes NOT LIKE '%trial_expiry_sent%')
+       LIMIT 50`
+    );
+    for (const lic of rows) {
+      if (!lic.storeEmail) continue;
+      const daysLeft = Math.ceil((new Date(lic.expiresAt) - new Date()) / 86400000);
+      const emailBody = `<p>Hi,</p><p>Your <strong>CellTechPOS</strong> free trial for <strong>${lic.storeName}</strong> expires in <strong>${daysLeft} day${daysLeft !== 1 ? 's' : ''}</strong>.</p><p>Subscribe now to keep access to all your data and features:</p><p style="margin:20px 0"><a href="${appUrl}/app/billing" style="background:#166534;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold">Subscribe Now</a></p><p style="font-size:13px;color:#6b7280">Plans start at $49.99/month. No setup fees. Cancel anytime.</p>`;
+      await sendEmail(lic.storeEmail, `Your CellTechPOS trial expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`, wrap(emailBody, 'CellTechPOS'), '').catch(() => {});
+      const existingNotes = lic.notes || '';
+      await sequelize.query(
+        "UPDATE `Licenses` SET notes=?, updatedAt=? WHERE storeId=?",
+        { replacements: [`${existingNotes} trial_expiry_sent`, new Date().toISOString(), lic.storeId] }
+      );
+      console.log(`[scheduler] Trial expiry reminder sent to ${lic.storeEmail}`);
+    }
+  } catch (err) {
+    console.error('[scheduler] Trial expiry reminders error:', err.message);
+  }
+}
+
+async function sendPaymentFailedFollowup() {
+  try {
+    const { sequelize } = require('../db');
+    const appUrl = process.env.APP_URL || 'https://celltechpos.com';
+    const [rows] = await sequelize.query(
+      `SELECT l.*, s.name as storeName, s.email as storeEmail FROM \`Licenses\` l
+       LEFT JOIN \`Stores\` s ON l.storeId = s.id
+       WHERE l.stripeStatus='past_due'
+         AND (l.notes IS NULL OR l.notes NOT LIKE '%payment_failed_sent%')
+       LIMIT 50`
+    );
+    for (const lic of rows) {
+      if (!lic.storeEmail) continue;
+      const emailBody = `<p>Hi,</p><p>We had trouble processing your payment for <strong>${lic.storeName}</strong>'s CellTechPOS subscription.</p><p>Please update your payment method to avoid service interruption:</p><p style="margin:20px 0"><a href="${appUrl}/app/billing" style="background:#dc2626;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold">Update Payment Method</a></p><p style="font-size:13px;color:#6b7280">If you need help, reply to this email or contact support.</p>`;
+      await sendEmail(lic.storeEmail, 'Action required: Payment failed for CellTechPOS', wrap(emailBody, 'CellTechPOS'), '').catch(() => {});
+      const existingNotes = lic.notes || '';
+      await sequelize.query(
+        "UPDATE `Licenses` SET notes=?, updatedAt=? WHERE storeId=?",
+        { replacements: [`${existingNotes} payment_failed_sent`, new Date().toISOString(), lic.storeId] }
+      );
+      console.log(`[scheduler] Payment failed follow-up sent to ${lic.storeEmail}`);
+    }
+  } catch (err) {
+    console.error('[scheduler] Payment failed follow-up error:', err.message);
+  }
+}
+
 function startScheduler() {
   // Daily at 9am — appointment reminders for tomorrow
   cron.schedule('0 9 * * *', sendAppointmentReminders);
@@ -221,7 +280,11 @@ function startScheduler() {
   cron.schedule('0 20 * * *', sendDailySalesSummary);
   // Every 30 min — review requests for recently picked-up repairs
   cron.schedule('*/30 * * * *', sendReviewRequests);
+  // Daily at 11am — trial expiring in 3 days reminders
+  cron.schedule('0 11 * * *', sendTrialExpiringReminders);
+  // Daily at noon — payment failed follow-ups
+  cron.schedule('0 12 * * *', sendPaymentFailedFollowup);
   console.log('[scheduler] Automated notifications scheduled');
 }
 
-module.exports = { startScheduler, sendAppointmentReminders, sendPickupFollowUps, sendLowStockAlerts, sendDailySalesSummary, sendReviewRequests };
+module.exports = { startScheduler, sendAppointmentReminders, sendPickupFollowUps, sendLowStockAlerts, sendDailySalesSummary, sendReviewRequests, sendTrialExpiringReminders, sendPaymentFailedFollowup };

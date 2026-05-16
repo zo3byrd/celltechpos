@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   XMarkIcon, PlusIcon, ArrowPathIcon, NoSymbolIcon,
@@ -6,8 +7,10 @@ import {
   ChevronRightIcon, UserGroupIcon, BuildingStorefrontIcon,
   LinkIcon, BanknotesIcon, CreditCardIcon, CubeIcon,
   ArrowDownTrayIcon, ChatBubbleLeftEllipsisIcon, TrashIcon,
+  ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
+import { useAuthStore } from '../../store/authStore';
 
 const fmt$ = n => '$' + parseFloat(n || 0).toFixed(2);
 const fmtDate = iso => iso ? new Date(iso).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' }) : '—';
@@ -51,6 +54,8 @@ const onboardDefault = {
 const extDefault = { months:'', years:'', price:'' };
 
 export default function Subscribers() {
+  const navigate = useNavigate();
+  const { setAuth } = useAuthStore();
   const [licenses, setLicenses]   = useState([]);
   const [plans, setPlans]         = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -169,6 +174,16 @@ export default function Subscribers() {
     setSelected(lic);
     setMarkPaidForm({ price: lic.price > 0 ? parseFloat(lic.price).toFixed(2) : '', period: lic.plan === 'yearly' ? 'year' : 'month', note });
     setModal('markPaid');
+  }
+
+  async function loginAsStore(lic, e) {
+    e.stopPropagation();
+    if (!window.confirm(`Login as admin of ${lic.storeName}?\n\nYou will be redirected to their POS. Log out and log back in as superadmin when done.`)) return;
+    try {
+      const { data } = await api.post(`/licenses/${lic.storeId}/impersonate`);
+      setAuth(data.token, data.user, data.plan, data.refreshToken);
+      navigate('/app');
+    } catch (err) { toast.error(err.response?.data?.error || 'Failed to impersonate'); }
   }
 
   async function seedInventory(lic, e) {
@@ -337,6 +352,7 @@ export default function Subscribers() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                      <ActionBtn icon={<ArrowRightOnRectangleIcon />} label="Login as store" color="#8b5cf6" onClick={e => loginAsStore(lic, e)} />
                       <ActionBtn icon={<CubeIcon />} label="Seed default inventory" color="#14b8a6" onClick={e => seedInventory(lic, e)} />
                       <ActionBtn icon={<LinkIcon />} label="Payment link" color="#6366f1" onClick={e => openPayMethod(lic, e)} />
                       <ActionBtn icon={<BanknotesIcon />} label="Mark paid" color="#10b981" onClick={e => { e.stopPropagation(); openMarkPaid(lic); }} />

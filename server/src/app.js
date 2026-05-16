@@ -249,6 +249,7 @@ app.get('/api', (req, res) => {
 </body></html>`);
 });
 app.use('/api/auth',           require('./routes/auth'));
+app.use('/api/contact',        require('./routes/contact'));
 app.post('/api/licenses/paypal-webhook', require('./routes/paypalWebhook'));
 app.use('/api/licenses',       require('./routes/licenses'));
 
@@ -280,7 +281,6 @@ app.use('/api/admin-campaigns', require('./routes/admin-campaigns'));
 app.use('/api/settings',       require('./routes/settings'));
 app.use('/api/announcements',  require('./routes/announcements'));
 app.use('/api/notifications',  require('./routes/notifications'));
-app.use('/api/contact',        require('./routes/contact'));
 app.use('/api/buyback',        require('./routes/buyback'));
 app.use('/api/estimates',      require('./routes/estimates'));
 app.use('/api/recurring',      require('./routes/recurring-invoices'));
@@ -292,6 +292,7 @@ app.use('/api/shifts',         require('./routes/shifts'));
 app.use('/api/transfers',      require('./routes/transfers'));
 app.use('/api/parts',          require('./routes/parts'));
 app.use('/api/storefront',     require('./routes/storefront'));
+app.use('/api/coupons',        require('./routes/coupons'));
 
 // Serve uploaded files
 app.use('/uploads', express.static(process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads')));

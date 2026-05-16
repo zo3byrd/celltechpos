@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   BuildingStorefrontIcon, CurrencyDollarIcon, ChartBarIcon,
   ExclamationTriangleIcon, ArrowTrendingUpIcon, PlusIcon,
-  ClockIcon, CheckCircleIcon, PencilSquareIcon,
+  ClockIcon, CheckCircleIcon, PencilSquareIcon, UserGroupIcon,
+  ArrowPathIcon, ShieldExclamationIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 
@@ -17,6 +18,7 @@ function StatCard({ label, value, sub, icon, accent }) {
     amber:  { bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.2)', icon: '#fbbf24', val: '#fcd34d' },
     red:    { bg: 'rgba(239,68,68,0.08)',  border: 'rgba(239,68,68,0.2)',  icon: '#f87171', val: '#fca5a5' },
     violet: { bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.2)', icon: '#a78bfa', val: '#c4b5fd' },
+    teal:   { bg: 'rgba(20,184,166,0.08)', border: 'rgba(20,184,166,0.2)', icon: '#2dd4bf', val: '#5eead4' },
   };
   const c = colors[accent] || colors.indigo;
   return (
@@ -36,6 +38,7 @@ function StatCard({ label, value, sub, icon, accent }) {
 export default function SADashboard() {
   const [stats, setStats] = useState(null);
   const [recent, setRecent] = useState([]);
+  const [atRisk, setAtRisk] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const [quickNotes, setQuickNotes] = useState(() => localStorage.getItem('sa_quick_notes') || '');
@@ -53,9 +56,11 @@ export default function SADashboard() {
     Promise.all([
       api.get('/licenses/stats/revenue'),
       api.get('/licenses'),
-    ]).then(([{ data: s }, { data: lics }]) => {
+      api.get('/licenses/at-risk'),
+    ]).then(([{ data: s }, { data: lics }, { data: risk }]) => {
       setStats(s);
       setRecent(lics.slice(0, 6));
+      setAtRisk(risk.slice(0, 5));
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
@@ -79,7 +84,7 @@ export default function SADashboard() {
       {/* Stats grid */}
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
+          {[...Array(8)].map((_, i) => (
             <div key={i} className="rounded-xl p-5 animate-pulse" style={{ background: 'rgba(255,255,255,0.04)', height: 110 }} />
           ))}
         </div>
@@ -91,6 +96,12 @@ export default function SADashboard() {
             <StatCard label="ARR"              value={fmt$(stats.arr)}      sub="Annual recurring revenue"          icon={<ArrowTrendingUpIcon />}     accent="violet" />
             <StatCard label="Needs Attention"  value={stats.expired + stats.suspended} sub={`${stats.expired} expired · ${stats.suspended} suspended`} icon={<ExclamationTriangleIcon />} accent={stats.expired + stats.suspended > 0 ? 'red' : 'green'} />
           </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard label="ARPU"             value={fmt$(stats.arpu)}          sub="Avg revenue per active store"  icon={<ChartBarIcon />}       accent="teal" />
+            <StatCard label="Churn Rate"       value={`${stats.churnRate}%`}     sub="Expired/cancelled last 30d"    icon={<ArrowPathIcon />}      accent={stats.churnRate > 10 ? 'red' : 'amber'} />
+            <StatCard label="Trial Conversion" value={`${stats.trialConversion}%`} sub="Paid stores vs total"        icon={<CheckCircleIcon />}    accent="green" />
+            <StatCard label="New This Month"   value={stats.newThisMonth}        sub="Stores signed up this month"   icon={<UserGroupIcon />}      accent="indigo" />
+          </div>
           <div className="grid grid-cols-3 gap-4">
             <StatCard label="Monthly Plans"  value={stats.monthly}  sub="Active subscribers"  icon={<ClockIcon />}        accent="indigo" />
             <StatCard label="Yearly Plans"   value={stats.yearly}   sub="Active subscribers"  icon={<CheckCircleIcon />}  accent="green" />
@@ -98,6 +109,60 @@ export default function SADashboard() {
           </div>
         </>
       ) : null}
+
+      {/* At-risk stores */}
+      {!loading && atRisk.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <ShieldExclamationIcon className="w-5 h-5" style={{ color: '#f87171' }} />
+            <h2 className="text-base font-bold text-white">At-Risk Stores</h2>
+            <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}>
+              {atRisk.length} store{atRisk.length !== 1 ? 's' : ''}
+            </span>
+            <button onClick={() => navigate('/superadmin/subscribers')} className="ml-auto text-xs font-semibold" style={{ color: '#6366f1' }}>
+              Manage →
+            </button>
+          </div>
+          <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.04)' }}>
+            <table className="w-full">
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(239,68,68,0.15)' }}>
+                  {['Store', 'Issue', 'Expires', 'Plan'].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#4b5563' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {atRisk.map((lic, i) => {
+                  const issue = lic.stripeStatus === 'past_due' ? 'Payment failed'
+                    : lic.status === 'suspended' ? 'Suspended'
+                    : `Expires in ${lic.daysLeft}d`;
+                  const issueColor = lic.stripeStatus === 'past_due' || lic.status === 'suspended' ? '#f87171' : '#fbbf24';
+                  return (
+                    <tr key={lic.storeId} style={{ borderBottom: i < atRisk.length - 1 ? '1px solid rgba(239,68,68,0.1)' : 'none' }}
+                      className="cursor-pointer hover:bg-red-500/5 transition-colors"
+                      onClick={() => navigate('/superadmin/subscribers')}>
+                      <td className="px-4 py-3">
+                        <div className="text-sm font-semibold text-white">{lic.storeName || '—'}</div>
+                        <div className="text-xs" style={{ color: '#4b5563' }}>{lic.storeEmail}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: issueColor + '20', color: issueColor }}>
+                          {issue}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm" style={{ color: '#9ca3af' }}>{fmtDate(lic.expiresAt)}</td>
+                      <td className="px-4 py-3 text-sm capitalize" style={{ color: '#9ca3af' }}>
+                        {lic.stripePlanKey?.replace(/_/g, ' ') || lic.plan}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Recent subscribers */}
       <div>
@@ -164,7 +229,7 @@ export default function SADashboard() {
           {[
             { label: 'Add Subscriber',   desc: 'Onboard a new store',       color: '#6366f1', path: '/superadmin/subscribers' },
             { label: 'Manage Pricing',   desc: 'Edit plan prices',           color: '#8b5cf6', path: '/superadmin/pricing' },
-            { label: 'View Subscribers', desc: 'See all active stores',      color: '#0ea5e9', path: '/superadmin/subscribers' },
+            { label: 'Coupons',          desc: 'Create promo codes',         color: '#0ea5e9', path: '/superadmin/coupons' },
             { label: 'Content Editor',   desc: 'Announcements & templates',  color: '#10b981', path: '/superadmin/content' },
             { label: 'Settings',         desc: 'Platform configuration',     color: '#f59e0b', path: '/superadmin/settings' },
           ].map(a => (
