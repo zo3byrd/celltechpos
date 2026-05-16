@@ -13,7 +13,7 @@ import {
   XMarkIcon, SunIcon, MoonIcon, ArrowUturnLeftIcon,
   DocumentTextIcon, ComputerDesktopIcon, ArrowPathIcon,
   CreditCardIcon, TicketIcon, QrCodeIcon, DocumentMinusIcon,
-  GiftIcon, ReceiptPercentIcon,
+  GiftIcon, ReceiptPercentIcon, ArrowsRightLeftIcon, TrophyIcon,
 } from '@heroicons/react/24/outline';
 
 // plan: 'trial' | 'starter' | 'pro' | 'multi'
@@ -40,13 +40,16 @@ const opsNav = [
   { to: '/app/expenses',      label: 'Expenses',        icon: ReceiptPercentIcon,  minPlan: 'starter' },
   { to: '/app/buyback',       label: 'Buyback',         icon: ArrowUturnLeftIcon,  minPlan: 'pro' },
   { to: '/app/serials',       label: 'Serials / IMEI',  icon: QrCodeIcon,          minPlan: 'starter' },
-  { to: '/app/purchasing',    label: 'Purchase Orders', icon: TruckIcon,           minPlan: 'multi' },
-  { to: '/app/bill-payments', label: 'Bill Payments',   icon: BanknotesIcon,       minPlan: 'multi' },
-  { to: '/app/layaway',       label: 'Layaway',         icon: ArchiveBoxIcon,      minPlan: 'multi' },
+  { to: '/app/purchasing',    label: 'Purchase Orders', icon: TruckIcon,             minPlan: 'multi' },
+  { to: '/app/bill-payments', label: 'Bill Payments',   icon: BanknotesIcon,         minPlan: 'multi' },
+  { to: '/app/layaway',       label: 'Layaway',         icon: ArchiveBoxIcon,        minPlan: 'multi' },
+  { to: '/app/transfers',     label: 'Transfers',       icon: ArrowsRightLeftIcon,   minPlan: 'multi' },
+  { to: '/app/parts',         label: 'Parts Catalog',   icon: WrenchScrewdriverIcon, minPlan: 'starter' },
 ];
 const staffNav = [
   { to: '/app/commissions', label: 'Commissions', icon: CurrencyDollarIcon, minPlan: 'pro' },
   { to: '/app/timeclock',   label: 'Time Clock',  icon: ClockIcon,          minPlan: 'multi' },
+  { to: '/app/shifts',      label: 'Shifts',      icon: CalendarDaysIcon,   minPlan: 'multi' },
 ];
 const growthNav = [
   { to: '/app/loyalty',        label: 'Loyalty',       icon: StarIcon,                minPlan: 'pro' },
@@ -56,6 +59,7 @@ const growthNav = [
 ];
 const adminNav = [
   { to: '/app/reports',    label: 'Reports',      icon: ChartBarIcon,        minPlan: 'starter' },
+  { to: '/app/goals',      label: 'Goals',        icon: TrophyIcon,          minPlan: 'pro' },
   { to: '/app/inv-counts', label: 'Inv. Count',   icon: ShieldCheckIcon,     minPlan: 'multi' },
   { to: '/app/admin',      label: 'Admin',        icon: Cog6ToothIcon,       minPlan: 'starter' },
   { to: '/app/billing',    label: 'Billing',      icon: CreditCardIcon,      minPlan: 'starter' },

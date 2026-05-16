@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { Op, fn, col, literal } = require('sequelize');
-const { Transaction, TransactionItem, RepairTicket, RepairPart, Activation, InventoryItem, User, Commission } = require('../db/models');
+const { Transaction, TransactionItem, RepairTicket, RepairPart, Activation, InventoryItem, User, Commission, Customer } = require('../db/models');
 const { auth, requireRole } = require('../middleware/auth');
 
 const sqliteGroupFmt = { day: '%Y-%m-%d', week: '%Y-%W', month: '%Y-%m', year: '%Y' };
@@ -257,6 +257,62 @@ router.get('/staff', auth, requireRole('superadmin', 'admin'), async (req, res) 
   });
 
   res.json(salesRows);
+});
+
+// Tax collection report
+router.get('/tax', auth, requireRole('superadmin', 'admin'), async (req, res) => {
+  const { startDate, endDate, groupBy = 'day' } = req.query;
+  const where = { storeId: req.user.storeId, paymentStatus: 'completed' };
+  if (startDate) where.createdAt = { [Op.gte]: new Date(startDate) };
+  if (endDate) where.createdAt = { ...(where.createdAt || {}), [Op.lte]: new Date(new Date(endDate).setHours(23,59,59,999)) };
+  const fmt = sqliteGroupFmt[groupBy] || '%Y-%m-%d';
+  const rows = await Transaction.findAll({
+    where,
+    attributes: [
+      [literal(`strftime('${fmt}', \`createdAt\`)`), 'period'],
+      [fn('SUM', col('taxAmount')), 'taxCollected'],
+      [fn('SUM', col('subtotal')), 'subtotal'],
+      [fn('COUNT', col('id')), 'txCount'],
+    ],
+    group: [literal(`strftime('${fmt}', \`createdAt\`)`)],
+    order: [[literal(`strftime('${fmt}', \`createdAt\`)`), 'ASC']],
+    raw: true,
+  });
+  const totalTax = rows.reduce((s, r) => s + parseFloat(r.taxCollected || 0), 0);
+  const totalSales = rows.reduce((s, r) => s + parseFloat(r.subtotal || 0), 0);
+  res.json({ rows, totalTax, totalSales });
+});
+
+// QuickBooks-compatible CSV export
+router.get('/export/quickbooks', auth, requireRole('superadmin', 'admin'), async (req, res) => {
+  const { startDate, endDate } = req.query;
+  const where = { storeId: req.user.storeId, paymentStatus: 'completed' };
+  if (startDate) where.createdAt = { [Op.gte]: new Date(startDate) };
+  if (endDate) where.createdAt = { ...(where.createdAt || {}), [Op.lte]: new Date(new Date(endDate).setHours(23,59,59,999)) };
+  const txns = await Transaction.findAll({
+    where,
+    include: [{ model: Customer, attributes: ['firstName', 'lastName'], required: false }],
+    order: [['createdAt', 'ASC']],
+  });
+  const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const header = ['Date','Ref #','Type','Customer','Subtotal','Tax','Tip','Total','Payment Method'].map(esc).join(',');
+  const lines = txns.map(t => {
+    const cust = t.Customer ? `${t.Customer.firstName} ${t.Customer.lastName}` : '';
+    return [
+      new Date(t.createdAt).toLocaleDateString('en-US'),
+      t.transactionNumber,
+      t.type.replace(/_/g, ' '),
+      cust,
+      parseFloat(t.subtotal || 0).toFixed(2),
+      parseFloat(t.taxAmount || 0).toFixed(2),
+      parseFloat(t.tipAmount || 0).toFixed(2),
+      parseFloat(t.total || 0).toFixed(2),
+      t.paymentMethod,
+    ].map(esc).join(',');
+  });
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="quickbooks-${new Date().toISOString().slice(0,10)}.csv"`);
+  res.send([header, ...lines].join('\r\n'));
 });
 
 module.exports = router;

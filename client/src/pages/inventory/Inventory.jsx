@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { PhotoIcon, XMarkIcon, PrinterIcon, TagIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { PhotoIcon, XMarkIcon, PrinterIcon, TagIcon, ArrowDownTrayIcon, ArrowUpTrayIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 
 function exportInventoryCSV() {
@@ -189,6 +189,31 @@ export default function Inventory() {
   const [adjustQty, setAdjustQty] = useState('');
   const [printModal, setPrintModal] = useState(null);
   const [printQty, setPrintQty] = useState(1);
+  const supplierImportRef = useRef(null);
+
+  async function generateReorders() {
+    try {
+      const { data } = await api.post('/inventory/reorder/generate');
+      if (data.count === 0) toast.success('All items are sufficiently stocked');
+      else toast.success(`Generated ${data.orders.length} PO(s) for ${data.count} items — check Purchasing`);
+    } catch (err) { toast.error(err.response?.data?.error || 'Reorder failed'); }
+  }
+
+  async function handleSupplierPriceImport(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    e.target.value = '';
+    const tid = toast.loading('Importing prices…');
+    try {
+      const { data } = await api.post('/inventory/import/supplier-prices', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      toast.success(`Updated ${data.updated} prices${data.skipped ? `, ${data.skipped} not matched` : ''}`, { id: tid });
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Import failed', { id: tid });
+    }
+  }
 
   function load() {
     setLoading(true);
@@ -242,6 +267,13 @@ export default function Inventory() {
             <button className={`px-3 py-1.5 text-sm font-medium transition-colors ${view === 'grid' ? 'bg-brand-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`} onClick={() => setView('grid')}>⊞</button>
             <button className={`px-3 py-1.5 text-sm font-medium transition-colors ${view === 'list' ? 'bg-brand-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`} onClick={() => setView('list')}>☰</button>
           </div>
+          <input ref={supplierImportRef} type="file" accept=".csv" className="hidden" onChange={handleSupplierPriceImport} />
+          <button className="btn-secondary flex items-center gap-1.5" title="Import supplier price list CSV" onClick={() => supplierImportRef.current?.click()}>
+            <ArrowUpTrayIcon className="w-4 h-4" /> Supplier Prices
+          </button>
+          <button className="btn-secondary flex items-center gap-1.5" title="Auto-generate reorder POs for low stock" onClick={generateReorders}>
+            <ArrowPathIcon className="w-4 h-4" /> Reorder
+          </button>
           <button className="btn-secondary flex items-center gap-1.5" onClick={exportInventoryCSV}>
             <ArrowDownTrayIcon className="w-4 h-4" /> Export
           </button>

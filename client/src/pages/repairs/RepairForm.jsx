@@ -4,9 +4,129 @@ import toast from 'react-hot-toast';
 import {
   PaperClipIcon, TrashIcon, PhotoIcon,
   DocumentIcon, ClockIcon, PlayIcon, StopIcon, PrinterIcon,
-  LinkIcon,
+  LinkIcon, CheckCircleIcon, PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
+
+const DEFAULT_CHECKLIST = [
+  'LCD functional — no dead pixels or cracks',
+  'Touch screen responsive',
+  'Front camera working',
+  'Rear camera working',
+  'Microphone working',
+  'Speaker working',
+  'Earpiece working',
+  'Charging port functional',
+  'Volume buttons working',
+  'Power button working',
+  'Home/fingerprint button working',
+  'WiFi connecting',
+  'Bluetooth working',
+  'Battery charges normally',
+];
+
+function IntakeChecklist({ value, onChange }) {
+  const items = value || DEFAULT_CHECKLIST.map(label => ({ label, checked: false, notes: '' }));
+
+  function toggle(i) {
+    const next = [...items];
+    next[i] = { ...next[i], checked: !next[i].checked };
+    onChange(next);
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {items.map((item, i) => (
+        <div key={i} className="flex items-center gap-2 text-sm">
+          <button type="button" onClick={() => toggle(i)} className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${item.checked ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300'}`}>
+            {item.checked && <CheckCircleIcon className="w-3.5 h-3.5" />}
+          </button>
+          <span className={item.checked ? 'text-gray-400 line-through' : 'text-gray-700'}>{item.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SignatureCanvas({ value, onChange }) {
+  const canvasRef = useRef(null);
+  const drawing = useRef(false);
+
+  useEffect(() => {
+    if (value && canvasRef.current) {
+      const img = new Image();
+      img.onload = () => {
+        const ctx = canvasRef.current?.getContext('2d');
+        if (ctx) { ctx.clearRect(0, 0, 400, 160); ctx.drawImage(img, 0, 0); }
+      };
+      img.src = value;
+    }
+  }, []);
+
+  function getPos(e, canvas) {
+    const rect = canvas.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+  }
+
+  function start(e) {
+    drawing.current = true;
+    const ctx = canvasRef.current.getContext('2d');
+    const { x, y } = getPos(e, canvasRef.current);
+    ctx.beginPath(); ctx.moveTo(x, y);
+    e.preventDefault();
+  }
+
+  function draw(e) {
+    if (!drawing.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    const { x, y } = getPos(e, canvasRef.current);
+    ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#111';
+    ctx.lineTo(x, y); ctx.stroke();
+    e.preventDefault();
+  }
+
+  function stop() {
+    drawing.current = false;
+    onChange(canvasRef.current.toDataURL());
+  }
+
+  function clear() {
+    const ctx = canvasRef.current.getContext('2d');
+    ctx.clearRect(0, 0, 400, 160);
+    onChange('');
+  }
+
+  return (
+    <div>
+      <canvas
+        ref={canvasRef}
+        width={400}
+        height={160}
+        style={{ border: '1.5px solid #d1d5db', borderRadius: 8, touchAction: 'none', cursor: 'crosshair', background: '#fafafa', width: '100%', maxWidth: 400 }}
+        onMouseDown={start}
+        onMouseMove={draw}
+        onMouseUp={stop}
+        onMouseLeave={stop}
+        onTouchStart={start}
+        onTouchMove={draw}
+        onTouchEnd={stop}
+      />
+      <button type="button" className="text-xs text-red-500 hover:underline mt-1" onClick={clear}>Clear</button>
+    </div>
+  );
+}
+
+const KNOWN_BAD_IMEI_PATTERNS = [
+  /^0+$/, /^1+$/, /^(\d)\1{14}$/, /^123456789012345$/,
+];
+function checkImeiLocally(imei) {
+  if (!imei || imei.length < 14) return null;
+  for (const p of KNOWN_BAD_IMEI_PATTERNS) {
+    if (p.test(imei)) return 'IMEI appears invalid or blacklisted (repeated digits)';
+  }
+  return null;
+}
 
 const STATUS_OPTIONS = ['received','diagnosing','waiting_parts','in_repair','quality_check','ready','picked_up','cancelled'];
 const PRIORITY_OPTIONS = ['low','normal','high','urgent'];
@@ -328,16 +448,26 @@ export default function RepairForm() {
     imei: '', passcode: '', color: '', issueDescription: '',
     diagnosis: '', status: 'received', priority: 'normal',
     estimatedCost: '', finalCost: '', deposit: '0', dueDate: '', notes: '',
+    technicianId: '',
   });
   const [ticket, setTicket] = useState(null);
   const [customers, setCustomers] = useState([]);
+  const [technicians, setTechnicians] = useState([]);
   const [custSearch, setCustSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [storeInfo, setStoreInfo] = useState(null);
   const [warranty, setWarranty] = useState(null);
+  const [imeiWarning, setImeiWarning] = useState('');
+  const [checklist, setChecklist] = useState(null);
+  const [signature, setSignature] = useState('');
+  const [showChecklist, setShowChecklist] = useState(false);
+  const [showSignature, setShowSignature] = useState(false);
 
   useEffect(() => { api.get('/admin/store').then(r => setStoreInfo(r.data)).catch(() => {}); }, []);
+  useEffect(() => {
+    api.get('/admin/users').then(r => setTechnicians(r.data.filter(u => ['technician', 'admin', 'superadmin'].includes(u.role)))).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!form.customerId) { setWarranty(null); return; }
@@ -372,7 +502,10 @@ export default function RepairForm() {
           deposit: t.deposit || '0',
           dueDate: t.dueDate ? t.dueDate.slice(0, 10) : '',
           notes: t.notes || '',
+          technicianId: t.technicianId || '',
         });
+        if (t.preChecklistJson) setChecklist(JSON.parse(t.preChecklistJson));
+        if (t.customerSignature) setSignature(t.customerSignature);
       }).finally(() => setLoading(false));
     }
   }, [id]);
@@ -381,7 +514,13 @@ export default function RepairForm() {
     api.get(`/customers?search=${custSearch}&limit=20`).then(r => setCustomers(r.data.customers));
   }, [custSearch]);
 
-  const set = (field, val) => setForm(f => ({ ...f, [field]: val }));
+  const set = (field, val) => {
+    setForm(f => ({ ...f, [field]: val }));
+    if (field === 'imei') {
+      const warn = checkImeiLocally(val);
+      setImeiWarning(warn || '');
+    }
+  };
 
   function printRepairTicket() {
     if (!ticket) return;
@@ -554,11 +693,17 @@ ${ticket.imei ? `<div class="row"><span class="lbl">IMEI / Serial</span><span cl
   async function handleSave() {
     setSaving(true);
     try {
+      const payload = {
+        ...form,
+        preChecklistJson: checklist ? JSON.stringify(checklist) : null,
+        customerSignature: signature || null,
+        signedAt: signature ? new Date().toISOString() : null,
+      };
       if (isEdit) {
-        await api.put(`/repairs/${id}`, form);
+        await api.put(`/repairs/${id}`, payload);
         toast.success('Ticket updated');
       } else {
-        const { data } = await api.post('/repairs', form);
+        const { data } = await api.post('/repairs', payload);
         toast.success(`Ticket ${data.ticketNumber} created`);
         navigate(`/app/repairs/${data.id}`);
       }
@@ -635,6 +780,9 @@ ${ticket.imei ? `<div class="row"><span class="lbl">IMEI / Serial</span><span cl
             <div className="col-span-2">
               <label className="label">IMEI / Serial</label>
               <input className="input font-mono" value={form.imei} onChange={e => set('imei', e.target.value)} placeholder="15-digit IMEI" />
+              {imeiWarning && (
+                <p className="mt-1 text-xs text-red-600 font-medium">⚠ {imeiWarning}</p>
+              )}
             </div>
             <div>
               <label className="label">Passcode</label>
@@ -668,6 +816,13 @@ ${ticket.imei ? `<div class="row"><span class="lbl">IMEI / Serial</span><span cl
               <label className="label">Priority</label>
               <select className="input" value={form.priority} onChange={e => set('priority', e.target.value)}>
                 {PRIORITY_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="label">Assigned Technician</label>
+              <select className="input" value={form.technicianId} onChange={e => set('technicianId', e.target.value)}>
+                <option value="">— Unassigned —</option>
+                {technicians.map(t => <option key={t.id} value={t.id}>{t.name} ({t.role})</option>)}
               </select>
             </div>
             <div>
@@ -704,6 +859,47 @@ ${ticket.imei ? `<div class="row"><span class="lbl">IMEI / Serial</span><span cl
             </div>
           </>
         )}
+
+        {/* Intake Checklist */}
+        <div className="card space-y-3 md:col-span-1">
+          <button type="button" className="w-full flex items-center justify-between" onClick={() => setShowChecklist(v => !v)}>
+            <h2 className="font-semibold text-gray-700 flex items-center gap-2">
+              <CheckCircleIcon className="w-4 h-4" /> Intake Checklist
+              {checklist && checklist.filter(i => i.checked).length > 0 && (
+                <span className="text-xs font-normal text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                  {checklist.filter(i => i.checked).length}/{checklist.length} OK
+                </span>
+              )}
+            </h2>
+            <span className="text-gray-400 text-xs">{showChecklist ? '▲' : '▼'}</span>
+          </button>
+          {showChecklist && (
+            <IntakeChecklist
+              value={checklist}
+              onChange={next => setChecklist(next)}
+            />
+          )}
+          {!showChecklist && !checklist && (
+            <p className="text-xs text-gray-400">Click to open intake checklist</p>
+          )}
+        </div>
+
+        {/* Customer Signature */}
+        <div className="card space-y-3 md:col-span-1">
+          <button type="button" className="w-full flex items-center justify-between" onClick={() => setShowSignature(v => !v)}>
+            <h2 className="font-semibold text-gray-700 flex items-center gap-2">
+              <PencilSquareIcon className="w-4 h-4" /> Customer Signature
+              {signature && <span className="text-xs font-normal text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Signed</span>}
+            </h2>
+            <span className="text-gray-400 text-xs">{showSignature ? '▲' : '▼'}</span>
+          </button>
+          {showSignature && (
+            <div>
+              <p className="text-xs text-gray-500 mb-2">Customer signs below to authorize the repair</p>
+              <SignatureCanvas value={signature} onChange={setSignature} />
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-3 flex-wrap">

@@ -61,6 +61,11 @@ const Returns          = lazy(() => import('./pages/returns/Returns'));
 const GiftCards        = lazy(() => import('./pages/giftcards/GiftCards'));
 const Expenses         = lazy(() => import('./pages/expenses/Expenses'));
 const RepairRequest    = lazy(() => import('./pages/repairrequest/RepairRequest'));
+const Shifts           = lazy(() => import('./pages/shifts/Shifts'));
+const Transfers        = lazy(() => import('./pages/transfers/Transfers'));
+const PartsCatalog     = lazy(() => import('./pages/parts/PartsCatalog'));
+const Storefront       = lazy(() => import('./pages/storefront/Storefront'));
+const Goals            = lazy(() => import('./pages/goals/Goals'));
 
 function Spin() {
   return (
@@ -98,6 +103,7 @@ export default function App() {
         <Route path="/status" element={<RepairStatus />} />
         <Route path="/status/:ticketNumber" element={<RepairStatus />} />
         <Route path="/request" element={<RepairRequest />} />
+        <Route path="/shop" element={<Storefront />} />
 
         <Route path="/login" element={
           token ? <Navigate to={user?.role === 'superadmin' ? '/superadmin' : '/app'} replace /> : <Login />
@@ -151,6 +157,10 @@ export default function App() {
           <Route path="marketing" element={<PrivateRoute roles={['superadmin', 'admin']}><Marketing /></PrivateRoute>} />
           <Route path="inv-counts" element={<PrivateRoute roles={['superadmin', 'admin']}><InventoryCount /></PrivateRoute>} />
           <Route path="serials" element={<Serials />} />
+          <Route path="shifts" element={<PrivateRoute roles={['superadmin', 'admin']}><Shifts /></PrivateRoute>} />
+          <Route path="transfers" element={<PrivateRoute roles={['superadmin', 'admin']}><Transfers /></PrivateRoute>} />
+          <Route path="parts" element={<PartsCatalog />} />
+          <Route path="goals" element={<PrivateRoute roles={['superadmin', 'admin']}><Goals /></PrivateRoute>} />
           <Route path="admin/users" element={<PrivateRoute roles={['superadmin', 'admin']}><AdminUsers /></PrivateRoute>} />
           <Route path="admin" element={<PrivateRoute roles={['superadmin', 'admin']}><AdminPanel /></PrivateRoute>} />
           <Route path="license-manager" element={<Navigate to="/superadmin/subscribers" replace />} />

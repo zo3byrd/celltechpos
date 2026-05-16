@@ -82,6 +82,40 @@ router.put('/entries/:id', requireAdmin, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+router.get('/payroll/export', requireAdmin, async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const where = { storeId: req.user.storeId, status: { [Op.ne]: 'active' } };
+    if (startDate) where.clockIn = { ...where.clockIn, [Op.gte]: new Date(startDate) };
+    if (endDate) {
+      const end = new Date(endDate); end.setDate(end.getDate() + 1);
+      where.clockIn = { ...where.clockIn, [Op.lt]: end };
+    }
+    const entries = await TimeEntry.findAll({
+      where,
+      include: [{ model: User, attributes: ['id', 'name', 'role', 'hourlyRate'], required: false }],
+      order: [['clockIn', 'ASC']],
+    });
+    const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const lines = [['Employee', 'Role', 'Clock In', 'Clock Out', 'Break (min)', 'Total Hours', 'Rate/hr', 'Earnings'].map(esc).join(',')];
+    for (const e of entries) {
+      lines.push([
+        e.User?.name || 'Unknown',
+        e.User?.role || '',
+        e.clockIn ? new Date(e.clockIn).toLocaleString() : '',
+        e.clockOut ? new Date(e.clockOut).toLocaleString() : '',
+        e.breakMins || 0,
+        ((e.totalMins || 0) / 60).toFixed(2),
+        parseFloat(e.User?.hourlyRate || 0).toFixed(2),
+        parseFloat(e.earnings || 0).toFixed(2),
+      ].map(esc).join(','));
+    }
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="payroll-${new Date().toISOString().slice(0,10)}.csv"`);
+    res.send(lines.join('\r\n'));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.get('/payroll', requireAdmin, async (req, res) => {
   try {
     const { startDate, endDate, userId } = req.query;

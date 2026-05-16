@@ -4,6 +4,16 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Legend,
 } from 'recharts';
 import api from '../../api/client';
+import toast from 'react-hot-toast';
+
+function downloadCSV(path, filename) {
+  api.get(path, { responseType: 'blob' }).then(r => {
+    const url = URL.createObjectURL(r.data);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }).catch(() => toast.error('Export failed'));
+}
 
 const COLORS = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2'];
 
@@ -50,6 +60,8 @@ export default function Reports() {
   const [plLoading, setPLLoading] = useState(false);
   const [staff, setStaff] = useState([]);
   const [staffLoading, setStaffLoading] = useState(false);
+  const [tax, setTax] = useState(null);
+  const [taxLoading, setTaxLoading] = useState(false);
   const [start, setStart] = useState(() => new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10));
   const [end, setEnd] = useState(() => new Date().toISOString().slice(0, 10));
   const [activeTab, setActiveTab] = useState('pl');
@@ -63,6 +75,14 @@ export default function Reports() {
     api.get(`/reports/activations?startDate=${start}&endDate=${end}`).then(r => setActivations(r.data));
     loadPL();
     loadStaff();
+    loadTax();
+  }
+
+  function loadTax() {
+    setTaxLoading(true);
+    api.get(`/reports/tax?startDate=${start}&endDate=${end}`)
+      .then(r => setTax(r.data))
+      .finally(() => setTaxLoading(false));
   }
 
   function loadPL() {
@@ -87,18 +107,22 @@ export default function Reports() {
     { key: 'repairs',     label: 'Repairs' },
     { key: 'activations', label: 'Activations' },
     { key: 'staff',       label: 'Staff' },
+    { key: 'tax',         label: 'Tax' },
   ];
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-sm flex-wrap">
           <label className="text-gray-500">From</label>
           <input type="date" className="input w-36" value={start} onChange={e => setStart(e.target.value)} />
           <label className="text-gray-500">To</label>
           <input type="date" className="input w-36" value={end} onChange={e => setEnd(e.target.value)} />
           <button className="btn-secondary" onClick={load}>Refresh</button>
+          <button className="btn-secondary" onClick={() => downloadCSV(`/reports/export/quickbooks?startDate=${start}&endDate=${end}`, `quickbooks-${start}-${end}.csv`)}>
+            QB Export
+          </button>
         </div>
       </div>
 
@@ -367,6 +391,68 @@ export default function Reports() {
                 )}
               </table>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Tax Tab ─────────────────────────────────────────────────────── */}
+      {activeTab === 'tax' && (
+        <div className="space-y-4">
+          {taxLoading && <div className="card animate-pulse h-48 bg-gray-100" />}
+          {!taxLoading && tax && (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="card"><div className="text-2xl font-bold text-orange-600">{fmt(tax.totalTax)}</div><div className="text-xs text-gray-500 mt-1">Total Tax Collected</div></div>
+                <div className="card"><div className="text-2xl font-bold text-blue-600">{fmt(tax.totalSales)}</div><div className="text-xs text-gray-500 mt-1">Taxable Sales</div></div>
+                <div className="card"><div className="text-2xl font-bold text-gray-700">{tax.totalSales > 0 ? ((tax.totalTax / tax.totalSales) * 100).toFixed(2) + '%' : '0%'}</div><div className="text-xs text-gray-500 mt-1">Effective Tax Rate</div></div>
+              </div>
+              <div className="card p-0 overflow-hidden">
+                <div className="bg-gray-50 px-5 py-3 border-b border-gray-100 flex justify-between items-center">
+                  <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Tax by Period</h3>
+                  <span className="text-xs text-gray-400">{start} → {end}</span>
+                </div>
+                <table className="w-full text-sm">
+                  <thead><tr className="bg-gray-50 border-b">
+                    <th className="table-th text-left">Period</th>
+                    <th className="table-th text-right">Transactions</th>
+                    <th className="table-th text-right">Sales</th>
+                    <th className="table-th text-right">Tax Collected</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {tax.rows.map((r, i) => (
+                      <tr key={i} className="hover:bg-gray-50">
+                        <td className="table-td font-mono text-gray-600">{r.period}</td>
+                        <td className="table-td text-right">{r.txCount}</td>
+                        <td className="table-td text-right font-mono">{fmt(r.subtotal)}</td>
+                        <td className="table-td text-right font-mono font-semibold text-orange-600">{fmt(r.taxCollected)}</td>
+                      </tr>
+                    ))}
+                    {tax.rows.length === 0 && <tr><td colSpan={4} className="text-center py-8 text-gray-400">No taxable transactions in this period</td></tr>}
+                  </tbody>
+                  {tax.rows.length > 0 && (
+                    <tfoot className="bg-gray-50 border-t-2 border-gray-200 font-semibold">
+                      <tr>
+                        <td className="table-td" colSpan={2}>Total</td>
+                        <td className="table-td text-right font-mono">{fmt(tax.totalSales)}</td>
+                        <td className="table-td text-right font-mono text-orange-600">{fmt(tax.totalTax)}</td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+              </div>
+              <div className="card">
+                <h2 className="font-semibold mb-4">Tax Collected Over Time</h2>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={tax.rows.map(r => ({ period: r.period, tax: parseFloat(r.taxCollected || 0) }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="period" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${v}`} />
+                    <Tooltip formatter={v => [fmt(v), 'Tax']} />
+                    <Bar dataKey="tax" fill="#f97316" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </>
           )}
         </div>
       )}

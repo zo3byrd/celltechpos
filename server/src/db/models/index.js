@@ -51,6 +51,8 @@ const Customer = sequelize.define('Customer', {
   notes:     { type: DataTypes.TEXT },
   idType:    { type: DataTypes.STRING },
   idNumber:  { type: DataTypes.STRING },
+  wholesale:  { type: DataTypes.BOOLEAN, defaultValue: false },
+  priceTier:  { type: DataTypes.ENUM('standard', 'wholesale', 'vip'), defaultValue: 'standard' },
 });
 
 // ── InventoryItem ─────────────────────────────────────────────────────────────
@@ -664,6 +666,64 @@ const Expense = sequelize.define('Expense', {
   notes:       { type: DataTypes.TEXT },
 });
 
+// ── SalesGoal ─────────────────────────────────────────────────────────────────
+const SalesGoal = sequelize.define('SalesGoal', {
+  id:        { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  storeId:   { type: DataTypes.UUID, allowNull: false },
+  userId:    { type: DataTypes.UUID, allowNull: true },
+  type:      { type: DataTypes.ENUM('revenue', 'repairs', 'activations', 'transactions'), defaultValue: 'revenue' },
+  period:    { type: DataTypes.ENUM('daily', 'weekly', 'monthly'), defaultValue: 'monthly' },
+  target:    { type: DataTypes.DECIMAL(12, 2), allowNull: false },
+  startDate: { type: DataTypes.DATEONLY },
+  endDate:   { type: DataTypes.DATEONLY },
+  notes:     { type: DataTypes.TEXT },
+});
+
+// ── ShiftSchedule ─────────────────────────────────────────────────────────────
+const ShiftSchedule = sequelize.define('ShiftSchedule', {
+  id:        { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  storeId:   { type: DataTypes.UUID, allowNull: false },
+  userId:    { type: DataTypes.UUID, allowNull: false },
+  startTime: { type: DataTypes.DATE, allowNull: false },
+  endTime:   { type: DataTypes.DATE, allowNull: false },
+  role:      { type: DataTypes.STRING },
+  notes:     { type: DataTypes.TEXT },
+  status:    { type: DataTypes.ENUM('scheduled', 'confirmed', 'completed', 'no_show', 'cancelled'), defaultValue: 'scheduled' },
+});
+
+// ── StoreTransfer ─────────────────────────────────────────────────────────────
+const StoreTransfer = sequelize.define('StoreTransfer', {
+  id:           { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  fromStoreId:  { type: DataTypes.UUID, allowNull: false },
+  toStoreId:    { type: DataTypes.UUID, allowNull: false },
+  itemId:       { type: DataTypes.UUID, allowNull: false },
+  quantity:     { type: DataTypes.INTEGER, allowNull: false },
+  requestedBy:  { type: DataTypes.UUID },
+  approvedBy:   { type: DataTypes.UUID },
+  status:       { type: DataTypes.ENUM('pending', 'approved', 'shipped', 'received', 'cancelled'), defaultValue: 'pending' },
+  notes:        { type: DataTypes.TEXT },
+  shippedAt:    { type: DataTypes.DATE },
+  receivedAt:   { type: DataTypes.DATE },
+});
+
+// ── PartsCatalogItem ──────────────────────────────────────────────────────────
+const PartsCatalogItem = sequelize.define('PartsCatalogItem', {
+  id:               { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  storeId:          { type: DataTypes.UUID, allowNull: false },
+  name:             { type: DataTypes.STRING, allowNull: false },
+  sku:              { type: DataTypes.STRING },
+  brand:            { type: DataTypes.STRING },
+  deviceModel:      { type: DataTypes.STRING },
+  description:      { type: DataTypes.TEXT },
+  cost:             { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
+  price:            { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
+  supplierId:       { type: DataTypes.UUID, allowNull: true },
+  quantity:         { type: DataTypes.INTEGER, defaultValue: 0 },
+  active:           { type: DataTypes.BOOLEAN, defaultValue: true },
+  condition:        { type: DataTypes.ENUM('new', 'refurbished', 'oem', 'aftermarket'), defaultValue: 'new' },
+  imageUrl:         { type: DataTypes.STRING(500) },
+});
+
 // ── Associations ──────────────────────────────────────────────────────────────
 Store.hasMany(User,          { foreignKey: 'storeId' });
 User.belongsTo(Store,        { foreignKey: 'storeId' });
@@ -863,6 +923,29 @@ Expense.belongsTo(Store,  { foreignKey: 'storeId' });
 User.hasMany(Expense,     { foreignKey: 'userId' });
 Expense.belongsTo(User,   { foreignKey: 'userId' });
 
+// SalesGoal
+Store.hasMany(SalesGoal,  { foreignKey: 'storeId' });
+SalesGoal.belongsTo(Store, { foreignKey: 'storeId' });
+User.hasMany(SalesGoal,   { foreignKey: 'userId' });
+SalesGoal.belongsTo(User, { foreignKey: 'userId' });
+
+// ShiftSchedule
+Store.hasMany(ShiftSchedule, { foreignKey: 'storeId' });
+ShiftSchedule.belongsTo(Store, { foreignKey: 'storeId' });
+User.hasMany(ShiftSchedule,  { foreignKey: 'userId' });
+ShiftSchedule.belongsTo(User, { foreignKey: 'userId' });
+
+// StoreTransfer
+InventoryItem.hasMany(StoreTransfer, { foreignKey: 'itemId' });
+StoreTransfer.belongsTo(InventoryItem, { foreignKey: 'itemId', as: 'item' });
+StoreTransfer.belongsTo(Store, { foreignKey: 'fromStoreId', as: 'fromStore' });
+StoreTransfer.belongsTo(Store, { foreignKey: 'toStoreId', as: 'toStore' });
+
+// PartsCatalogItem
+Store.hasMany(PartsCatalogItem, { foreignKey: 'storeId' });
+PartsCatalogItem.belongsTo(Store, { foreignKey: 'storeId' });
+PartsCatalogItem.belongsTo(Supplier, { foreignKey: 'supplierId', as: 'supplier' });
+
 module.exports = {
   Store, User, Customer, InventoryItem, License, StripePlan, Message,
   RepairTicket, RepairPart,
@@ -886,4 +969,5 @@ module.exports = {
   RepairTimeLog,
   RecurringInvoice,
   Invoice,
+  SalesGoal, ShiftSchedule, StoreTransfer, PartsCatalogItem,
 };

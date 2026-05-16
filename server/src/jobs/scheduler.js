@@ -175,6 +175,41 @@ async function sendDailySalesSummary() {
   }
 }
 
+async function sendReviewRequests() {
+  try {
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
+
+    const tickets = await RepairTicket.findAll({
+      where: {
+        status: 'picked_up',
+        updatedAt: { [Op.gte]: fourHoursAgo, [Op.lte]: twoHoursAgo },
+      },
+      include: [
+        { model: Customer, required: true },
+        { model: Store, required: true },
+      ],
+    });
+
+    for (const ticket of tickets) {
+      const store = ticket.Store;
+      if (!store.googleReviewUrl) continue;
+      const customer = ticket.Customer;
+      if (!customer.email && !customer.phone) continue;
+
+      const firstName = customer.firstName || 'Valued Customer';
+      const smsBody = `Hi ${firstName}, thanks for choosing ${store.name}! We'd love your feedback: ${store.googleReviewUrl}`;
+      const emailBody = `<p>Hi ${firstName},</p><p>Thank you for trusting <strong>${store.name}</strong> with your device repair!</p><p>If you had a great experience, we'd really appreciate a quick review — it means the world to us:</p><p style="margin:20px 0"><a href="${store.googleReviewUrl}" style="background:#166534;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;">Leave a Google Review ⭐</a></p><p style="font-size:13px;color:#6b7280">If anything wasn't right, please reply and we'll make it right.</p>`;
+
+      if (customer.phone) sendSMS(customer.phone, smsBody).catch(() => {});
+      if (customer.email) sendEmail(customer.email, `How was your repair experience? — ${store.name}`, wrap(emailBody, store.name), smsBody).catch(() => {});
+      console.log(`[scheduler] Review request sent for ticket ${ticket.ticketNumber}`);
+    }
+  } catch (err) {
+    console.error('[scheduler] Review requests error:', err.message);
+  }
+}
+
 function startScheduler() {
   // Daily at 9am — appointment reminders for tomorrow
   cron.schedule('0 9 * * *', sendAppointmentReminders);
@@ -184,7 +219,9 @@ function startScheduler() {
   cron.schedule('0 8 * * *', sendLowStockAlerts);
   // Daily at 8pm — sales summary to admin
   cron.schedule('0 20 * * *', sendDailySalesSummary);
+  // Every 30 min — review requests for recently picked-up repairs
+  cron.schedule('*/30 * * * *', sendReviewRequests);
   console.log('[scheduler] Automated notifications scheduled');
 }
 
-module.exports = { startScheduler, sendAppointmentReminders, sendPickupFollowUps, sendLowStockAlerts, sendDailySalesSummary };
+module.exports = { startScheduler, sendAppointmentReminders, sendPickupFollowUps, sendLowStockAlerts, sendDailySalesSummary, sendReviewRequests };

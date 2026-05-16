@@ -22,7 +22,7 @@ export default function Customers() {
   const [modal, setModal] = useState(false);
   const [detail, setDetail] = useState(null);
   const [msgCustomer, setMsgCustomer] = useState(null);
-  const [form, setForm] = useState({ firstName:'', lastName:'', email:'', phone:'', address:'', city:'', state:'', zip:'', notes:'' });
+  const [form, setForm] = useState({ firstName:'', lastName:'', email:'', phone:'', address:'', city:'', state:'', zip:'', notes:'', wholesale: false, priceTier: 'standard' });
   const importRef = useRef(null);
 
   function load() {
@@ -85,7 +85,7 @@ export default function Customers() {
           <button className="btn-secondary flex items-center gap-1.5" onClick={() => exportCSV('/customers/export/csv', 'customers.csv')}>
             <ArrowDownTrayIcon className="w-4 h-4" /> Export CSV
           </button>
-          <button className="btn-primary" onClick={() => { setForm({ firstName:'', lastName:'', email:'', phone:'', address:'', city:'', state:'', zip:'', notes:'' }); setModal(true); }}>
+          <button className="btn-primary" onClick={() => { setForm({ firstName:'', lastName:'', email:'', phone:'', address:'', city:'', state:'', zip:'', notes:'', wholesale: false, priceTier: 'standard' }); setModal(true); }}>
             + Add Customer
           </button>
         </div>
@@ -145,6 +145,18 @@ export default function Customers() {
                 <label className="label">Notes</label>
                 <textarea className="input h-16 resize-none" value={form.notes} onChange={e => set('notes', e.target.value)} />
               </div>
+              <div>
+                <label className="label">Price Tier</label>
+                <select className="input" value={form.priceTier} onChange={e => set('priceTier', e.target.value)}>
+                  <option value="standard">Standard</option>
+                  <option value="wholesale">Wholesale</option>
+                  <option value="vip">VIP</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2 mt-5">
+                <input type="checkbox" id="wholesale" checked={!!form.wholesale} onChange={e => set('wholesale', e.target.checked)} className="w-4 h-4" />
+                <label htmlFor="wholesale" className="text-sm font-medium text-gray-700">Wholesale Customer</label>
+              </div>
             </div>
             <div className="flex gap-3">
               <button className="btn-primary" onClick={save}>Save</button>
@@ -179,6 +191,13 @@ export default function Customers() {
               <div><span className="text-gray-500">Phone:</span> {detail.phone || '—'}</div>
               <div><span className="text-gray-500">Email:</span> {detail.email || '—'}</div>
               <div><span className="text-gray-500">Address:</span> {[detail.address, detail.city, detail.state, detail.zip].filter(Boolean).join(', ') || '—'}</div>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500">Tier:</span>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${detail.priceTier === 'vip' ? 'bg-purple-100 text-purple-700' : detail.priceTier === 'wholesale' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                  {detail.priceTier || 'standard'}
+                </span>
+                {detail.wholesale && <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full">Wholesale</span>}
+              </div>
             </div>
             {detail.RepairTickets?.length > 0 && (
               <div>

@@ -66,6 +66,10 @@ async function runMigrations() {
   // PayPal plan ID on StripePlan
   await addColumn('StripePlans', 'paypalPlanId',      'VARCHAR(255)');
 
+  // Wholesale / tiered pricing on Customer
+  await addColumn('Customers', 'wholesale',  'TINYINT(1) DEFAULT 0');
+  await addColumn('Customers', 'priceTier',  "VARCHAR(20) DEFAULT 'standard'");
+
   // Auto-create license for every store (ISO strings — no DATE type issues)
   const { License } = require('./models');
   const [stores] = await sequelize.query('SELECT id FROM `Stores`');

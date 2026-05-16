@@ -287,6 +287,11 @@ app.use('/api/recurring',      require('./routes/recurring-invoices'));
 app.use('/api/uploads',        require('./routes/uploads'));
 app.use('/api/gift-cards',     require('./routes/gift-cards'));
 app.use('/api/expenses',       require('./routes/expenses'));
+app.use('/api/goals',          require('./routes/goals'));
+app.use('/api/shifts',         require('./routes/shifts'));
+app.use('/api/transfers',      require('./routes/transfers'));
+app.use('/api/parts',          require('./routes/parts'));
+app.use('/api/storefront',     require('./routes/storefront'));
 
 // Serve uploaded files
 app.use('/uploads', express.static(process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads')));

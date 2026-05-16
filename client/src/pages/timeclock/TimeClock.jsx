@@ -1,8 +1,22 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { ClockIcon } from '@heroicons/react/24/outline';
+import { ClockIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
+
+function exportPayrollCSV(filterStart, filterEnd) {
+  const params = new URLSearchParams();
+  if (filterStart) params.set('startDate', filterStart);
+  if (filterEnd) params.set('endDate', filterEnd);
+  api.get(`/timeclock/payroll/export?${params}`, { responseType: 'blob' }).then(r => {
+    const url = URL.createObjectURL(r.data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `payroll-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }).catch(() => toast.error('Export failed'));
+}
 
 function fmt$(n) { return '$' + parseFloat(n || 0).toFixed(2); }
 function fmtDate(d) { return d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—'; }
@@ -195,9 +209,12 @@ export default function TimeClock() {
 
       {tab === 'payroll' && isAdmin && (
         <>
-          <div className="card py-3 flex gap-3 flex-wrap">
+          <div className="card py-3 flex gap-3 flex-wrap items-end">
             <div><label className="label text-xs">From</label><input type="date" className="input" value={filterStart} onChange={e => setFilterStart(e.target.value)} /></div>
             <div><label className="label text-xs">To</label><input type="date" className="input" value={filterEnd} onChange={e => setFilterEnd(e.target.value)} /></div>
+            <button className="btn-secondary flex items-center gap-1.5 ml-auto" onClick={() => exportPayrollCSV(filterStart, filterEnd)}>
+              <ArrowDownTrayIcon className="w-4 h-4" /> Export CSV
+            </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {payroll.map((p, i) => (
