@@ -1,7 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { PhotoIcon, XMarkIcon, PrinterIcon, TagIcon } from '@heroicons/react/24/outline';
+import { PhotoIcon, XMarkIcon, PrinterIcon, TagIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import api from '../../api/client';
+
+function exportInventoryCSV() {
+  api.get('/inventory/export/csv', { responseType: 'blob' }).then(r => {
+    const url = URL.createObjectURL(r.data);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'inventory.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }).catch(() => toast.error('Export failed'));
+}
 
 const CATEGORIES = ['part','accessory','device','plan','service','other'];
 
@@ -233,6 +242,9 @@ export default function Inventory() {
             <button className={`px-3 py-1.5 text-sm font-medium transition-colors ${view === 'grid' ? 'bg-brand-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`} onClick={() => setView('grid')}>⊞</button>
             <button className={`px-3 py-1.5 text-sm font-medium transition-colors ${view === 'list' ? 'bg-brand-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`} onClick={() => setView('list')}>☰</button>
           </div>
+          <button className="btn-secondary flex items-center gap-1.5" onClick={exportInventoryCSV}>
+            <ArrowDownTrayIcon className="w-4 h-4" /> Export
+          </button>
           <button className="btn-primary" onClick={() => { setForm({ name: '', sku: '', category: 'accessory', brand: '', quantity: 0, minQuantity: 5, cost: '', price: '', description: '', imageUrl: '' }); setModal('add'); }}>
             + Add Item
           </button>

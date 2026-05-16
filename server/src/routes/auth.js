@@ -180,6 +180,7 @@ router.post('/login',
       user: {
         id: user.id, name: user.name, email: user.email,
         role: user.role, storeId: user.storeId,
+        emailVerified: user.emailVerified === 1 || user.emailVerified === true,
         store: user.Store ? { id: user.Store.id, name: user.Store.name } : null,
       },
     });
@@ -352,6 +353,32 @@ router.get('/verify-email', async (req, res) => {
   }
 });
 
+// POST /resend-verification — resend email verification link
+router.post('/resend-verification', auth, async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id, { include: [{ model: Store }] });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.emailVerified) return res.json({ message: 'Already verified' });
+
+    const verifyToken = jwt.sign(
+      { id: user.id, purpose: 'verify' },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    const appUrl = process.env.APP_URL || 'https://celltechpos.com';
+    const verifyUrl = `${appUrl}/verify-email?token=${verifyToken}`;
+    await sendEmail(
+      user.email,
+      'Verify your CellTechPOS account',
+      `<p>Hi ${user.name},</p><p>Click below to verify your email address:</p><p><a href="${verifyUrl}" style="background:#2dd4bf;color:#fff;padding:12px 28px;text-decoration:none;border-radius:6px;font-weight:600;display:inline-block">Verify Email</a></p><p style="font-size:12px;color:#9ca3af">Link expires in 7 days.</p>`,
+      `Verify your CellTechPOS email: ${verifyUrl}`
+    );
+    res.json({ message: 'Verification email sent' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /google — sign in with Google ID token
 router.post('/google', async (req, res) => {
   try {
@@ -386,6 +413,7 @@ router.post('/google', async (req, res) => {
       user: {
         id: user.id, name: user.name, email: user.email,
         role: user.role, storeId: user.storeId,
+        emailVerified: user.emailVerified === 1 || user.emailVerified === true,
         store: user.Store ? { id: user.Store.id, name: user.Store.name } : null,
       },
     });

@@ -1,7 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import MessageModal from '../../components/MessageModal';
+
+function exportCSV(params) {
+  const p = new URLSearchParams();
+  if (params.status) p.set('status', params.status);
+  api.get(`/repairs/export/csv?${p}`, { responseType: 'blob' }).then(r => {
+    const url = URL.createObjectURL(r.data);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'repairs.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }).catch(() => toast.error('Export failed'));
+}
 
 const STATUS_BADGE = {
   received:       'badge-blue',
@@ -42,7 +55,12 @@ export default function RepairList() {
           <h1 className="text-2xl font-bold text-gray-900">Repair Tickets</h1>
           <p className="text-sm text-gray-500">{total} total tickets</p>
         </div>
-        <Link to="/app/repairs/new" className="btn-primary">+ New Ticket</Link>
+        <div className="flex gap-2">
+          <button className="btn-secondary flex items-center gap-1.5" onClick={() => exportCSV({ status })}>
+            <ArrowDownTrayIcon className="w-4 h-4" /> Export CSV
+          </button>
+          <Link to="/app/repairs/new" className="btn-primary">+ New Ticket</Link>
+        </div>
       </div>
 
       <div className="flex gap-3">

@@ -1,0 +1,5 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" width="200" height="80">
+  <rect width="200" height="80" rx="10" fill="#0066CC"/>
+  <text x="100" y="36" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="22" fill="white" text-anchor="middle" dominant-baseline="middle">Simple</text>
+  <text x="100" y="58" font-family="Arial,sans-serif" font-weight="600" font-size="14" fill="rgba(255,255,255,0.9)" text-anchor="middle" dominant-baseline="middle" letter-spacing="2">MOBILE</text>
+</svg>

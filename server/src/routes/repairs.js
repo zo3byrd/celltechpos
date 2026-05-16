@@ -154,4 +154,35 @@ router.post('/:id/notes', auth, async (req, res) => {
   res.json(ticket);
 });
 
+// CSV export
+router.get('/export/csv', auth, async (req, res) => {
+  try {
+    const { status } = req.query;
+    const where = { storeId: req.user.storeId };
+    if (status) where.status = status;
+    const tickets = await RepairTicket.findAll({
+      where,
+      include: [{ model: Customer }],
+      order: [['createdAt', 'DESC']],
+    });
+    const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const header = ['Ticket #','Status','Priority','Customer','Phone','Device','Model','IMEI','Estimate','Final Cost','Deposit','Due Date','Created'].join(',');
+    const lines = tickets.map(t => {
+      const cust = t.Customer;
+      return [
+        t.ticketNumber, t.status, t.priority,
+        cust ? `${cust.firstName} ${cust.lastName}` : '',
+        cust?.phone ?? '',
+        t.deviceBrand, t.deviceModel, t.imei,
+        t.estimatedCost, t.finalCost, t.deposit,
+        t.dueDate ? new Date(t.dueDate).toLocaleDateString() : '',
+        t.createdAt ? new Date(t.createdAt).toLocaleDateString() : '',
+      ].map(escape).join(',');
+    });
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="repairs.csv"');
+    res.send([header, ...lines].join('\r\n'));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 module.exports = router;

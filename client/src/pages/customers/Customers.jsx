@@ -1,7 +1,17 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import MessageModal from '../../components/MessageModal';
+
+function exportCSV(path, filename) {
+  api.get(path, { responseType: 'blob' }).then(r => {
+    const url = URL.createObjectURL(r.data);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }).catch(() => toast.error('Export failed'));
+}
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
@@ -50,9 +60,14 @@ export default function Customers() {
           <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
           <p className="text-sm text-gray-500">{total} total</p>
         </div>
-        <button className="btn-primary" onClick={() => { setForm({ firstName:'', lastName:'', email:'', phone:'', address:'', city:'', state:'', zip:'', notes:'' }); setModal(true); }}>
-          + Add Customer
-        </button>
+        <div className="flex gap-2">
+          <button className="btn-secondary flex items-center gap-1.5" onClick={() => exportCSV('/customers/export/csv', 'customers.csv')}>
+            <ArrowDownTrayIcon className="w-4 h-4" /> Export CSV
+          </button>
+          <button className="btn-primary" onClick={() => { setForm({ firstName:'', lastName:'', email:'', phone:'', address:'', city:'', state:'', zip:'', notes:'' }); setModal(true); }}>
+            + Add Customer
+          </button>
+        </div>
       </div>
 
       <input className="input max-w-sm" placeholder="Search name, phone, email…" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />

@@ -27,6 +27,7 @@ export default function Layout() {
   const [dismissed, setDismissed] = useState(false);
   const [license, setLicense] = useState(null);
   const [verifyDismissed, setVerifyDismissed] = useState(() => !!sessionStorage.getItem('verify_banner_dismissed'));
+  const [resending, setResending] = useState(false);
 
   useEffect(() => {
     api.get('/announcements').then(({ data }) => {
@@ -53,6 +54,15 @@ export default function Layout() {
   function dismissVerify() {
     sessionStorage.setItem('verify_banner_dismissed', '1');
     setVerifyDismissed(true);
+  }
+
+  async function resendVerification() {
+    setResending(true);
+    try {
+      await api.post('/auth/resend-verification');
+      dismissVerify();
+    } catch { /* non-fatal */ }
+    finally { setResending(false); }
   }
 
   const trialDays = license?.plan === 'trial' ? daysLeft(license?.expiresAt) : null;
@@ -93,6 +103,19 @@ export default function Layout() {
             <NotificationBell />
           </div>
         </div>
+
+        {/* Email verification banner */}
+        {user && user.emailVerified === false && !verifyDismissed && (
+          <div className="flex items-center gap-3 px-4 py-2 text-sm font-medium" style={{ background: '#1e3a5f', color: '#bfdbfe', flexShrink: 0 }}>
+            <span>📧 Please verify your email address to keep your account secure.</span>
+            <button onClick={resendVerification} disabled={resending}
+              className="ml-auto underline font-bold text-blue-200 hover:text-white flex-shrink-0 disabled:opacity-50"
+              style={{ background: 'none', border: 'none', cursor: resending ? 'not-allowed' : 'pointer' }}>
+              {resending ? 'Sending…' : 'Resend link'}
+            </button>
+            <button onClick={dismissVerify} style={{ background: 'none', border: 'none', color: '#bfdbfe', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+          </div>
+        )}
 
         {/* Trial expiry warning */}
         {showTrialBanner && (

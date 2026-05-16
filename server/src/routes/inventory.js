@@ -71,6 +71,24 @@ router.post('/:id/adjust', auth, requireRole('superadmin', 'admin'), async (req,
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+router.get('/export/csv', auth, async (req, res) => {
+  try {
+    const items = await InventoryItem.findAll({
+      where: { storeId: req.user.storeId, active: true },
+      order: [['name', 'ASC']],
+    });
+    const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const header = ['Name','SKU','Barcode','Brand','Category','Quantity','Min Qty','Cost','Price','Notes'].join(',');
+    const lines = items.map(i => [
+      i.name, i.sku, i.barcode, i.brand, i.category,
+      i.quantity, i.minQuantity, i.cost, i.price, i.notes,
+    ].map(escape).join(','));
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="inventory.csv"');
+    res.send([header, ...lines].join('\r\n'));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.delete('/:id', auth, requireRole('superadmin', 'admin'), async (req, res) => {
   try {
     const item = await InventoryItem.findOne({ where: { id: req.params.id, storeId: req.user.storeId } });

@@ -12,7 +12,7 @@ import {
   ShieldCheckIcon, KeyIcon, ChatBubbleLeftRightIcon,
   XMarkIcon, SunIcon, MoonIcon, ArrowUturnLeftIcon,
   DocumentTextIcon, ComputerDesktopIcon, ArrowPathIcon,
-  CreditCardIcon, TicketIcon,
+  CreditCardIcon, TicketIcon, QrCodeIcon,
 } from '@heroicons/react/24/outline';
 
 // plan: 'trial' | 'starter' | 'pro' | 'multi'
@@ -35,6 +35,7 @@ const opsNav = [
   { to: '/app/appointments',  label: 'Appointments',    icon: CalendarDaysIcon,    minPlan: 'pro' },
   { to: '/app/activations',   label: 'Activations',     icon: SignalIcon,          minPlan: 'pro' },
   { to: '/app/buyback',       label: 'Buyback',         icon: ArrowUturnLeftIcon,  minPlan: 'pro' },
+  { to: '/app/serials',       label: 'Serials / IMEI',  icon: QrCodeIcon,          minPlan: 'starter' },
   { to: '/app/purchasing',    label: 'Purchase Orders', icon: TruckIcon,           minPlan: 'multi' },
   { to: '/app/bill-payments', label: 'Bill Payments',   icon: BanknotesIcon,       minPlan: 'multi' },
   { to: '/app/layaway',       label: 'Layaway',         icon: ArchiveBoxIcon,      minPlan: 'multi' },

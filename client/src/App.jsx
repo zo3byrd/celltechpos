@@ -56,6 +56,7 @@ const RecurringInvoices = lazy(() => import('./pages/invoices/RecurringInvoices'
 const InventoryCount   = lazy(() => import('./pages/inventory/InventoryCount'));
 const Billing          = lazy(() => import('./pages/billing/Billing'));
 const Subscriptions    = lazy(() => import('./pages/subscriptions/Subscriptions'));
+const Serials          = lazy(() => import('./pages/serials/Serials'));
 
 function Spin() {
   return (
@@ -141,6 +142,7 @@ export default function App() {
           <Route path="reports" element={<PrivateRoute roles={['superadmin', 'admin']}><Reports /></PrivateRoute>} />
           <Route path="marketing" element={<PrivateRoute roles={['superadmin', 'admin']}><Marketing /></PrivateRoute>} />
           <Route path="inv-counts" element={<PrivateRoute roles={['superadmin', 'admin']}><InventoryCount /></PrivateRoute>} />
+          <Route path="serials" element={<Serials />} />
           <Route path="admin/users" element={<PrivateRoute roles={['superadmin', 'admin']}><AdminUsers /></PrivateRoute>} />
           <Route path="admin" element={<PrivateRoute roles={['superadmin', 'admin']}><AdminPanel /></PrivateRoute>} />
           <Route path="license-manager" element={<Navigate to="/superadmin/subscribers" replace />} />

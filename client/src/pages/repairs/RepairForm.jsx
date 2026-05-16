@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import {
   PaperClipIcon, TrashIcon, PhotoIcon,
   DocumentIcon, ClockIcon, PlayIcon, StopIcon, PrinterIcon,
+  LinkIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 
@@ -636,6 +637,18 @@ export default function RepairForm() {
         {isEdit && ticket && (
           <button className="btn-secondary flex items-center gap-1.5" onClick={printRepairTicket}>
             <PrinterIcon className="w-4 h-4" /> Print Ticket
+          </button>
+        )}
+        {isEdit && ticket && (
+          <button
+            className="btn-secondary flex items-center gap-1.5"
+            onClick={() => {
+              const base = window.location.origin;
+              const url = `${base}/portal?ticket=${ticket.ticketNumber}&storeId=${storeInfo?.id || ticket.storeId}`;
+              navigator.clipboard.writeText(url).then(() => toast.success('Tracking link copied!'));
+            }}
+          >
+            <LinkIcon className="w-4 h-4" /> Copy Tracking Link
           </button>
         )}
         <Link to="/app/repairs" className="btn-secondary">Cancel</Link>

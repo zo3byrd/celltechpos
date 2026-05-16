@@ -1,0 +1,7 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" width="200" height="80">
+  <rect width="200" height="80" rx="10" fill="#6B21A8"/>
+  <circle cx="40" cy="40" r="20" fill="white" opacity="0.15"/>
+  <circle cx="40" cy="40" r="10" fill="white" opacity="0.3"/>
+  <circle cx="40" cy="40" r="4" fill="white"/>
+  <text x="120" y="40" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="26" fill="white" text-anchor="middle" dominant-baseline="middle">Visible</text>
+</svg>

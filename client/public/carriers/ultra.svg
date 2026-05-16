@@ -1,0 +1,6 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" width="200" height="80">
+  <rect width="200" height="80" rx="10" fill="#7C3AED"/>
+  <polygon points="28,56 44,20 60,56 52,56 44,36 36,56" fill="white" opacity="0.9"/>
+  <text x="118" y="36" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="22" fill="white" text-anchor="middle" dominant-baseline="middle">ULTRA</text>
+  <text x="118" y="58" font-family="Arial,sans-serif" font-weight="400" font-size="13" fill="rgba(255,255,255,0.8)" text-anchor="middle" dominant-baseline="middle" letter-spacing="2">MOBILE</text>
+</svg>

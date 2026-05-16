@@ -56,4 +56,23 @@ router.put('/:id', auth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+router.get('/export/csv', auth, async (req, res) => {
+  try {
+    const rows = await Customer.findAll({
+      where: { storeId: req.user.storeId },
+      order: [['lastName', 'ASC'], ['firstName', 'ASC']],
+    });
+    const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const header = ['First Name','Last Name','Email','Phone','Address','City','State','Zip','Notes','Created'].join(',');
+    const lines = rows.map(c => [
+      c.firstName, c.lastName, c.email, c.phone,
+      c.address, c.city, c.state, c.zip, c.notes,
+      c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '',
+    ].map(escape).join(','));
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="customers.csv"');
+    res.send([header, ...lines].join('\r\n'));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 module.exports = router;

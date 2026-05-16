@@ -1,0 +1,6 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" width="200" height="80">
+  <rect width="200" height="80" rx="10" fill="#FF6B00"/>
+  <polygon points="80,14 58,44 74,44 56,66 96,36 78,36" fill="white" opacity="0.95"/>
+  <text x="104" y="34" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="22" fill="white" dominant-baseline="middle">boost</text>
+  <text x="104" y="58" font-family="Arial,sans-serif" font-weight="400" font-size="13" fill="rgba(255,255,255,0.85)" dominant-baseline="middle" letter-spacing="2">mobile</text>
+</svg>
