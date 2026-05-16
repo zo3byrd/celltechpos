@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../api/client';
 
-const TABS = ['Overview', 'Store Settings', 'Users', 'Integrations'];
+const TABS = ['Overview', 'Store Settings', 'Users', 'Notifications', 'Integrations'];
 
 const ROLES = ['superadmin','admin','technician','sales_rep','cashier'];
 const ROLE_COLOR = {
@@ -504,6 +504,137 @@ function Integrations() {
   );
 }
 
+// ── Notifications tab ─────────────────────────────────────────────────────────
+function Notifications() {
+  const [config, setConfig] = useState(null);
+  const [msgs, setMsgs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      api.get('/messages/config/status').then(r => setConfig(r.data)),
+      api.get('/messages?limit=30').then(r => setMsgs(r.data.messages || [])),
+    ]).finally(() => setLoading(false));
+  }, []);
+
+  const AUTOMATIONS = [
+    {
+      label: 'Appointment Booking Confirmation',
+      desc: 'SMS + email sent immediately when an appointment is created',
+      trigger: 'On appointment create',
+      icon: '📅',
+    },
+    {
+      label: 'Appointment Reminders',
+      desc: 'SMS + email sent the day before each appointment at 9am',
+      trigger: 'Daily at 9:00 AM',
+      icon: '⏰',
+    },
+    {
+      label: 'Repair Status Updates',
+      desc: 'SMS + email when repair status changes to Diagnosed, Ready, or Cancelled',
+      trigger: 'On status change',
+      icon: '🔧',
+    },
+    {
+      label: 'Pickup Follow-Up',
+      desc: 'SMS + email sent when a repair has been "Ready for Pickup" for 2+ days',
+      trigger: 'Daily at 10:00 AM',
+      icon: '📦',
+    },
+  ];
+
+  if (loading) return <div className="text-gray-400 text-sm p-4">Loading…</div>;
+
+  return (
+    <div className="space-y-6">
+      {/* Channel status */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {[
+          { label: 'SMS (Twilio)', active: config?.sms, detail: config?.twilioFrom },
+          { label: 'Email (SendGrid / SMTP)', active: config?.email, detail: config?.smtpFrom },
+        ].map(ch => (
+          <div key={ch.label} className="bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${ch.active ? 'bg-green-100' : 'bg-gray-100'}`}>
+              {ch.active ? '✅' : '⚠️'}
+            </div>
+            <div>
+              <p className="font-semibold text-gray-800 text-sm">{ch.label}</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {ch.active ? (ch.detail ? `Sending from ${ch.detail}` : 'Configured') : 'Not configured — add credentials to .env'}
+              </p>
+            </div>
+            <span className={`ml-auto text-xs px-2.5 py-1 rounded-full font-medium ${ch.active ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+              {ch.active ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Automated workflows */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Automated Notifications</h2>
+        <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
+          {AUTOMATIONS.map(a => (
+            <div key={a.label} className="flex items-start gap-4 px-5 py-4">
+              <span className="text-2xl mt-0.5">{a.icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-800 text-sm">{a.label}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{a.desc}</p>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="inline-block bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-full font-medium">{a.trigger}</span>
+                <p className="text-xs text-green-600 font-medium mt-1">● Enabled</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Recent messages log */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Recent Messages Sent</h2>
+        {msgs.length === 0 ? (
+          <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-400 text-sm">No messages sent yet</div>
+        ) : (
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  {['Type','To','Subject / Body','Status','Sent'].map(h => (
+                    <th key={h} className="table-th">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {msgs.map(m => (
+                  <tr key={m.id} className="hover:bg-gray-50">
+                    <td className="table-td">
+                      <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${m.type === 'sms' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                        {m.type.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="table-td font-mono text-xs text-gray-500 max-w-[120px] truncate">{m.to}</td>
+                    <td className="table-td text-gray-600 max-w-[240px] truncate text-xs">{m.subject || m.body?.slice(0, 80)}</td>
+                    <td className="table-td">
+                      <span className={`text-xs font-medium ${m.status === 'sent' ? 'text-green-600' : m.status === 'failed' ? 'text-red-500' : 'text-gray-400'}`}>
+                        {m.status}
+                      </span>
+                    </td>
+                    <td className="table-td text-xs text-gray-400 whitespace-nowrap">
+                      {new Date(m.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Root component ────────────────────────────────────────────────────────────
 import { useAuthStore } from '../../store/authStore';
 
@@ -547,6 +678,7 @@ export default function AdminPanel() {
       {tab === 'Overview'       && <Overview sys={sys} store={store} />}
       {tab === 'Store Settings' && <StoreSettings store={store} onSaved={loadStore} />}
       {tab === 'Users'          && <Users currentUserId={user?.id} />}
+      {tab === 'Notifications'  && <Notifications />}
       {tab === 'Integrations'   && <Integrations />}
     </div>
   );

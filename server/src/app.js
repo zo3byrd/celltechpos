@@ -314,11 +314,14 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
+const { startScheduler } = require('./jobs/scheduler');
+
 sequelize
   .sync()
   .then(() => runMigrations())
   .then(() => seedIfEmpty())
   .then(() => ensurePlans(sequelize))
   .then(() => ensurePayPalPlans(sequelize))
+  .then(() => startScheduler())
   .then(() => app.listen(PORT, () => console.log(`API ready → http://localhost:${PORT}/api`)))
   .catch(err => { console.error('DB init failed:', err); process.exit(1); });
