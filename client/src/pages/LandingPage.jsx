@@ -271,8 +271,8 @@ const plans = [
 ];
 
 const testimonials = [
+  { name: 'Cell 4 Less Repair', role: 'Wireless Repair Store — Florida', text: 'We switched from paper tickets and a basic spreadsheet. CellTechPOS handles our repairs, inventory, and activations all in one place. Setup was the same day and the support is real.', initials: 'C4', color: '#0d9488', featured: true },
   { name: 'Marcus D.', role: 'Owner, Metro Wireless', text: 'CellTechPOS replaced 3 different tools we were using. Repairs, activations, and inventory are all in one place now. My team learned it in a day.', initials: 'MD', color: '#6366f1' },
-  { name: 'Sandra R.', role: 'Manager, Quick Fix Mobile', text: 'The repair ticket system alone is worth it. Customers get updates automatically and we never lose track of a device. Game changer.', initials: 'SR', color: '#0d9488' },
   { name: 'Tony M.', role: 'Owner, T&M Wireless', text: 'Commission tracking for activations used to take me hours every month. Now it\'s automatic. I wish I had this years ago.', initials: 'TM', color: '#f59e0b' },
 ];
 
@@ -330,7 +330,7 @@ export default function LandingPage() {
 
           {/* Desktop nav links */}
           <div className="nav-desktop-links">
-            {[['#solutions','Solutions'],['#features','Features'],['#pricing','Pricing'],['#contact','Contact']].map(([href, label]) => (
+            {[['#solutions','Solutions'],['#features','Features'],['/pricing','Pricing'],['#contact','Contact']].map(([href, label]) => (
               <a key={href} href={href} style={{ fontSize: 14, fontWeight: 500, color: '#94a3b8', textDecoration: 'none' }}
                 onMouseEnter={e => e.target.style.color='#fff'} onMouseLeave={e => e.target.style.color='#94a3b8'}>{label}</a>
             ))}
@@ -362,7 +362,7 @@ export default function LandingPage() {
         {/* Mobile dropdown menu */}
         {mobileMenuOpen && (
           <div className="nav-mobile-menu">
-            {[['#solutions','Solutions'],['#features','Features'],['#pricing','Pricing'],['#contact','Contact']].map(([href, label]) => (
+            {[['#solutions','Solutions'],['#features','Features'],['/pricing','Pricing'],['#contact','Contact']].map(([href, label]) => (
               <a key={href} href={href} className="nav-mobile-link" onClick={() => setMobileMenuOpen(false)}>{label}</a>
             ))}
             <div style={{ paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -606,8 +606,10 @@ export default function LandingPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
             {testimonials.map(t => (
-              <div key={t.name} className="card-hover" style={{ background: '#fff', borderRadius: 16, padding: '28px', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-                {/* Stars */}
+              <div key={t.name} className="card-hover" style={{ background: t.featured ? `linear-gradient(135deg, ${t.color}10, ${t.color}05)` : '#fff', borderRadius: 16, padding: '28px', border: t.featured ? `2px solid ${t.color}44` : '1px solid #e2e8f0', boxShadow: t.featured ? `0 8px 32px ${t.color}18` : '0 1px 4px rgba(0,0,0,0.05)', position: 'relative' }}>
+                {t.featured && (
+                  <div style={{ position: 'absolute', top: -11, left: 24, background: t.color, color: '#fff', fontSize: 10, fontWeight: 800, padding: '3px 12px', borderRadius: 999, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Verified Customer</div>
+                )}
                 <div style={{ display: 'flex', gap: 3, marginBottom: 16 }}>
                   {[1,2,3,4,5].map(i => <span key={i} style={{ color: '#f59e0b', fontSize: 16 }}>★</span>)}
                 </div>
@@ -666,6 +668,9 @@ export default function LandingPage() {
           </div>
           <p style={{ textAlign: 'center', marginTop: 28, fontSize: 13, color: '#94a3b8' }}>
             All plans include a <strong style={{ color: '#64748b' }}>30-day free trial</strong> · No credit card required · Cancel anytime
+          </p>
+          <p style={{ textAlign: 'center', marginTop: 12 }}>
+            <Link to="/pricing" style={{ fontSize: 14, color: TEAL, textDecoration: 'none', fontWeight: 600 }}>See full feature comparison →</Link>
           </p>
         </div>
       </section>
@@ -774,7 +779,7 @@ export default function LandingPage() {
             </div>
             {[
               { title: 'Solutions', links: [['Point of Sale', '#features'], ['Repair Management', '#solutions'], ['Activations', '#solutions'], ['Inventory', '#solutions'], ['Customer CRM', '#solutions']] },
-              { title: 'Company', links: [['Pricing', '#pricing'], ['Features', '#features'], ['Contact Us', '/contact'], ['Privacy Policy', '/privacy'], ['Terms', '/terms']] },
+              { title: 'Company', links: [['Pricing', '/pricing'], ['Features', '#features'], ['Contact Us', '/contact'], ['Privacy Policy', '/privacy'], ['Terms', '/terms']] },
             ].map(col => (
               <div key={col.title}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>{col.title}</div>

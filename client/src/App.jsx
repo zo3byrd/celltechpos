@@ -33,6 +33,7 @@ const SASettings       = lazy(() => import('./pages/superadmin/SASettings'));
 const SAContentEditor  = lazy(() => import('./pages/superadmin/SAContentEditor'));
 const SAAnalytics      = lazy(() => import('./pages/superadmin/SAAnalytics'));
 const SACoupons        = lazy(() => import('./pages/superadmin/SACoupons'));
+const LandingPricing   = lazy(() => import('./pages/PricingPage'));
 const LandingPrivacy   = lazy(() => import('./pages/PrivacyPolicy'));
 const LandingTerms     = lazy(() => import('./pages/TermsOfService'));
 const LandingContact   = lazy(() => import('./pages/Contact'));
@@ -96,6 +97,7 @@ export default function App() {
       <Routes>
         {/* ── Public pages ── */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/pricing" element={<LandingPricing />} />
         <Route path="/privacy" element={<LandingPrivacy />} />
         <Route path="/terms" element={<LandingTerms />} />
         <Route path="/contact" element={<LandingContact />} />
