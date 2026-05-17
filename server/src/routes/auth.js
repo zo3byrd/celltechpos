@@ -167,6 +167,81 @@ router.post('/signup',
         console.warn('Verification email failed (non-fatal):', emailErr.message);
       }
 
+      // Welcome / getting-started email (separate from verification, non-blocking)
+      try {
+        const appUrl = process.env.APP_URL || 'https://celltechpos.com';
+        const welcomeHtml = `<!DOCTYPE html>
+<html>
+<body style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:32px;color:#1f2937;background:#f9fafb">
+  <div style="background:#fff;border-radius:12px;padding:32px;box-shadow:0 1px 4px rgba(0,0,0,0.08)">
+    <h1 style="margin:0 0 4px 0;font-size:28px;color:#2dd4bf;letter-spacing:1px">CELLTECHPOS</h1>
+    <p style="margin:0 0 28px 0;color:#6b7280;font-size:13px">Your wireless store, fully automated</p>
+
+    <h2 style="margin:0 0 8px 0;font-size:20px;color:#111827">You're in, ${name.trim()}! 🎉</h2>
+    <p style="font-size:15px;line-height:1.7;margin:0 0 20px 0">
+      <strong>${storeName.trim()}</strong> is set up and your <strong>30-day free trial</strong> starts today — no credit card needed.
+      Here's how to hit the ground running:
+    </p>
+
+    <table style="width:100%;margin:0 0 28px 0;border-collapse:collapse">
+      <tr>
+        <td style="padding:14px;background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;vertical-align:top;width:50px">
+          <span style="font-size:22px">🛠️</span>
+        </td>
+        <td style="padding:14px;vertical-align:top">
+          <p style="margin:0 0 4px 0;font-weight:700;color:#111827">Create your first repair ticket</p>
+          <p style="margin:0;font-size:13px;color:#6b7280">Track device issues from intake to pickup, with parts and labor included.</p>
+          <a href="${appUrl}/app/repairs/new" style="font-size:13px;color:#2dd4bf;font-weight:600">Open Repairs →</a>
+        </td>
+      </tr>
+      <tr><td style="height:10px" colspan="2"></td></tr>
+      <tr>
+        <td style="padding:14px;background:#eff6ff;border-radius:10px;border:1px solid #bfdbfe;vertical-align:top;width:50px">
+          <span style="font-size:22px">📦</span>
+        </td>
+        <td style="padding:14px;vertical-align:top">
+          <p style="margin:0 0 4px 0;font-weight:700;color:#111827">Add your inventory</p>
+          <p style="margin:0;font-size:13px;color:#6b7280">Phones, accessories, parts, and services — all in one place with real-time stock.</p>
+          <a href="${appUrl}/app/inventory" style="font-size:13px;color:#2dd4bf;font-weight:600">Open Inventory →</a>
+        </td>
+      </tr>
+      <tr><td style="height:10px" colspan="2"></td></tr>
+      <tr>
+        <td style="padding:14px;background:#fefce8;border-radius:10px;border:1px solid #fde68a;vertical-align:top;width:50px">
+          <span style="font-size:22px">💳</span>
+        </td>
+        <td style="padding:14px;vertical-align:top">
+          <p style="margin:0 0 4px 0;font-weight:700;color:#111827">Ring up your first sale</p>
+          <p style="margin:0;font-size:13px;color:#6b7280">Cash, card, split payments, gift cards — the POS handles them all.</p>
+          <a href="${appUrl}/app/pos" style="font-size:13px;color:#2dd4bf;font-weight:600">Open POS →</a>
+        </td>
+      </tr>
+    </table>
+
+    <div style="text-align:center;margin:0 0 28px 0">
+      <a href="${appUrl}/app" style="display:inline-block;background:linear-gradient(135deg,#059669,#2dd4bf);color:#fff;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:16px;font-weight:700;letter-spacing:0.5px">
+        Go to My Dashboard
+      </a>
+    </div>
+
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:0 0 20px 0">
+    <p style="font-size:12px;color:#9ca3af;margin:0;text-align:center">
+      Questions? Reply to this email or reach us at <a href="mailto:support@celltechpos.com" style="color:#2dd4bf">support@celltechpos.com</a>.<br>
+      CellTechPOS · Built for wireless stores
+    </p>
+  </div>
+</body>
+</html>`;
+        await sendEmail(
+          email,
+          `Welcome to CellTechPOS, ${name.trim()}! Your 30-day trial has started`,
+          welcomeHtml,
+          `Hi ${name.trim()}, your CellTechPOS trial is live! Go to your dashboard: ${appUrl}/app`
+        );
+      } catch (welcomeErr) {
+        console.warn('Welcome email failed (non-fatal):', welcomeErr.message);
+      }
+
       res.status(201).json({
         token, refreshToken,
         user: {
