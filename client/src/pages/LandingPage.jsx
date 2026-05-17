@@ -425,7 +425,7 @@ export default function LandingPage() {
               </div>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(99,102,241,0.18)', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 999, padding: '6px 16px' }}>
                 <span style={{ fontSize: 13 }}>✨</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#a5b4fc', letterSpacing: '0.06em' }}>Now with Claude AI</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#a5b4fc', letterSpacing: '0.06em' }}>Now with Built-in AI</span>
               </div>
             </div>
             <h1 style={{ fontSize: 'clamp(36px, 5vw, 62px)', fontWeight: 900, lineHeight: 1.08, letterSpacing: '-2px', color: '#fff', margin: '0 0 22px' }}>
