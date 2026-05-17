@@ -51,7 +51,7 @@ router.post('/sales-insights', async (req, res) => {
   try {
     const storeId = req.user.storeId;
     const [txRows] = await sequelize.query(
-      `SELECT date(createdAt) as day, COUNT(*) as count, SUM(amount) as revenue, type
+      `SELECT date(createdAt) as day, COUNT(*) as count, SUM("total") as revenue, type
        FROM Transactions
        WHERE storeId = ? AND createdAt >= date('now', '-30 days')
        GROUP BY day, type ORDER BY day DESC LIMIT 60`,
