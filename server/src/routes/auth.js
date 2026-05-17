@@ -577,6 +577,17 @@ router.post('/demo', async (req, res) => {
       for (const r of repairs) await RepairTicket.create({ id: uuidv4(), storeId: store.id, ...r });
     }
 
+    // Ensure a real demo user exists (needed for FK constraint on transactions.userId)
+    let demoUser = await User.findOne({ where: { email: 'demo@celltechpos.com' } });
+    if (!demoUser) {
+      const hash = await bcrypt.hash('demo-readonly-' + store.id, 10);
+      demoUser = await User.create({
+        id: uuidv4(), storeId: store.id, name: 'Demo Staff',
+        email: 'demo@celltechpos.com', password: hash,
+        role: 'admin', active: true, emailVerified: true,
+      });
+    }
+
     // Seed transactions if none exist yet (runs for both new and existing demo stores)
     const existingTxns = await Transaction.count({ where: { storeId: store.id } });
     if (existingTxns === 0) {
@@ -601,7 +612,7 @@ router.post('/demo', async (req, res) => {
           const tx = await Transaction.create({
             id: uuidv4(),
             transactionNumber: `DEMO-${String(txnSeq++).padStart(5, '0')}`,
-            storeId: store.id, customerId: custId, userId: store.id,
+            storeId: store.id, customerId: custId, userId: demoUser.id,
             type: 'sale', subtotal, taxAmount, discountAmount: 0, total,
             paymentMethod: pick(methods), paymentStatus: 'completed',
             createdAt: txDate, updatedAt: txDate,
