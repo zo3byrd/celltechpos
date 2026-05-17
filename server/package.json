@@ -12,6 +12,7 @@
     "build": "cd ../client && npm install && node --max-old-space-size=400 node_modules/.bin/vite build"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.55.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",

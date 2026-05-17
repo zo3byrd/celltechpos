@@ -463,6 +463,28 @@ export default function RepairForm() {
   const [signature, setSignature] = useState('');
   const [showChecklist, setShowChecklist] = useState(false);
   const [showSignature, setShowSignature] = useState(false);
+  const [aiNoteLoading, setAiNoteLoading] = useState(false);
+
+  async function generateAiDiagnosis() {
+    if (!form.deviceBrand && !form.deviceModel && !form.issueDescription) {
+      return toast.error('Fill in device info or issue description first');
+    }
+    setAiNoteLoading(true);
+    try {
+      const { data } = await api.post('/ai/repair-notes', {
+        deviceType: form.deviceType,
+        deviceBrand: form.deviceBrand,
+        deviceModel: form.deviceModel,
+        issueDescription: form.issueDescription,
+      });
+      set('diagnosis', data.text);
+      toast.success('AI diagnosis generated');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'AI generation failed');
+    } finally {
+      setAiNoteLoading(false);
+    }
+  }
 
   useEffect(() => { api.get('/admin/store').then(r => setStoreInfo(r.data)).catch(() => {}); }, []);
   useEffect(() => {
@@ -798,7 +820,18 @@ ${ticket.imei ? `<div class="row"><span class="lbl">IMEI / Serial</span><span cl
             <textarea className="input h-20 resize-none" value={form.issueDescription} onChange={e => set('issueDescription', e.target.value)} placeholder="Describe the issue…" />
           </div>
           <div>
-            <label className="label">Technician Diagnosis</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="label mb-0">Technician Diagnosis</label>
+              <button
+                type="button"
+                onClick={generateAiDiagnosis}
+                disabled={aiNoteLoading}
+                className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'white' }}
+              >
+                {aiNoteLoading ? '…' : '✨'} AI Notes
+              </button>
+            </div>
             <textarea className="input h-20 resize-none" value={form.diagnosis} onChange={e => set('diagnosis', e.target.value)} placeholder="Internal diagnosis notes…" />
           </div>
         </div>

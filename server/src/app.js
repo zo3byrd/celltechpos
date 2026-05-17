@@ -300,6 +300,7 @@ app.use('/api/parts',          require('./routes/parts'));
 app.use('/api/storefront',     require('./routes/storefront'));
 app.use('/api/coupons',        require('./routes/coupons'));
 app.use('/api/referrals',      require('./routes/referrals'));
+app.use('/api/ai',             require('./routes/ai'));
 
 // Serve uploaded files
 app.use('/uploads', express.static(process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads')));

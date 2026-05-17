@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import toast from 'react-hot-toast';
 import api from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -15,6 +16,20 @@ export default function Dashboard() {
   const [sales, setSales] = useState([]);
   const [appts, setAppts] = useState([]);
   const [repairs, setRepairs] = useState([]);
+  const [aiInsights, setAiInsights] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+
+  async function generateInsights() {
+    setAiLoading(true);
+    try {
+      const { data } = await api.post('/ai/sales-insights');
+      setAiInsights(data.text);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'AI generation failed');
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   useEffect(() => {
     api.get('/reports/dashboard').then(r => setStats(r.data)).catch(() => {});
@@ -136,6 +151,26 @@ export default function Dashboard() {
                   </tbody>
                 </table>
               </div>
+            )}
+          </div>
+
+          {/* AI Insights */}
+          <div className="card p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-bold text-gray-700">✨ AI Sales Insights</span>
+              <button
+                onClick={generateInsights}
+                disabled={aiLoading}
+                className="text-xs font-semibold px-3 py-1 rounded-lg text-white transition-colors disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}
+              >
+                {aiLoading ? 'Analyzing…' : aiInsights ? 'Refresh' : 'Generate'}
+              </button>
+            </div>
+            {aiInsights ? (
+              <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">{aiInsights}</p>
+            ) : (
+              <p className="text-xs text-gray-400">Click Generate to get AI-powered insights based on your last 30 days of sales data.</p>
             )}
           </div>
         </div>

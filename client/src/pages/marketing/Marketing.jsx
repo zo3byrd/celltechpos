@@ -394,6 +394,27 @@ export default function Marketing() {
   const [msgConfig, setMsgConfig] = useState({ sms: false, email: false });
   const [configTarget, setConfigTarget] = useState(null);
   const [catFilter, setCatFilter] = useState('all');
+  const [aiCopyLoading, setAiCopyLoading] = useState(false);
+  const [aiTopic, setAiTopic] = useState('');
+
+  async function generateAiCopy() {
+    if (!aiTopic.trim()) return toast.error('Enter a topic/promotion first');
+    setAiCopyLoading(true);
+    try {
+      const { data } = await api.post('/ai/campaign-copy', {
+        type: form.type,
+        target: form.target,
+        topic: aiTopic,
+        tone: 'friendly and professional',
+      });
+      setForm(f => ({ ...f, message: data.text }));
+      toast.success('AI copy generated');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'AI generation failed');
+    } finally {
+      setAiCopyLoading(false);
+    }
+  }
 
   async function load() {
     try {
@@ -688,6 +709,31 @@ export default function Marketing() {
                 {form.type === 'email' && (
                   <div><label className="label">Subject Line</label><input className="input" value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} placeholder="Email subject…" /></div>
                 )}
+                {/* AI copy generator */}
+                <div className="rounded-lg p-3 space-y-2" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)' }}>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm">✨</span>
+                    <span className="text-xs font-bold text-indigo-700">AI Copy Generator</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      className="input flex-1 text-sm py-1.5"
+                      placeholder="Topic / promotion (e.g. screen repair sale, 20% off accessories)"
+                      value={aiTopic}
+                      onChange={e => setAiTopic(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={generateAiCopy}
+                      disabled={aiCopyLoading}
+                      className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg text-white disabled:opacity-50"
+                      style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}
+                    >
+                      {aiCopyLoading ? 'Writing…' : 'Generate'}
+                    </button>
+                  </div>
+                  <p className="text-xs text-indigo-500">Generates {form.type === 'sms' ? 'SMS' : 'email'} copy for {form.target === 'all' ? 'all customers' : form.target.replace(/_/g, ' ')}.</p>
+                </div>
                 <div>
                   <label className="label">Message *</label>
                   <textarea className="input" rows={5} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}

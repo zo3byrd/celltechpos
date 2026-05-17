@@ -190,6 +190,24 @@ export default function Inventory() {
   const [printModal, setPrintModal] = useState(null);
   const [printQty, setPrintQty] = useState(1);
   const supplierImportRef = useRef(null);
+  const [aiForecast, setAiForecast] = useState('');
+  const [aiForecastLoading, setAiForecastLoading] = useState(false);
+  const [aiForecastModal, setAiForecastModal] = useState(false);
+
+  async function runAiForecast() {
+    setAiForecastModal(true);
+    if (aiForecast) return;
+    setAiForecastLoading(true);
+    try {
+      const { data } = await api.post('/ai/inventory-forecast');
+      setAiForecast(data.text);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'AI forecast failed');
+      setAiForecastModal(false);
+    } finally {
+      setAiForecastLoading(false);
+    }
+  }
 
   async function generateReorders() {
     try {
@@ -276,6 +294,13 @@ export default function Inventory() {
           </button>
           <button className="btn-secondary flex items-center gap-1.5" onClick={exportInventoryCSV}>
             <ArrowDownTrayIcon className="w-4 h-4" /> Export
+          </button>
+          <button
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg text-white transition-colors"
+            style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}
+            onClick={runAiForecast}
+          >
+            ✨ AI Forecast
           </button>
           <button className="btn-primary" onClick={() => { setForm({ name: '', sku: '', category: 'accessory', brand: '', quantity: 0, minQuantity: 5, cost: '', price: '', description: '', imageUrl: '' }); setModal('add'); }}>
             + Add Item
@@ -459,6 +484,42 @@ export default function Inventory() {
                 <PrinterIcon className="w-4 h-4" /> Print {printQty > 1 ? `${printQty} Labels` : 'Label'}
               </button>
               <button onClick={() => setPrintModal(null)} className="btn-secondary">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Forecast Modal */}
+      {aiForecastModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">✨</span>
+                <h2 className="font-bold text-gray-900">AI Inventory Forecast</h2>
+              </div>
+              <button onClick={() => setAiForecastModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-5 py-4">
+              {aiForecastLoading ? (
+                <div className="flex items-center gap-3 text-gray-500 py-6 justify-center">
+                  <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                  <span className="text-sm">Analyzing inventory…</span>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{aiForecast}</p>
+              )}
+            </div>
+            <div className="px-5 py-3 border-t border-gray-100 flex gap-3 justify-end">
+              <button
+                onClick={() => { setAiForecast(''); setAiForecastLoading(true); api.post('/ai/inventory-forecast').then(r => setAiForecast(r.data.text)).catch(err => toast.error(err.response?.data?.error || 'Failed')).finally(() => setAiForecastLoading(false)); }}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+              >
+                Refresh
+              </button>
+              <button onClick={() => setAiForecastModal(false)} className="btn-primary text-sm">Done</button>
             </div>
           </div>
         </div>
