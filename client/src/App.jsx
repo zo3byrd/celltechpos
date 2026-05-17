@@ -67,6 +67,7 @@ const Transfers        = lazy(() => import('./pages/transfers/Transfers'));
 const PartsCatalog     = lazy(() => import('./pages/parts/PartsCatalog'));
 const Storefront       = lazy(() => import('./pages/storefront/Storefront'));
 const Goals            = lazy(() => import('./pages/goals/Goals'));
+const Referral         = lazy(() => import('./pages/referrals/Referral'));
 
 function Spin() {
   return (
@@ -163,6 +164,7 @@ export default function App() {
           <Route path="transfers" element={<PrivateRoute roles={['superadmin', 'admin']}><Transfers /></PrivateRoute>} />
           <Route path="parts" element={<PartsCatalog />} />
           <Route path="goals" element={<PrivateRoute roles={['superadmin', 'admin']}><Goals /></PrivateRoute>} />
+          <Route path="referrals" element={<Referral />} />
           <Route path="admin/users" element={<PrivateRoute roles={['superadmin', 'admin']}><AdminUsers /></PrivateRoute>} />
           <Route path="admin" element={<PrivateRoute roles={['superadmin', 'admin']}><AdminPanel /></PrivateRoute>} />
           <Route path="license-manager" element={<Navigate to="/superadmin/subscribers" replace />} />

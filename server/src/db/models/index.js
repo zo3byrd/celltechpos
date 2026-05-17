@@ -465,6 +465,19 @@ const License = sequelize.define('License', {
   cryptoChargeId:       { type: DataTypes.STRING },
   cryptoChargeCode:     { type: DataTypes.STRING },
   cryptoStatus:         { type: DataTypes.STRING },
+  referralCode:         { type: DataTypes.STRING(20) },
+  referredBy:           { type: DataTypes.STRING(20) },
+});
+
+// ── Referral ──────────────────────────────────────────────────────────────────
+const Referral = sequelize.define('Referral', {
+  id:              { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  referrerStoreId: { type: DataTypes.UUID, allowNull: false },
+  refereeStoreId:  { type: DataTypes.UUID, allowNull: true },
+  code:            { type: DataTypes.STRING(20), allowNull: false },
+  status:          { type: DataTypes.ENUM('pending', 'rewarded'), defaultValue: 'pending' },
+  rewardedAt:      { type: DataTypes.STRING, allowNull: true },
+  rewardDays:      { type: DataTypes.INTEGER, defaultValue: 30 },
 });
 
 // ── StripePlan ────────────────────────────────────────────────────────────────
@@ -964,7 +977,7 @@ PartsCatalogItem.belongsTo(Store, { foreignKey: 'storeId' });
 PartsCatalogItem.belongsTo(Supplier, { foreignKey: 'supplierId', as: 'supplier' });
 
 module.exports = {
-  Store, User, Customer, InventoryItem, License, StripePlan, Message, Coupon,
+  Store, User, Customer, InventoryItem, License, StripePlan, Message, Coupon, Referral,
   RepairTicket, RepairPart,
   Transaction, TransactionItem,
   Activation, Commission,

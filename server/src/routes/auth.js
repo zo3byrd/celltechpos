@@ -50,7 +50,7 @@ router.post('/signup',
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
-    const { storeName, name, email, password, googleCredential, phone, city, state } = req.body;
+    const { storeName, name, email, password, googleCredential, phone, city, state, referralCode } = req.body;
 
     try {
       const existing = await User.findOne({ where: { email } });
@@ -85,6 +85,19 @@ router.post('/signup',
         role: 'admin', active: true,
       });
 
+      const newCode = Math.random().toString(36).substring(2, 6).toUpperCase() +
+                      Math.random().toString(36).substring(2, 6).toUpperCase();
+
+      // Validate referral code if provided
+      let validRef = null;
+      if (referralCode) {
+        const [refRows] = await sequelize.query(
+          "SELECT storeId FROM `Licenses` WHERE referralCode=? LIMIT 1",
+          { replacements: [referralCode.toUpperCase()] }
+        );
+        validRef = refRows[0] || null;
+      }
+
       const trialEnd = new Date();
       trialEnd.setDate(trialEnd.getDate() + 30);
       await License.create({
@@ -92,7 +105,22 @@ router.post('/signup',
         plan: 'trial', status: 'active',
         startedAt: new Date().toISOString(),
         expiresAt: trialEnd.toISOString(),
+        referralCode: newCode,
+        referredBy: validRef ? referralCode.toUpperCase() : null,
       });
+
+      // Create referral record if referred by a valid code
+      if (validRef) {
+        try {
+          const { Referral } = require('../db/models');
+          await Referral.create({
+            referrerStoreId: validRef.storeId,
+            refereeStoreId:  store.id,
+            code:            referralCode.toUpperCase(),
+            status:          'pending',
+          });
+        } catch { /* non-fatal */ }
+      }
 
       const { accessToken: token, refreshToken } = signTokens(user);
 

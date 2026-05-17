@@ -1,6 +1,7 @@
 const { getStripe } = require('../stripe');
 const { sequelize } = require('../db');
 const { sendEmail } = require('../integrations/messaging');
+const { rewardReferrer } = require('./referrals');
 
 function daysUntil(isoStr) {
   if (!isoStr) return null;
@@ -132,6 +133,22 @@ module.exports = async (req, res) => {
           price: (invoice.amount_paid / 100).toFixed(2),
         });
         console.log(`Payment succeeded: store ${lic.storeId}, expires ${newExpiry}`);
+
+        // On first subscription payment, check for a referral and reward the referrer
+        if (invoice.billing_reason === 'subscription_create') {
+          try {
+            const [refRows] = await sequelize.query(
+              "SELECT id, referrerStoreId, rewardDays FROM `Referrals` WHERE refereeStoreId=? AND status='pending' LIMIT 1",
+              { replacements: [lic.storeId] }
+            );
+            if (refRows[0]) {
+              await rewardReferrer(refRows[0].referrerStoreId, refRows[0].id, refRows[0].rewardDays || 30);
+              console.log(`Referral rewarded: referrer ${refRows[0].referrerStoreId} earned ${refRows[0].rewardDays || 30} days`);
+            }
+          } catch (refErr) {
+            console.warn('Referral reward failed (non-fatal):', refErr.message);
+          }
+        }
 
         // Send payment receipt (skip for first invoice — checkout.session.completed handles that)
         if (invoice.billing_reason !== 'subscription_create') {

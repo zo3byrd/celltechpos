@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../api/client';
@@ -18,8 +18,14 @@ export default function Signup() {
     phone: '', city: '', state: '',
   });
   const [loading, setLoading] = useState(false);
+  const [referralCode, setReferralCode] = useState('');
   const { setAuth, resetOnboarding } = useAuthStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get('ref');
+    if (ref) setReferralCode(ref.toUpperCase());
+  }, []);
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
@@ -40,6 +46,7 @@ export default function Signup() {
         state: form.state,
       };
       body.password = form.password;
+      if (referralCode) body.referralCode = referralCode;
 
       const { data } = await api.post('/auth/signup', body);
       setAuth(data.token, data.user, data.plan || 'trial', data.refreshToken);

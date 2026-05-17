@@ -66,6 +66,18 @@ async function runMigrations() {
   // PayPal plan ID on StripePlan
   await addColumn('StripePlans', 'paypalPlanId',      'VARCHAR(255)');
 
+  // Referral program fields on License
+  await addColumn('Licenses', 'referralCode', 'VARCHAR(20)');
+  await addColumn('Licenses', 'referredBy',   'VARCHAR(20)');
+
+  // Generate referral codes for any store that doesn't have one yet
+  const [noCode] = await sequelize.query("SELECT storeId FROM `Licenses` WHERE referralCode IS NULL OR referralCode = ''");
+  for (const row of noCode) {
+    const code = Math.random().toString(36).substring(2, 6).toUpperCase() +
+                 Math.random().toString(36).substring(2, 6).toUpperCase();
+    await sequelize.query("UPDATE `Licenses` SET referralCode=? WHERE storeId=?", { replacements: [code, row.storeId] });
+  }
+
   // Crypto payment fields on License
   await addColumn('Licenses', 'cryptoChargeId',   'VARCHAR(255)');
   await addColumn('Licenses', 'cryptoChargeCode',  'VARCHAR(255)');

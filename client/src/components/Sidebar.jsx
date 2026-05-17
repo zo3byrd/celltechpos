@@ -14,6 +14,7 @@ import {
   DocumentTextIcon, ComputerDesktopIcon, ArrowPathIcon,
   CreditCardIcon, TicketIcon, QrCodeIcon, DocumentMinusIcon,
   GiftIcon, ReceiptPercentIcon, ArrowsRightLeftIcon, TrophyIcon,
+  ShareIcon,
 } from '@heroicons/react/24/outline';
 
 // plan: 'trial' | 'starter' | 'pro' | 'multi'
@@ -63,6 +64,7 @@ const adminNav = [
   { to: '/app/inv-counts', label: 'Inv. Count',   icon: ShieldCheckIcon,     minPlan: 'multi' },
   { to: '/app/admin',      label: 'Admin',        icon: Cog6ToothIcon,       minPlan: 'starter' },
   { to: '/app/billing',    label: 'Billing',      icon: CreditCardIcon,      minPlan: 'starter' },
+  { to: '/app/referrals', label: 'Refer & Earn', icon: ShareIcon,           minPlan: 'starter' },
   { to: '/display',        label: 'Shop Display', icon: ComputerDesktopIcon, minPlan: 'starter' },
 ];
 const superNav = [
