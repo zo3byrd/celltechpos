@@ -104,8 +104,16 @@ export default function Layout() {
           </div>
         </div>
 
+        {/* Demo mode banner */}
+        {user?.role === 'demo' && (
+          <div className="flex items-center gap-3 px-4 py-2 text-sm font-semibold flex-shrink-0" style={{ background: '#0d9488', color: '#fff' }}>
+            <span>👀 Demo mode — browsing is enabled but changes won't be saved.</span>
+            <Link to="/signup" className="ml-auto font-bold underline text-teal-100 hover:text-white flex-shrink-0">Sign up free →</Link>
+          </div>
+        )}
+
         {/* Email verification banner */}
-        {user && user.emailVerified === false && !verifyDismissed && (
+        {user && user.emailVerified === false && !verifyDismissed && user?.role !== 'demo' && (
           <div className="flex items-center gap-3 px-4 py-2 text-sm font-medium" style={{ background: '#1e3a5f', color: '#bfdbfe', flexShrink: 0 }}>
             <span>📧 Please verify your email address to keep your account secure.</span>
             <button onClick={resendVerification} disabled={resending}

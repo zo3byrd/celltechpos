@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import CellTechLogo from '../components/Logo';
 import { useAuthStore } from '../store/authStore';
+import api from '../api/client';
 import {
   WrenchScrewdriverIcon, ShoppingCartIcon, CubeIcon,
   UsersIcon, SignalIcon, ChartBarIcon, ClockIcon,
@@ -303,9 +304,24 @@ function FAQItem({ q, a }) {
 }
 
 export default function LandingPage() {
-  const { token, user } = useAuthStore();
+  const { token, user, setAuth } = useAuthStore();
   const appPath = user?.role === 'superadmin' ? '/superadmin' : '/app';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const navigate = useNavigate();
+
+  async function handleDemo() {
+    setDemoLoading(true);
+    try {
+      const { data } = await api.post('/auth/demo');
+      setAuth(data.token, data.user, data.plan, null);
+      navigate('/app');
+    } catch {
+      alert('Demo is temporarily unavailable. Please try again.');
+    } finally {
+      setDemoLoading(false);
+    }
+  }
 
   return (
     <div style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif", color: NAVY, overflowX: 'hidden' }}>
@@ -420,9 +436,9 @@ export default function LandingPage() {
               <Link to="/signup" style={{ padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 700, background: `linear-gradient(135deg, ${TEAL}, #0f766e)`, color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8, boxShadow: `0 8px 24px rgba(13,148,136,0.35)` }}>
                 Get Started Free <ArrowRightIcon style={{ width: 16, height: 16 }} />
               </Link>
-              <a href="#features" style={{ padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 700, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0', textDecoration: 'none' }}>
-                See Features
-              </a>
+              <button onClick={handleDemo} disabled={demoLoading} style={{ padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 700, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: '#e2e8f0', cursor: demoLoading ? 'wait' : 'pointer', opacity: demoLoading ? 0.7 : 1 }}>
+                {demoLoading ? 'Loading…' : '▶ Try Live Demo'}
+              </button>
             </div>
             {/* Trust row */}
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>

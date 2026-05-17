@@ -526,4 +526,71 @@ router.post('/google', async (req, res) => {
   }
 });
 
+// POST /demo — spin up a read-only demo session (no credentials needed)
+router.post('/demo', async (req, res) => {
+  try {
+    const { InventoryItem, Customer, RepairTicket } = require('../db/models');
+    const appUrl = process.env.APP_URL || 'https://celltechpos.com';
+
+    let store = await Store.findOne({ where: { name: 'CellTechPOS Demo' } });
+
+    if (!store) {
+      store = await Store.create({
+        id: uuidv4(), name: 'CellTechPOS Demo',
+        city: 'Miami', state: 'FL', phone: '(305) 555-0100',
+        email: 'demo@celltechpos.com', taxRate: 0.07, active: true,
+      });
+
+      const farFuture = new Date(); farFuture.setFullYear(farFuture.getFullYear() + 100);
+      await License.create({
+        id: uuidv4(), storeId: store.id, plan: 'multi', status: 'active',
+        stripePlanKey: 'multi_monthly',
+        startedAt: new Date().toISOString(), expiresAt: farFuture.toISOString(),
+      });
+
+      const inv = [
+        { name: 'iPhone 15 Pro 256GB',         sku: 'IP15P-256',  category: 'device',    brand: 'Apple',   quantity: 8,   minQuantity: 2, cost: 850,  price: 1099  },
+        { name: 'Samsung Galaxy S24 128GB',     sku: 'SGS24-128',  category: 'device',    brand: 'Samsung', quantity: 5,   minQuantity: 2, cost: 600,  price: 799   },
+        { name: 'Screen Replacement (OLED)',    sku: 'SVC-SCRN',   category: 'service',   brand: '',        quantity: 999, minQuantity: 0, cost: 45,   price: 89    },
+        { name: 'Battery Replacement',          sku: 'SVC-BATT',   category: 'service',   brand: '',        quantity: 999, minQuantity: 0, cost: 20,   price: 49    },
+        { name: 'USB-C Cable 6ft',              sku: 'ACC-USBC',   category: 'accessory', brand: 'Anker',   quantity: 24,  minQuantity: 5, cost: 4.5,  price: 14.99 },
+        { name: 'Tempered Glass Protector',     sku: 'ACC-TGSP',   category: 'accessory', brand: 'Generic', quantity: 3,   minQuantity: 5, cost: 1.5,  price: 9.99  },
+        { name: 'Wireless Charger Pad 15W',     sku: 'ACC-WCHG',   category: 'accessory', brand: 'Anker',   quantity: 12,  minQuantity: 3, cost: 8,    price: 24.99 },
+      ];
+      for (const i of inv) await InventoryItem.create({ id: uuidv4(), storeId: store.id, active: true, barcode: '', description: '', imageUrl: '', ...i });
+
+      const custs = [
+        { firstName: 'Maria',  lastName: 'Garcia',    email: 'maria@example.com',  phone: '(305) 555-0201' },
+        { firstName: 'James',  lastName: 'Thompson',  email: 'james@example.com',  phone: '(305) 555-0302' },
+        { firstName: 'Ashley', lastName: 'Williams',  email: 'ashley@example.com', phone: '(786) 555-0403' },
+      ];
+      const createdCusts = [];
+      for (const c of custs) { const cr = await Customer.create({ id: uuidv4(), storeId: store.id, active: true, ...c }); createdCusts.push(cr); }
+
+      const repairs = [
+        { customerId: createdCusts[0].id, ticketNumber: 'TKT-10001', deviceType: 'phone', deviceBrand: 'Apple',   deviceModel: 'iPhone 14',    issue: 'Cracked screen — OLED replacement needed',  status: 'in_progress', estimatedCost: 89,  depositPaid: 20 },
+        { customerId: createdCusts[1].id, ticketNumber: 'TKT-10002', deviceType: 'phone', deviceBrand: 'Samsung', deviceModel: 'Galaxy S22',   issue: 'Battery draining — needs replacement',       status: 'ready',       estimatedCost: 49,  depositPaid: 0  },
+        { customerId: createdCusts[2].id, ticketNumber: 'TKT-10003', deviceType: 'phone', deviceBrand: 'Apple',   deviceModel: 'iPhone 13',    issue: 'Water damage — not powering on',             status: 'open',        estimatedCost: 120, depositPaid: 60 },
+      ];
+      for (const r of repairs) await RepairTicket.create({ id: uuidv4(), storeId: store.id, ...r });
+    }
+
+    // 2-hour read-only token, no refresh
+    const token = jwt.sign(
+      { id: store.id, role: 'demo', storeId: store.id, name: 'Demo Store' },
+      process.env.JWT_SECRET,
+      { expiresIn: '2h' }
+    );
+
+    res.json({
+      token, refreshToken: null,
+      user: { id: store.id, name: 'Demo Store', email: 'demo@celltechpos.com', role: 'demo', storeId: store.id, store: { id: store.id, name: 'CellTechPOS Demo' } },
+      plan: 'multi',
+    });
+  } catch (err) {
+    console.error('Demo login error:', err);
+    res.status(500).json({ error: 'Demo unavailable — please try again.' });
+  }
+});
+
 module.exports = router;

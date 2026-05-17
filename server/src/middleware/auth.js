@@ -7,6 +7,10 @@ function auth(req, res, next) {
   }
   try {
     req.user = jwt.verify(header.slice(7), process.env.JWT_SECRET);
+    // Demo sessions are read-only — block all writes
+    if (req.user.role === 'demo' && req.method !== 'GET') {
+      return res.status(403).json({ error: 'Demo mode — sign up free to save changes', demo: true });
+    }
     next();
   } catch {
     res.status(401).json({ error: 'Invalid token' });
