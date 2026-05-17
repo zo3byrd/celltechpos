@@ -484,32 +484,12 @@ function Integrations() {
         ['Mode',         'Sandbox / Stub'],
       ],
     },
-    {
-      name: 'Vidapay',
-      status: 'Configured',
-      fields: [
-        ['API URL',    'https://api.vidapay.com/v1'],
-        ['API Key',    'stub_vidapay_key'],
-        ['Dealer ID',  'stub_dealer_id'],
-        ['Mode',       'Sandbox / Stub'],
-      ],
-    },
-    {
-      name: 'WebPOS',
-      status: 'Configured',
-      fields: [
-        ['API URL',      'https://api.webpos.com/v1'],
-        ['API Key',      'stub_webpos_key'],
-        ['Terminal ID',  'stub_terminal_id'],
-        ['Mode',         'Sandbox / Stub'],
-      ],
-    },
   ];
 
   return (
     <div className="space-y-6">
       <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-800">
-        <strong>Sandbox mode active.</strong> All integrations are running with stub credentials. Replace the keys in <code className="bg-yellow-100 px-1 rounded">server/.env</code> with your real Epay, Vidapay, and WebPOS credentials to go live.
+        <strong>Sandbox mode active.</strong> All integrations are running with stub credentials. Replace the keys in <code className="bg-yellow-100 px-1 rounded">server/.env</code> with your real Epay credentials to go live.
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -540,7 +520,7 @@ function Integrations() {
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
         <h3 className="font-semibold text-gray-800">Payment Methods</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {['Cash','Card (WebPOS)','Epay','Vidapay','Check','Split Payment'].map(m => (
+          {['Cash','Card','Epay','Check','Split Payment'].map(m => (
             <div key={m} className="flex items-center gap-2 text-sm text-gray-600">
               <div className="w-2 h-2 rounded-full bg-green-400" />
               {m}

@@ -250,7 +250,7 @@ const features = [
   { icon: DocumentTextIcon,        title: 'Estimates',             desc: 'Create professional estimates with line items, send approval links and convert to repair tickets.',   color: '#14b8a6' },
   { icon: ArrowPathIcon,           title: 'Recurring Invoices',    desc: 'Set up weekly, monthly or yearly billing contracts that auto-generate invoices on schedule.',         color: '#a855f7' },
   { icon: ArrowUturnLeftIcon,      title: 'Buyback / Trade-In',    desc: 'Quote, purchase and optionally add used devices to inventory with automatic 30% markup pricing.',    color: '#f43f5e' },
-  { icon: BanknotesIcon,           title: 'Bill Payments',         desc: 'Process prepaid PINs, mobile top-ups, bill payments and money orders with ePay & VidaPay support.',  color: '#22c55e' },
+  { icon: BanknotesIcon,           title: 'Bill Payments',         desc: 'Process prepaid PINs, mobile top-ups, bill payments and money orders all from one screen.',  color: '#22c55e' },
   { icon: TruckIcon,               title: 'Purchase Orders',       desc: 'Create POs, track supplier orders and auto-update stock when shipments are received.',                color: '#f97316' },
   { icon: ArchiveBoxIcon,          title: 'Layaway',               desc: 'Flexible layaway plans with deposit tracking, payment schedules and automatic completion.',           color: '#06b6d4' },
   { icon: StarIcon,                title: 'Loyalty Program',       desc: 'Reward repeat customers with points per dollar that convert to real discounts at checkout.',          color: '#eab308' },
@@ -571,7 +571,7 @@ export default function LandingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
             {[
               { icon: WrenchScrewdriverIcon, color: TEAL,      title: 'Repair Management',      desc: 'Full repair workflow from intake to pickup.',           items: ['Ticket tracking & status updates', 'Parts & labor cost tracking', 'Photo & file attachments', 'Customer signature capture', 'Job timer per technician', 'Warranty management', 'Mail-in repair support'] },
-              { icon: SignalIcon,            color: '#6366f1', title: 'Carrier Activations',    desc: 'All major carriers, commissions auto-calculated.',       items: ['Boost, T-Mobile, AT&T, Verizon', 'Metro, Cricket, Visible & more', 'ePay & VidaPay integration', 'Commission & spiff tracking', 'New lines, upgrades & ports', 'Monthly payout reports'] },
+              { icon: SignalIcon,            color: '#6366f1', title: 'Carrier Activations',    desc: 'All major carriers, commissions auto-calculated.',       items: ['Boost, T-Mobile, AT&T, Verizon', 'Metro, Cricket, Visible & more', 'Commission & spiff tracking', 'New lines, upgrades & ports', 'Monthly payout reports'] },
               { icon: CubeIcon,             color: '#f59e0b', title: 'Inventory & Purchasing', desc: 'Never run out of stock again.',                          items: ['Real-time stock levels', 'Low-stock & reorder alerts', 'Barcode label printing', 'Supplier & PO management', 'Serial number tracking', 'Cycle count audits'] },
               { icon: UsersIcon,            color: '#ec4899', title: 'Customer & Growth',      desc: 'Build lasting relationships and grow revenue.',          items: ['Full CRM with repair history', 'Loyalty points & rewards', 'SMS & email marketing campaigns', 'Two-way messaging', 'Automated appointment reminders', 'Customer portal for ticket lookup'] },
               { icon: ShoppingCartIcon,     color: '#0ea5e9', title: 'Sales & Billing',        desc: 'Every revenue stream under one roof.',                   items: ['POS with split payments', 'Estimates with approval links', 'Recurring invoice contracts', 'Layaway & payment plans', 'Bill payments & prepaid PINs', 'Buyback / trade-in purchasing'] },
@@ -711,7 +711,6 @@ export default function LandingPage() {
               { name: 'PayPal', desc: 'Online payments', color: '#003087', emoji: '🅿️' },
               { name: 'QuickBooks', desc: 'Accounting export', color: '#2ca01c', emoji: '📊' },
               { name: 'ePay', desc: 'Carrier top-ups', color: '#0ea5e9', emoji: '📶' },
-              { name: 'VidaPay', desc: 'Bill payments', color: '#7c3aed', emoji: '💵' },
               { name: 'Google', desc: 'Reviews & maps', color: '#4285f4', emoji: '📍' },
             ].map(intg => (
               <div key={intg.name} className="card-hover" style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, padding: '18px 14px', textAlign: 'center', cursor: 'default' }}>

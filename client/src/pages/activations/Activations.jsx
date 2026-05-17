@@ -63,7 +63,7 @@ function CarrierLogo({ carrier, size = 'sm', customName, customColor }) {
 const emptyForm = {
   customerId:'', carrier:'boost', activationType:'new', planName:'', planCost:'',
   phoneNumber:'', imei:'', simNumber:'', commissionAmount:'', spiffAmount:'',
-  useEpay: false, useVidapay: false, notes:'', otherName:'', otherColor:'#6b7280',
+  useEpay: false, notes:'', otherName:'', otherColor:'#6b7280',
 };
 
 export default function Activations() {
@@ -134,7 +134,7 @@ export default function Activations() {
 
   async function loadEpayPlans(c) {
     try {
-      const plans = await api.get(`/activations/integrations/vidapay-plans?carrier=${c}`);
+      const plans = await api.get(`/activations/integrations/epay-plans?carrier=${c}`);
       setEpayPlans(plans.data.plans || []);
     } catch { setEpayPlans([]); }
   }
@@ -419,10 +419,6 @@ export default function Activations() {
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
                     <input type="checkbox" checked={form.useEpay} onChange={e => set('useEpay', e.target.checked)} className="rounded" />
                     Submit via <strong>Epay</strong>
-                  </label>
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={form.useVidapay} onChange={e => set('useVidapay', e.target.checked)} className="rounded" />
-                    Submit via <strong>Vidapay</strong>
                   </label>
                 </div>
                 <div className="col-span-2">
