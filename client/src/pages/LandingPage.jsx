@@ -418,19 +418,24 @@ export default function LandingPage() {
         <div className="hero-grid" style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr auto', gap: 60, alignItems: 'center', position: 'relative', zIndex: 1 }}>
           {/* Left: Text */}
           <div className="fade-up">
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(13,148,136,0.15)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 999, padding: '6px 16px', marginBottom: 28 }}>
-              <BoltIcon style={{ width: 13, height: 13, color: '#2dd4bf' }} />
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#2dd4bf', letterSpacing: '0.06em' }}>Built for Wireless & Repair Shops</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 28 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(13,148,136,0.15)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 999, padding: '6px 16px' }}>
+                <BoltIcon style={{ width: 13, height: 13, color: '#2dd4bf' }} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#2dd4bf', letterSpacing: '0.06em' }}>Built for Wireless & Repair Shops</span>
+              </div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(99,102,241,0.18)', border: '1px solid rgba(99,102,241,0.4)', borderRadius: 999, padding: '6px 16px' }}>
+                <span style={{ fontSize: 13 }}>✨</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#a5b4fc', letterSpacing: '0.06em' }}>Now with Claude AI</span>
+              </div>
             </div>
             <h1 style={{ fontSize: 'clamp(36px, 5vw, 62px)', fontWeight: 900, lineHeight: 1.08, letterSpacing: '-2px', color: '#fff', margin: '0 0 22px' }}>
-              Tomorrow's wireless<br />
+              The smarter way to run<br />
               <span style={{ background: `linear-gradient(90deg, #2dd4bf, #38bdf8)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                retail technology,
+                your repair shop.
               </span>
-              <br />today.
             </h1>
-            <p style={{ fontSize: 18, color: '#94a3b8', lineHeight: 1.7, maxWidth: 500, margin: '0 0 40px' }}>
-              The all-in-one platform for cell phone stores and repair shops. Manage POS, repairs, activations, inventory and your whole team from one powerful system.
+            <p style={{ fontSize: 18, color: '#94a3b8', lineHeight: 1.7, maxWidth: 520, margin: '0 0 40px' }}>
+              The all-in-one platform for cell phone stores and repair shops — with built-in AI that writes repair notes, forecasts inventory, generates marketing copy, and delivers business insights automatically.
             </p>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 48 }}>
               <Link to="/signup" style={{ padding: '14px 32px', borderRadius: 10, fontSize: 15, fontWeight: 700, background: `linear-gradient(135deg, ${TEAL}, #0f766e)`, color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8, boxShadow: `0 8px 24px rgba(13,148,136,0.35)` }}>
@@ -451,6 +456,9 @@ export default function LandingPage() {
                   <Icon style={{ width: 15, height: 15, color: '#2dd4bf' }} />{text}
                 </div>
               ))}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: '#818cf8' }}>
+                <span style={{ fontSize: 14 }}>✨</span>AI included in every plan
+              </div>
             </div>
           </div>
 
