@@ -462,6 +462,9 @@ const License = sequelize.define('License', {
   stripePlanKey:        { type: DataTypes.STRING },
   paypalSubscriptionId: { type: DataTypes.STRING },
   paypalStatus:         { type: DataTypes.STRING },
+  cryptoChargeId:       { type: DataTypes.STRING },
+  cryptoChargeCode:     { type: DataTypes.STRING },
+  cryptoStatus:         { type: DataTypes.STRING },
 });
 
 // ── StripePlan ────────────────────────────────────────────────────────────────

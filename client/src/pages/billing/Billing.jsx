@@ -46,15 +46,22 @@ export default function Billing() {
   const [plans, setPlans] = useState([]);
   const [annual, setAnnual] = useState(false);
   const [loading, setLoading] = useState(null);
+  const [cryptoLoading, setCryptoLoading] = useState(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [cryptoSuccess, setCryptoSuccess] = useState(false);
 
   useEffect(() => {
     api.get('/licenses/my').then(r => setLicense(r.data)).catch(() => {});
     api.get('/licenses/stripe-plans').then(r => setPlans(r.data)).catch(() => {});
-    if (window.location.search.includes('success=true')) {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
       setSuccess(true);
+      window.history.replaceState({}, '', '/app/billing');
+    }
+    if (params.get('crypto') === 'success') {
+      setCryptoSuccess(true);
       window.history.replaceState({}, '', '/app/billing');
     }
   }, []);
@@ -80,6 +87,19 @@ export default function Billing() {
       setError(err.response?.data?.error || 'Could not start checkout. Try again.');
     } finally {
       setLoading(null);
+    }
+  }
+
+  async function payCrypto(planKey) {
+    setCryptoLoading(planKey);
+    setError('');
+    try {
+      const { data } = await api.post('/licenses/crypto-checkout', { planKey });
+      if (data.url) window.location.href = data.url;
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not start crypto checkout. Try again.');
+    } finally {
+      setCryptoLoading(null);
     }
   }
 
@@ -113,6 +133,16 @@ export default function Billing() {
           <div>
             <p className="font-semibold text-green-800">Subscription activated!</p>
             <p className="text-sm text-green-700 mt-0.5">Welcome aboard. Your plan is now active.</p>
+          </div>
+        </div>
+      )}
+
+      {cryptoSuccess && (
+        <div className="mb-6 p-4 rounded-xl border border-orange-200 bg-orange-50 flex items-center gap-3">
+          <span className="text-2xl">₿</span>
+          <div>
+            <p className="font-semibold text-orange-800">Crypto payment received!</p>
+            <p className="text-sm text-orange-700 mt-0.5">Your payment is being confirmed on-chain. Your plan will activate within a few minutes.</p>
           </div>
         </div>
       )}
@@ -227,17 +257,25 @@ export default function Billing() {
 
                   <button
                     onClick={() => subscribe(plan.key)}
-                    disabled={!!loading}
+                    disabled={!!loading || !!cryptoLoading}
                     className="w-full py-2.5 rounded-lg font-bold text-sm transition-all"
                     style={{
                       background: plan.popular ? plan.color : 'transparent',
                       color: plan.popular ? '#fff' : plan.color,
                       border: `2px solid ${plan.color}`,
-                      opacity: loading ? 0.7 : 1,
-                      cursor: loading ? 'not-allowed' : 'pointer',
+                      opacity: (loading || cryptoLoading) ? 0.7 : 1,
+                      cursor: (loading || cryptoLoading) ? 'not-allowed' : 'pointer',
                     }}
                   >
                     {loading === plan.key ? 'Redirecting…' : `Choose ${plan.name || plan.label}`}
+                  </button>
+
+                  <button
+                    onClick={() => payCrypto(plan.key)}
+                    disabled={!!loading || !!cryptoLoading}
+                    className="w-full mt-2 py-2 rounded-lg font-semibold text-xs text-gray-500 border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {cryptoLoading === plan.key ? 'Redirecting…' : '₿ Pay with Crypto'}
                   </button>
                 </div>
               ))}
@@ -245,7 +283,7 @@ export default function Billing() {
           )}
 
           <p className="text-center text-xs text-gray-400 mt-6">
-            Secure checkout via Stripe · Cancel anytime · No hidden fees
+            Secure checkout via Stripe or Coinbase Commerce · Cancel anytime · No hidden fees
           </p>
         </>
       )}

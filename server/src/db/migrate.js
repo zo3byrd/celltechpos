@@ -66,6 +66,11 @@ async function runMigrations() {
   // PayPal plan ID on StripePlan
   await addColumn('StripePlans', 'paypalPlanId',      'VARCHAR(255)');
 
+  // Crypto payment fields on License
+  await addColumn('Licenses', 'cryptoChargeId',   'VARCHAR(255)');
+  await addColumn('Licenses', 'cryptoChargeCode',  'VARCHAR(255)');
+  await addColumn('Licenses', 'cryptoStatus',      'VARCHAR(50)');
+
   // Wholesale / tiered pricing on Customer
   await addColumn('Customers', 'wholesale',  'TINYINT(1) DEFAULT 0');
   await addColumn('Customers', 'priceTier',  "VARCHAR(20) DEFAULT 'standard'");

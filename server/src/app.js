@@ -52,6 +52,9 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 // Stripe webhook needs raw body — must be before express.json()
 app.post('/api/licenses/webhook', express.raw({ type: 'application/json' }), require('./routes/stripeWebhook'));
 
+// Coinbase Commerce webhook — raw body for HMAC verification
+app.post('/api/licenses/crypto-webhook', express.raw({ type: 'application/json' }), require('./routes/cryptoWebhook'));
+
 app.use(express.json());
 
 // ── Rate limiting on auth ─────────────────────────────────────────────────────

@@ -487,6 +487,67 @@ router.post('/self-checkout', async (req, res) => {
   }
 });
 
+// POST /crypto-checkout — store owner pays subscription via Coinbase Commerce crypto
+router.post('/crypto-checkout', async (req, res) => {
+  const apiKey = process.env.COINBASE_COMMERCE_API_KEY;
+  if (!apiKey) return res.status(503).json({ error: 'Crypto payments not configured' });
+
+  const { planKey } = req.body;
+  if (!planKey) return res.status(400).json({ error: 'planKey is required' });
+
+  try {
+    const planRow = await StripePlan.findOne({ where: { key: planKey } });
+    if (!planRow) return res.status(404).json({ error: `Plan "${planKey}" not found` });
+
+    const amountDollars = (planRow.amount / 100).toFixed(2);
+    const appUrl = process.env.APP_URL || 'https://celltechpos.com';
+    const store = await Store.findByPk(req.user.storeId);
+
+    const body = JSON.stringify({
+      name: `CellTechPOS ${planRow.label}`,
+      description: `${planRow.label} subscription for ${store?.name || 'your store'}`,
+      local_price: { amount: amountDollars, currency: 'USD' },
+      pricing_type: 'fixed_price',
+      redirect_url: `${appUrl}/app/billing?crypto=success`,
+      cancel_url: `${appUrl}/app/billing`,
+      metadata: {
+        storeId: req.user.storeId,
+        planKey,
+        interval: planRow.interval,
+        price: amountDollars,
+      },
+    });
+
+    const ccRes = await fetch('https://api.commerce.coinbase.com/charges', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CC-Api-Key': apiKey,
+        'X-CC-Version': '2018-03-22',
+      },
+      body,
+    });
+
+    if (!ccRes.ok) {
+      const errText = await ccRes.text();
+      console.error('Coinbase Commerce error:', errText);
+      return res.status(502).json({ error: 'Failed to create crypto charge' });
+    }
+
+    const { data: charge } = await ccRes.json();
+
+    await sequelize.query(
+      'UPDATE `Licenses` SET cryptoChargeId=?, cryptoChargeCode=?, cryptoStatus=?, stripePlanKey=?, updatedAt=? WHERE storeId=?',
+      { replacements: [charge.id, charge.code, 'NEW', planKey, new Date().toISOString(), req.user.storeId] }
+    );
+
+    res.json({ url: charge.hosted_url });
+  } catch (err) {
+    console.error('Crypto checkout error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Stripe Plan Management (superadmin) ───────────────────────────────────────
 
 // PUT update plan price (creates new Stripe price, keeps product)
