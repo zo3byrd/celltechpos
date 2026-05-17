@@ -19,19 +19,20 @@ export default function Dashboard() {
   const [aiInsights, setAiInsights] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
-  async function generateInsights() {
+  async function generateInsights(silent = false) {
     setAiLoading(true);
     try {
       const { data } = await api.post('/ai/sales-insights');
       setAiInsights(data.text);
     } catch (err) {
-      toast.error(err.response?.data?.error || 'AI generation failed');
+      if (!silent) toast.error(err.response?.data?.error || 'AI generation failed');
     } finally {
       setAiLoading(false);
     }
   }
 
   useEffect(() => {
+    generateInsights(true);
     api.get('/reports/dashboard').then(r => setStats(r.data)).catch(() => {});
     const end = new Date().toISOString().slice(0, 10);
     const start = new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10);
@@ -159,12 +160,12 @@ export default function Dashboard() {
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-bold text-gray-700">✨ AI Sales Insights</span>
               <button
-                onClick={generateInsights}
+                onClick={() => generateInsights(false)}
                 disabled={aiLoading}
                 className="text-xs font-semibold px-3 py-1 rounded-lg text-white transition-colors disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}
               >
-                {aiLoading ? 'Analyzing…' : aiInsights ? 'Refresh' : 'Generate'}
+                {aiLoading ? 'Analyzing…' : 'Refresh'}
               </button>
             </div>
             {aiInsights ? (
