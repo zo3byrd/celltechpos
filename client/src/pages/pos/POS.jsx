@@ -141,6 +141,7 @@ export default function POS() {
   const [sendingReceipt, setSendingReceipt] = useState(false);
   const [mobileView, setMobileView] = useState('browse');
   const searchRef = useRef(null);
+  const barcodeHandlerRef = useRef(null);
 
   // Load items when search or category changes
   useEffect(() => {
@@ -164,6 +165,33 @@ export default function POS() {
     }, 300);
     return () => clearTimeout(t);
   }, [custSearch]);
+
+  // Global barcode scanner listener — fires when no input/textarea has focus
+  useEffect(() => {
+    const buf = { v: '' };
+    const timer = { id: null };
+    function onKeyDown(e) {
+      const active = document.activeElement;
+      const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT');
+      if (e.key === 'Enter') {
+        const code = buf.v.trim();
+        buf.v = '';
+        if (timer.id) { clearTimeout(timer.id); timer.id = null; }
+        if (code.length >= 4 && !isInput && barcodeHandlerRef.current) {
+          e.preventDefault();
+          barcodeHandlerRef.current(code);
+        }
+        return;
+      }
+      if (!isInput && e.key.length === 1) {
+        buf.v += e.key;
+        if (timer.id) clearTimeout(timer.id);
+        timer.id = setTimeout(() => { buf.v = ''; }, 100);
+      }
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => { document.removeEventListener('keydown', onKeyDown); if (timer.id) clearTimeout(timer.id); };
+  }, []);
 
   function addToCart(item) {
     setCart(c => {
@@ -192,6 +220,28 @@ export default function POS() {
   }
 
   function clearCustomer() { setCustomerId(''); setSelectedCust(null); setCustSearch(''); }
+
+  async function handleBarcodeEnter(code) {
+    try {
+      const { data } = await api.get(`/inventory?search=${encodeURIComponent(code)}&limit=10`);
+      const items = data.items || [];
+      const exact = items.find(i => i.barcode === code || i.sku === code);
+      const match = exact || (items.length === 1 ? items[0] : null);
+      if (match) {
+        addToCart(match);
+        setSearch('');
+        toast.success(`Added: ${match.name}`, { duration: 1500 });
+      } else if (items.length > 1) {
+        setSearch(code);
+        searchRef.current?.focus();
+      } else {
+        toast.error(`No item found: ${code}`, { duration: 2000 });
+      }
+    } catch {
+      toast.error('Barcode lookup failed');
+    }
+  }
+  barcodeHandlerRef.current = handleBarcodeEnter;
 
   const taxRate  = storeInfo ? parseFloat(storeInfo.taxRate) : 0.0825;
   const subtotal = cart.reduce((s, i) => s + i.unitPrice * i.qty, 0);
@@ -417,9 +467,10 @@ ${policyHtml}
             <input
               ref={searchRef}
               className="input pl-9 text-sm"
-              placeholder="Search by name, SKU or barcode…"
+              placeholder="Search or scan barcode…"
               value={search}
               onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && search.trim()) handleBarcodeEnter(search.trim()); }}
               autoFocus
             />
             {search && (
