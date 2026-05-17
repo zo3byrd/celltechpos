@@ -583,8 +583,8 @@ router.post('/demo', async (req, res) => {
       const hash = await bcrypt.hash('demo-readonly-' + store.id, 10);
       demoUser = await User.create({
         id: uuidv4(), storeId: store.id, name: 'Demo Staff',
-        email: 'demo@celltechpos.com', password: hash,
-        role: 'admin', active: true, emailVerified: true,
+        email: 'demo@celltechpos.com', passwordHash: hash,
+        role: 'admin', active: true,
       });
     }
 
