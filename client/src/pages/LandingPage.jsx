@@ -557,6 +557,83 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── AI Features ──────────────────────────────────────────── */}
+      <section style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)', padding: '80px 24px', position: 'relative', overflow: 'hidden' }}>
+        {/* Background glow */}
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 800, height: 800, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 65%)', pointerEvents: 'none' }} />
+        <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+          <div style={{ textAlign: 'center', marginBottom: 52 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.35)', borderRadius: 999, padding: '6px 16px', marginBottom: 16 }}>
+              <span style={{ fontSize: 14 }}>✨</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#a5b4fc', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Powered by AI</span>
+            </div>
+            <h2 style={{ fontSize: 36, fontWeight: 800, color: '#fff', margin: '0 0 12px', letterSpacing: '-0.5px' }}>Built-in AI that works for you</h2>
+            <p style={{ fontSize: 16, color: '#94a3b8', maxWidth: 520, margin: '0 auto', lineHeight: 1.6 }}>CellTechPOS uses Claude AI to automate diagnosis, forecast inventory, generate marketing copy, and flag risk — all without leaving your dashboard.</p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
+            {[
+              {
+                emoji: '🔧',
+                title: 'AI Repair Notes',
+                desc: 'Type the device and customer complaint — AI writes a professional technician diagnosis in seconds. Saves time on every ticket.',
+                color: '#6366f1',
+              },
+              {
+                emoji: '📊',
+                title: 'AI Sales Insights',
+                desc: 'Your dashboard auto-generates business insights from the last 30 days of sales data every time you log in. No setup needed.',
+                color: '#8b5cf6',
+              },
+              {
+                emoji: '📦',
+                title: 'AI Inventory Forecasting',
+                desc: 'Instantly see which parts are at or below reorder point, with smart restocking recommendations tailored to a repair shop.',
+                color: '#0ea5e9',
+              },
+              {
+                emoji: '📱',
+                title: 'AI Marketing Campaigns',
+                desc: 'Generate SMS and email campaign copy in one click. Just enter your promotion and target audience — AI writes it for you.',
+                color: '#10b981',
+              },
+              {
+                emoji: '💬',
+                title: 'AI Customer Support',
+                desc: 'AI-assisted responses help your team handle common customer questions faster, keeping service quality consistent.',
+                color: '#f59e0b',
+              },
+              {
+                emoji: '🛡️',
+                title: 'AI Fraud & Risk Detection',
+                desc: 'Flag suspicious transactions, duplicate IMEIs, and unusual patterns before they become a problem for your store.',
+                color: '#ef4444',
+              },
+            ].map(f => (
+              <div key={f.title} className="card-hover" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '28px 24px', backdropFilter: 'blur(4px)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+                  <div style={{ width: 46, height: 46, borderRadius: 12, background: f.color + '22', border: `1px solid ${f.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
+                    {f.emoji}
+                  </div>
+                  <div style={{ display: 'inline-block', background: f.color + '22', borderRadius: 999, padding: '3px 10px' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: f.color }}>AI-Powered</span>
+                  </div>
+                </div>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 8px' }}>{f.title}</h3>
+                <p style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.65, margin: 0 }}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: 44 }}>
+            <p style={{ fontSize: 13, color: '#475569', marginBottom: 16 }}>Included in every plan — no extra AI subscription required.</p>
+            <Link to="/signup" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', fontWeight: 700, fontSize: 14, padding: '12px 28px', borderRadius: 10, textDecoration: 'none' }}>
+              ✨ Try AI Features Free <ArrowRightIcon style={{ width: 16, height: 16 }} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ── Solutions ────────────────────────────────────────────── */}
       <section id="solutions" style={{ background: NAVY, padding: '80px 24px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: -200, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(13,148,136,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
