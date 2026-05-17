@@ -210,6 +210,62 @@ async function sendReviewRequests() {
   }
 }
 
+async function sendTrialSevenDayReminders() {
+  try {
+    const { sequelize } = require('../db');
+    const appUrl = process.env.APP_URL || 'https://celltechpos.com';
+    const [rows] = await sequelize.query(
+      `SELECT l.*, s.name as storeName, s.email as storeEmail FROM \`Licenses\` l
+       LEFT JOIN \`Stores\` s ON l.storeId = s.id
+       WHERE l.status='active' AND l.stripeStatus IS NULL
+         AND l.expiresAt IS NOT NULL
+         AND l.expiresAt <= datetime('now', '+7 days')
+         AND l.expiresAt > datetime('now')
+         AND (l.notes IS NULL OR l.notes NOT LIKE '%trial_7day_sent%')
+       LIMIT 50`
+    );
+    for (const lic of rows) {
+      if (!lic.storeEmail) continue;
+      const daysLeft = Math.ceil((new Date(lic.expiresAt) - new Date()) / 86400000);
+      const emailBody = `
+        <p>Hi,</p>
+        <p>Your free trial for <strong>${lic.storeName}</strong> on CellTechPOS has <strong>${daysLeft} days left</strong>.</p>
+        <p>Here's what you'll keep when you subscribe:</p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;margin:12px 0">
+          ${[
+            ['🛠️ Repair Tickets',    'All open tickets, history, and customer signatures'],
+            ['📦 Inventory',         'Your full parts, accessories, and device catalog'],
+            ['💳 Sales & Customers', 'Every transaction and customer record stays intact'],
+            ['📊 Reports & Data',    'Sales history, commission reports, and daily summaries'],
+          ].map(([f, d]) => `<tr style="border-bottom:1px solid #f3f4f6">
+            <td style="padding:8px 4px;font-weight:600;white-space:nowrap">${f}</td>
+            <td style="padding:8px 4px;color:#6b7280;font-size:13px">${d}</td>
+          </tr>`).join('')}
+        </table>
+        <p style="font-size:14px;color:#6b7280">Plans start at <strong style="color:#111827">$49.99/month</strong> — no setup fees, cancel anytime.</p>
+        <p style="margin:24px 0">
+          <a href="${appUrl}/app/billing" style="background:linear-gradient(135deg,#059669,#2dd4bf);color:#fff;padding:13px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">
+            Choose a Plan
+          </a>
+        </p>`;
+      await sendEmail(
+        lic.storeEmail,
+        `Your CellTechPOS trial ends in ${daysLeft} days — keep your data`,
+        wrap(emailBody, 'CellTechPOS'),
+        `Your CellTechPOS trial ends in ${daysLeft} days. Subscribe to keep your data: ${appUrl}/app/billing`
+      ).catch(() => {});
+      const existingNotes = lic.notes || '';
+      await sequelize.query(
+        "UPDATE `Licenses` SET notes=?, updatedAt=? WHERE storeId=?",
+        { replacements: [`${existingNotes} trial_7day_sent`, new Date().toISOString(), lic.storeId] }
+      );
+      console.log(`[scheduler] 7-day trial reminder sent to ${lic.storeEmail}`);
+    }
+  } catch (err) {
+    console.error('[scheduler] 7-day trial reminders error:', err.message);
+  }
+}
+
 async function sendTrialExpiringReminders() {
   try {
     const { sequelize } = require('../db');
@@ -280,7 +336,9 @@ function startScheduler() {
   cron.schedule('0 20 * * *', sendDailySalesSummary);
   // Every 30 min — review requests for recently picked-up repairs
   cron.schedule('*/30 * * * *', sendReviewRequests);
-  // Daily at 11am — trial expiring in 3 days reminders
+  // Daily at 9am — trial expiring in 7 days (first nudge)
+  cron.schedule('0 9 * * *', sendTrialSevenDayReminders);
+  // Daily at 11am — trial expiring in 3 days reminders (urgency)
   cron.schedule('0 11 * * *', sendTrialExpiringReminders);
   // Daily at noon — payment failed follow-ups
   cron.schedule('0 12 * * *', sendPaymentFailedFollowup);

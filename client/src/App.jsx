@@ -7,6 +7,7 @@ import SuperAdminLayout from './pages/superadmin/SuperAdminLayout';
 import SubscriptionExpired from './components/SubscriptionExpired';
 import LandingPage from './pages/LandingPage';
 import RepairStatus from './pages/RepairStatus';
+import NotFound from './pages/NotFound';
 import Layout from './components/Layout';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
@@ -172,7 +173,7 @@ export default function App() {
           <Route path="license-manager" element={<Navigate to="/superadmin/subscribers" replace />} />
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
   );
