@@ -67,17 +67,17 @@ export default function SADashboard() {
   const statusColor = s => ({ active:'#4ade80', expired:'#f87171', suspended:'#fbbf24', cancelled:'#6b7280', trial:'#818cf8' }[s] || '#6b7280');
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 sm:p-6 md:p-8 space-y-6 md:space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-white">Dashboard</h1>
           <p className="text-sm mt-0.5" style={{ color: '#6b7280' }}>CellTechPOS — Subscription Overview</p>
         </div>
         <button onClick={() => navigate('/superadmin/subscribers')}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all"
+          className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all"
           style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>
-          <PlusIcon className="w-4 h-4" />Onboard Store
+          <PlusIcon className="w-4 h-4" /><span className="hidden sm:inline">Onboard Store</span><span className="sm:hidden">Add</span>
         </button>
       </div>
 
@@ -123,8 +123,8 @@ export default function SADashboard() {
               Manage →
             </button>
           </div>
-          <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.04)' }}>
-            <table className="w-full">
+          <div className="rounded-xl overflow-hidden overflow-x-auto" style={{ border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.04)' }}>
+            <table className="w-full min-w-[480px]">
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(239,68,68,0.15)' }}>
                   {['Store', 'Issue', 'Expires', 'Plan'].map(h => (
@@ -173,7 +173,7 @@ export default function SADashboard() {
             View all →
           </button>
         </div>
-        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1e2240' }}>
+        <div className="rounded-xl overflow-hidden overflow-x-auto" style={{ border: '1px solid #1e2240' }}>
           {loading ? (
             <div className="p-8 text-center animate-pulse" style={{ color: '#374151' }}>Loading…</div>
           ) : recent.length === 0 ? (
@@ -184,7 +184,7 @@ export default function SADashboard() {
               </button>
             </div>
           ) : (
-            <table className="w-full">
+            <table className="w-full min-w-[480px]">
               <thead>
                 <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid #1e2240' }}>
                   {['Store', 'Plan', 'Status', 'Expires', 'Price'].map(h => (
