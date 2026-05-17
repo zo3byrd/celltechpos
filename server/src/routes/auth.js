@@ -529,8 +529,10 @@ router.post('/google', async (req, res) => {
 // POST /demo — spin up a read-only demo session (no credentials needed)
 router.post('/demo', async (req, res) => {
   try {
-    const { InventoryItem, Customer, RepairTicket } = require('../db/models');
-    const appUrl = process.env.APP_URL || 'https://celltechpos.com';
+    const { InventoryItem, Customer, RepairTicket, Transaction, TransactionItem, Activation } = require('../db/models');
+
+    const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+    const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
     let store = await Store.findOne({ where: { name: 'CellTechPOS Demo' } });
 
@@ -549,30 +551,93 @@ router.post('/demo', async (req, res) => {
       });
 
       const inv = [
-        { name: 'iPhone 15 Pro 256GB',         sku: 'IP15P-256',  category: 'device',    brand: 'Apple',   quantity: 8,   minQuantity: 2, cost: 850,  price: 1099  },
-        { name: 'Samsung Galaxy S24 128GB',     sku: 'SGS24-128',  category: 'device',    brand: 'Samsung', quantity: 5,   minQuantity: 2, cost: 600,  price: 799   },
-        { name: 'Screen Replacement (OLED)',    sku: 'SVC-SCRN',   category: 'service',   brand: '',        quantity: 999, minQuantity: 0, cost: 45,   price: 89    },
-        { name: 'Battery Replacement',          sku: 'SVC-BATT',   category: 'service',   brand: '',        quantity: 999, minQuantity: 0, cost: 20,   price: 49    },
-        { name: 'USB-C Cable 6ft',              sku: 'ACC-USBC',   category: 'accessory', brand: 'Anker',   quantity: 24,  minQuantity: 5, cost: 4.5,  price: 14.99 },
-        { name: 'Tempered Glass Protector',     sku: 'ACC-TGSP',   category: 'accessory', brand: 'Generic', quantity: 3,   minQuantity: 5, cost: 1.5,  price: 9.99  },
-        { name: 'Wireless Charger Pad 15W',     sku: 'ACC-WCHG',   category: 'accessory', brand: 'Anker',   quantity: 12,  minQuantity: 3, cost: 8,    price: 24.99 },
+        { name: 'iPhone 15 Pro 256GB',     sku: 'IP15P-256', category: 'device',    brand: 'Apple',   quantity: 8,   minQuantity: 2, cost: 850, price: 1099  },
+        { name: 'Samsung Galaxy S24 128GB', sku: 'SGS24-128', category: 'device',    brand: 'Samsung', quantity: 5,   minQuantity: 2, cost: 600, price: 799   },
+        { name: 'Screen Replacement (OLED)',sku: 'SVC-SCRN',  category: 'service',   brand: '',        quantity: 999, minQuantity: 0, cost: 45,  price: 89    },
+        { name: 'Battery Replacement',      sku: 'SVC-BATT',  category: 'service',   brand: '',        quantity: 999, minQuantity: 0, cost: 20,  price: 49    },
+        { name: 'USB-C Cable 6ft',          sku: 'ACC-USBC',  category: 'accessory', brand: 'Anker',   quantity: 24,  minQuantity: 5, cost: 4.5, price: 14.99 },
+        { name: 'Tempered Glass Protector', sku: 'ACC-TGSP',  category: 'accessory', brand: 'Generic', quantity: 3,   minQuantity: 5, cost: 1.5, price: 9.99  },
+        { name: 'Wireless Charger Pad 15W', sku: 'ACC-WCHG',  category: 'accessory', brand: 'Anker',   quantity: 12,  minQuantity: 3, cost: 8,   price: 24.99 },
       ];
       for (const i of inv) await InventoryItem.create({ id: uuidv4(), storeId: store.id, active: true, barcode: '', description: '', imageUrl: '', ...i });
 
-      const custs = [
-        { firstName: 'Maria',  lastName: 'Garcia',    email: 'maria@example.com',  phone: '(305) 555-0201' },
-        { firstName: 'James',  lastName: 'Thompson',  email: 'james@example.com',  phone: '(305) 555-0302' },
-        { firstName: 'Ashley', lastName: 'Williams',  email: 'ashley@example.com', phone: '(786) 555-0403' },
+      const custDefs = [
+        { firstName: 'Maria',  lastName: 'Garcia',   email: 'maria@example.com',  phone: '(305) 555-0201' },
+        { firstName: 'James',  lastName: 'Thompson', email: 'james@example.com',  phone: '(305) 555-0302' },
+        { firstName: 'Ashley', lastName: 'Williams', email: 'ashley@example.com', phone: '(786) 555-0403' },
       ];
-      const createdCusts = [];
-      for (const c of custs) { const cr = await Customer.create({ id: uuidv4(), storeId: store.id, active: true, ...c }); createdCusts.push(cr); }
+      for (const c of custDefs) await Customer.create({ id: uuidv4(), storeId: store.id, active: true, ...c });
 
+      const custs = await Customer.findAll({ where: { storeId: store.id }, raw: true });
       const repairs = [
-        { customerId: createdCusts[0].id, ticketNumber: 'TKT-10001', deviceType: 'phone', deviceBrand: 'Apple',   deviceModel: 'iPhone 14',    issue: 'Cracked screen — OLED replacement needed',  status: 'in_progress', estimatedCost: 89,  depositPaid: 20 },
-        { customerId: createdCusts[1].id, ticketNumber: 'TKT-10002', deviceType: 'phone', deviceBrand: 'Samsung', deviceModel: 'Galaxy S22',   issue: 'Battery draining — needs replacement',       status: 'ready',       estimatedCost: 49,  depositPaid: 0  },
-        { customerId: createdCusts[2].id, ticketNumber: 'TKT-10003', deviceType: 'phone', deviceBrand: 'Apple',   deviceModel: 'iPhone 13',    issue: 'Water damage — not powering on',             status: 'open',        estimatedCost: 120, depositPaid: 60 },
+        { customerId: custs[0].id, ticketNumber: 'TKT-10001', deviceType: 'phone', deviceBrand: 'Apple',   deviceModel: 'iPhone 14',  issue: 'Cracked screen — OLED replacement needed', status: 'in_progress', estimatedCost: 89,  depositPaid: 20 },
+        { customerId: custs[1].id, ticketNumber: 'TKT-10002', deviceType: 'phone', deviceBrand: 'Samsung', deviceModel: 'Galaxy S22', issue: 'Battery draining — needs replacement',      status: 'ready',       estimatedCost: 49,  depositPaid: 0  },
+        { customerId: custs[2].id, ticketNumber: 'TKT-10003', deviceType: 'phone', deviceBrand: 'Apple',   deviceModel: 'iPhone 13',  issue: 'Water damage — not powering on',            status: 'open',        estimatedCost: 120, depositPaid: 60 },
       ];
       for (const r of repairs) await RepairTicket.create({ id: uuidv4(), storeId: store.id, ...r });
+    }
+
+    // Seed transactions if none exist yet (runs for both new and existing demo stores)
+    const existingTxns = await Transaction.count({ where: { storeId: store.id } });
+    if (existingTxns === 0) {
+      const demoInv  = await InventoryItem.findAll({ where: { storeId: store.id }, raw: true });
+      const demoCusts = await Customer.findAll({ where: { storeId: store.id }, raw: true });
+      const methods  = ['cash','cash','cash','card','card','card','split','cash','card'];
+      let txnSeq = 10001;
+
+      for (let daysAgo = 30; daysAgo >= 0; daysAgo--) {
+        const count = rand(2, 6);
+        for (let t = 0; t < count; t++) {
+          const txDate = new Date();
+          txDate.setDate(txDate.getDate() - daysAgo);
+          txDate.setHours(rand(9, 18), rand(0, 59), 0, 0);
+
+          const chosen = Array.from({ length: rand(1, 3) }, () => pick(demoInv));
+          const subtotal   = parseFloat(chosen.reduce((s, i) => s + parseFloat(i.price), 0).toFixed(2));
+          const taxAmount  = parseFloat((subtotal * 0.07).toFixed(2));
+          const total      = parseFloat((subtotal + taxAmount).toFixed(2));
+          const custId     = Math.random() > 0.45 ? pick(demoCusts).id : null;
+
+          const tx = await Transaction.create({
+            id: uuidv4(),
+            transactionNumber: `DEMO-${String(txnSeq++).padStart(5, '0')}`,
+            storeId: store.id, customerId: custId, userId: store.id,
+            type: 'sale', subtotal, taxAmount, discountAmount: 0, total,
+            paymentMethod: pick(methods), paymentStatus: 'completed',
+            createdAt: txDate, updatedAt: txDate,
+          });
+
+          for (const item of chosen) {
+            await TransactionItem.create({
+              id: uuidv4(), transactionId: tx.id, itemId: item.id,
+              name: item.name, quantity: 1,
+              unitPrice: item.price, discount: 0, total: item.price,
+            });
+          }
+        }
+      }
+
+      // Seed activations
+      const carriers = ['Boost Mobile','T-Mobile','AT&T','Metro by T-Mobile','Cricket Wireless'];
+      const actTypes  = ['new_line','upgrade','port_in','new_line','new_line'];
+      const actStatuses = ['approved','approved','approved','pending','approved'];
+      for (let daysAgo = 30; daysAgo >= 0; daysAgo--) {
+        if (Math.random() < 0.55) {
+          const actDate = new Date(); actDate.setDate(actDate.getDate() - daysAgo);
+          const cust    = pick(demoCusts);
+          const actType = pick(actTypes);
+          const commission = actType === 'new_line' ? rand(20, 55) : actType === 'port_in' ? rand(30, 65) : rand(10, 30);
+          try {
+            await Activation.create({
+              id: uuidv4(), storeId: store.id, customerId: cust.id,
+              customerName: `${cust.firstName} ${cust.lastName}`,
+              carrier: pick(carriers), activationType: actType,
+              status: pick(actStatuses), commission,
+              createdAt: actDate, updatedAt: actDate,
+            });
+          } catch { /* skip if schema differs */ }
+        }
+      }
     }
 
     // 2-hour read-only token, no refresh
