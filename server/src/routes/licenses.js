@@ -477,7 +477,7 @@ router.post('/self-checkout', async (req, res) => {
       allow_promotion_codes: true,
       success_url: `${appUrl}/app/billing?success=true`,
       cancel_url: `${appUrl}/app/billing`,
-      metadata: { storeId: req.user.storeId },
+      metadata: { storeId: req.user.storeId, planKey },
     });
 
     res.json({ url: session.url });

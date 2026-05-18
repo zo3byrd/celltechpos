@@ -864,6 +864,48 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── YouTube Tutorial Banner ──────────────────────────────── */}
+      <section style={{ background: 'linear-gradient(135deg,#0f172a 0%,#1a1035 50%,#0f172a 100%)', padding: '64px 24px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ maxWidth: 860, margin: '0 auto', textAlign: 'center' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,0,0,0.12)', border: '1px solid rgba(255,0,0,0.25)', borderRadius: 40, padding: '6px 18px', marginBottom: 24 }}>
+            <svg viewBox="0 0 24 24" fill="#ff4444" style={{ width: 18, height: 18 }}><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#ff6666', letterSpacing: '0.08em', textTransform: 'uppercase' }}>YouTube Tutorial Series</span>
+          </div>
+          <h2 style={{ fontSize: 'clamp(28px,5vw,44px)', fontWeight: 900, color: '#fff', margin: '0 0 16px', lineHeight: 1.15 }}>
+            Learn CellTechPOS in minutes
+          </h2>
+          <p style={{ fontSize: 17, color: '#94a3b8', margin: '0 0 36px', lineHeight: 1.6, maxWidth: 560, marginLeft: 'auto', marginRight: 'auto' }}>
+            Watch our free 6-part video series and get your store running fast — repairs, POS, inventory, activations, and AI insights.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 36 }}>
+            {[
+              { n: '01', label: 'Getting Started',  color: '#2dd4bf' },
+              { n: '02', label: 'Repair Tickets',   color: '#f59e0b' },
+              { n: '03', label: 'Point of Sale',    color: '#6366f1' },
+              { n: '04', label: 'Inventory',        color: '#10b981' },
+              { n: '05', label: 'Reports & AI',     color: '#8b5cf6' },
+              { n: '06', label: 'Activations',      color: '#ec4899' },
+            ].map(v => (
+              <div key={v.n} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.05)', border: `1px solid ${v.color}33`, borderRadius: 30, padding: '6px 14px' }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: v.color }}>{v.n}</span>
+                <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>{v.label}</span>
+              </div>
+            ))}
+          </div>
+          <a
+            href="https://www.youtube.com/playlist?list=PLvRZywmevF72nGP5OWimMjHMaM9RxAKtG"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: '#ff0000', color: '#fff', fontWeight: 800, fontSize: 16, padding: '14px 32px', borderRadius: 10, textDecoration: 'none', boxShadow: '0 4px 24px rgba(255,0,0,0.3)', transition: 'opacity 0.2s' }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >
+            <svg viewBox="0 0 24 24" fill="white" style={{ width: 20, height: 20 }}><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            Watch Free Tutorials →
+          </a>
+        </div>
+      </section>
+
       {/* ── Footer ───────────────────────────────────────────────── */}
       <footer style={{ background: '#020617', padding: '52px 24px 28px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
@@ -879,7 +921,7 @@ export default function LandingPage() {
             </div>
             {[
               { title: 'Solutions', links: [['Point of Sale', '#features'], ['Repair Management', '#solutions'], ['Activations', '#solutions'], ['Inventory', '#solutions'], ['Customer CRM', '#solutions']] },
-              { title: 'Company', links: [['Pricing', '/pricing'], ['Features', '#features'], ['Contact Us', '/contact'], ['Privacy Policy', '/privacy'], ['Terms', '/terms']] },
+              { title: 'Company', links: [['Pricing', '/pricing'], ['Features', '#features'], ['Contact Us', '/contact'], ['Privacy Policy', '/privacy'], ['Terms', '/terms'], ['Video Tutorials', 'https://www.youtube.com/playlist?list=PLvRZywmevF72nGP5OWimMjHMaM9RxAKtG']] },
             ].map(col => (
               <div key={col.title}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>{col.title}</div>

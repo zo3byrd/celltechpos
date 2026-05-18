@@ -59,6 +59,10 @@ export default function Billing() {
     if (params.get('success') === 'true') {
       setSuccess(true);
       window.history.replaceState({}, '', '/app/billing');
+      // Webhook may not have fired yet — refetch after 3s to pick up updated plan
+      setTimeout(() => {
+        api.get('/licenses/my').then(r => setLicense(r.data)).catch(() => {});
+      }, 3000);
     }
     if (params.get('crypto') === 'success') {
       setCryptoSuccess(true);
@@ -117,7 +121,8 @@ export default function Billing() {
 
   const days = daysLeft(license?.expiresAt);
   const isExpired = license?.status === 'expired' || (days !== null && days <= 0);
-  const isTrial = license?.plan === 'trial';
+  // Treat as non-trial if plan was updated by webhook OR if stripeSubscriptionId exists (paid but webhook slightly delayed)
+  const isTrial = license?.plan === 'trial' && !license?.stripeSubscriptionId;
   const isActive = license?.status === 'active' && !isTrial;
 
   return (

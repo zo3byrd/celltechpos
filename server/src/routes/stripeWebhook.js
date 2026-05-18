@@ -68,12 +68,15 @@ module.exports = async (req, res) => {
         const storeId = session.metadata?.storeId;
         if (!storeId) break;
 
+        const planKey = session.metadata?.planKey || null;
+        const planInterval = planKey?.includes('yearly') || planKey?.includes('annual') ? 'yearly' : 'monthly';
         await updateLicense(storeId, {
           stripeSubscriptionId: session.subscription,
           stripeStatus: 'active',
           status: 'active',
+          ...(planKey ? { plan: planInterval, stripePlanKey: planKey } : {}),
         });
-        console.log(`Stripe checkout completed: store ${storeId}`);
+        console.log(`Stripe checkout completed: store ${storeId}, plan ${planKey || 'unknown'}`);
 
         // Send subscription confirmation email
         try {
@@ -123,14 +126,32 @@ module.exports = async (req, res) => {
         const lic = await getLicenseBySubscription(invoice.subscription);
         if (!lic) break;
 
-        const sub = await stripe.subscriptions.retrieve(invoice.subscription);
+        const sub = await stripe.subscriptions.retrieve(invoice.subscription, { expand: ['items.data.price'] });
         const newExpiry = sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null;
+
+        // Look up plan key from the subscription price ID
+        const priceId = sub.items?.data?.[0]?.price?.id;
+        let planFields = {};
+        if (priceId) {
+          const [planRows] = await sequelize.query(
+            'SELECT `key`, `interval` FROM `StripePlans` WHERE stripePriceId = ? LIMIT 1',
+            { replacements: [priceId] }
+          );
+          if (planRows[0]) {
+            planFields = {
+              stripePlanKey: planRows[0].key,
+              plan: planRows[0].interval === 'year' ? 'yearly' : 'monthly',
+            };
+          }
+        }
+
         await updateLicense(lic.storeId, {
           status: 'active',
           stripeStatus: 'active',
           expiresAt: newExpiry,
           lastPaidAt: new Date().toISOString(),
           price: (invoice.amount_paid / 100).toFixed(2),
+          ...planFields,
         });
         console.log(`Payment succeeded: store ${lic.storeId}, expires ${newExpiry}`);
 
