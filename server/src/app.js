@@ -33,6 +33,14 @@ const { checkLicense } = require('./middleware/checkLicense');
 
 const app = express();
 
+// ── og-image.png — served before CORS middleware so no Vary: Origin header ───
+// Facebook/social scrapers require clean headers to render link previews.
+app.get('/og-image.png', (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.setHeader('Content-Type', 'image/png');
+  res.sendFile(path.join(__dirname, '../../client/dist/og-image.png'));
+});
+
 // ── CORS ─────────────────────────────────────────────────────────────────────
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000')
   .split(',').map(o => o.trim());
