@@ -8,8 +8,8 @@ router.use(auth);
 
 const superadminOnly = requireRole('superadmin');
 
-// GET /my — current store's referral code, link, and stats
-router.get('/my', async (req, res) => {
+// GET /my and /summary — current store's referral code, link, and stats
+router.get(['/my', '/summary'], async (req, res) => {
   try {
     const [licRows] = await sequelize.query(
       'SELECT referralCode, referredBy FROM `Licenses` WHERE storeId=? LIMIT 1',

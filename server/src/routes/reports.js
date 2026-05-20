@@ -5,8 +5,8 @@ const { auth, requireRole } = require('../middleware/auth');
 
 const sqliteGroupFmt = { day: '%Y-%m-%d', week: '%Y-%W', month: '%Y-%m', year: '%Y' };
 
-// Dashboard summary
-router.get('/dashboard', auth, async (req, res) => {
+// Dashboard summary (also accessible as /summary)
+router.get(['/dashboard', '/summary'], auth, async (req, res) => {
   const storeId = req.user.storeId;
   const today = new Date();
   today.setHours(0, 0, 0, 0);

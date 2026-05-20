@@ -10,6 +10,18 @@ async function getOrCreate(customerId, storeId) {
   return acc;
 }
 
+// GET / — all loyalty accounts for this store
+router.get('/', requireAdmin, async (req, res) => {
+  try {
+    const accounts = await LoyaltyAccount.findAll({
+      where: { storeId: req.user.storeId },
+      include: [{ model: Customer, attributes: ['id', 'firstName', 'lastName', 'phone', 'email'] }],
+      order: [['points', 'DESC']],
+    });
+    res.json({ accounts, total: accounts.length });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.get('/account/:customerId', async (req, res) => {
   try {
     const acc = await getOrCreate(req.params.customerId, req.user.storeId);
